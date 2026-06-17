@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { History, LayoutGrid } from "lucide-react";
 import type { ReactNode } from "react";
+import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
