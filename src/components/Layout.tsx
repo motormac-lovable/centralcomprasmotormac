@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { History, LayoutGrid } from "lucide-react";
 import type { ReactNode } from "react";
+import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -10,7 +11,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 group">
             <img
-              src="/logo-motormac.png"
+              src={logoAsset.url}
               alt="Motormac"
               className="h-10 w-auto object-contain"
               onError={(e) => {
