@@ -14,16 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buyer_applications: {
+        Row: {
+          checklist_types: string[]
+          cpf: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          status: Database["public"]["Enums"]["application_status"]
+          user_id: string | null
+        }
+        Insert: {
+          checklist_types?: string[]
+          cpf: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          status?: Database["public"]["Enums"]["application_status"]
+          user_id?: string | null
+        }
+        Update: {
+          checklist_types?: string[]
+          cpf?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      kanban_cards: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          data: Json
+          empresa: string | null
+          id: string
+          kind: Database["public"]["Enums"]["card_kind"]
+          requester_email: string | null
+          requester_name: string | null
+          status: Database["public"]["Enums"]["card_status"]
+          summary: string | null
+          title: string
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          data?: Json
+          empresa?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["card_kind"]
+          requester_email?: string | null
+          requester_name?: string | null
+          status?: Database["public"]["Enums"]["card_status"]
+          summary?: string | null
+          title: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          data?: Json
+          empresa?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["card_kind"]
+          requester_email?: string | null
+          requester_name?: string | null
+          status?: Database["public"]["Enums"]["card_status"]
+          summary?: string | null
+          title?: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "buyer"
+      application_status: "pending" | "approved" | "rejected"
+      card_kind: "compras" | "contratos" | "frete"
+      card_status: "pending" | "in_progress" | "done" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +293,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "buyer"],
+      application_status: ["pending", "approved", "rejected"],
+      card_kind: ["compras", "contratos", "frete"],
+      card_status: ["pending", "in_progress", "done", "rejected"],
+    },
   },
 } as const
