@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
 import { addHistory } from "../lib/history";
+import { createCard } from "../lib/cards";
 import { isValidEmail, maskCNPJ, maskPhone } from "../lib/masks";
 
 export const Route = createFileRoute("/compras")({
@@ -54,7 +55,7 @@ function ComprasPage() {
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (!form.nome.trim()) er.nome = "Obrigatório";
@@ -69,6 +70,20 @@ function ComprasPage() {
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
+      return;
+    }
+    try {
+      await createCard({
+        kind: "compras",
+        title: `Compra: ${form.peca}`,
+        summary: `${form.nome} · ${form.unidade || "Unidade não informada"}`,
+        requester_name: form.nome,
+        requester_email: form.email,
+        unidade: form.unidade,
+        data: { ...form, files: files.map((f) => f.name) },
+      });
+    } catch (err) {
+      toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
     addHistory({
