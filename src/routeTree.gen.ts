@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as HistoricoRouteImport } from './routes/historico'
+import { Route as FreteRouteImport } from './routes/frete'
+import { Route as ContratosRouteImport } from './routes/contratos'
+import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as IndexRouteImport } from './routes/index'
 
+const HistoricoRoute = HistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FreteRoute = FreteRouteImport.update({
+  id: '/frete',
+  path: '/frete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContratosRoute = ContratosRouteImport.update({
+  id: '/contratos',
+  path: '/contratos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasRoute = ComprasRouteImport.update({
+  id: '/compras',
+  path: '/compras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/compras': typeof ComprasRoute
+  '/contratos': typeof ContratosRoute
+  '/frete': typeof FreteRoute
+  '/historico': typeof HistoricoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compras': typeof ComprasRoute
+  '/contratos': typeof ContratosRoute
+  '/frete': typeof FreteRoute
+  '/historico': typeof HistoricoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/compras': typeof ComprasRoute
+  '/contratos': typeof ContratosRoute
+  '/frete': typeof FreteRoute
+  '/historico': typeof HistoricoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/compras' | '/contratos' | '/frete' | '/historico'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/compras' | '/contratos' | '/frete' | '/historico'
+  id: '__root__' | '/' | '/compras' | '/contratos' | '/frete' | '/historico'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComprasRoute: typeof ComprasRoute
+  ContratosRoute: typeof ContratosRoute
+  FreteRoute: typeof FreteRoute
+  HistoricoRoute: typeof HistoricoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/historico': {
+      id: '/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof HistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/frete': {
+      id: '/frete'
+      path: '/frete'
+      fullPath: '/frete'
+      preLoaderRoute: typeof FreteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contratos': {
+      id: '/contratos'
+      path: '/contratos'
+      fullPath: '/contratos'
+      preLoaderRoute: typeof ContratosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras': {
+      id: '/compras'
+      path: '/compras'
+      fullPath: '/compras'
+      preLoaderRoute: typeof ComprasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComprasRoute: ComprasRoute,
+  ContratosRoute: ContratosRoute,
+  FreteRoute: FreteRoute,
+  HistoricoRoute: HistoricoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
