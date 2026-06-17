@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { addHistory } from "../lib/history";
+import { createCard } from "../lib/cards";
 import { maskCEP, maskCNPJ, maskMoney } from "../lib/masks";
 
 export const Route = createFileRoute("/frete")({
@@ -25,8 +26,20 @@ function FretePage() {
   });
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await createCard({
+        kind: "frete",
+        title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`,
+        summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`,
+        unidade: f.cidadeOrigem,
+        data: f,
+      });
+    } catch (err) {
+      toast.error("Falha ao enviar: " + (err as Error).message);
+      return;
+    }
     addHistory({
       kind: "frete",
       title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`,

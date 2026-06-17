@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
 import { addHistory } from "../lib/history";
+import { createCard } from "../lib/cards";
 import { isValidEmail, maskCNPJ, maskMoney } from "../lib/masks";
 
 export const Route = createFileRoute("/contratos")({
@@ -47,7 +48,7 @@ function ContratosPage() {
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const er: Record<string, string> = {};
     if (!f.nome.trim()) er.nome = "Obrigatório";
@@ -71,6 +72,21 @@ function ContratosPage() {
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
+      return;
+    }
+    try {
+      await createCard({
+        kind: "contratos",
+        title: `${f.tipo} — ${f.razaoSocial}`,
+        summary: `${f.empresa} · ${f.unidade}`,
+        requester_name: f.nome,
+        requester_email: f.email,
+        unidade: f.unidade,
+        empresa: f.empresa,
+        data: { ...f, contrato: contrato.map((x) => x.name), financeiro: financeiro.map((x) => x.name) },
+      });
+    } catch (err) {
+      toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
     addHistory({
