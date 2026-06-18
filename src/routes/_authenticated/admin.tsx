@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
-import { deleteUserCompletely } from "@/lib/admin-users.functions";
+import { deleteUserCompletely, updateUserRole } from "@/lib/admin-users.functions";
 import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
@@ -298,6 +298,7 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
@@ -315,25 +316,42 @@ function RegisteredUsers() {
   );
 }
 
-function EditUserModal({ row, onClose, onSaved }: { row: ProfileRow & { roles: string[] }; onClose: () => void; onSaved: () => void }) {
+function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRow & { roles: string[] }; allowedRoles: string[]; onClose: () => void; onSaved: () => void }) {
   const [full_name, setFullName] = useState(row.full_name ?? "");
   const [email, setEmail] = useState(row.email ?? "");
   const [cpf, setCpf] = useState(row.cpf ?? "");
   const [phone, setPhone] = useState(row.phone ?? "");
+  const currentNonOwnerRole = row.roles.find((r) => r !== "owner") ?? "buyer";
+  const [role, setRole] = useState<string>(currentNonOwnerRole);
   const [saving, setSaving] = useState(false);
+  const updateRoleFn = useServerFn(updateUserRole);
+
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
 
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: full_name.trim(), email: email.trim(), cpf: cpf.trim(), phone: phone.trim() })
-      .eq("id", row.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Usuário atualizado.");
-    onSaved();
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: full_name.trim(), email: email.trim(), cpf: cpf.trim(), phone: phone.trim() })
+        .eq("id", row.id);
+      if (error) throw error;
+
+      if (role !== currentNonOwnerRole && allowedRoles.includes(role)) {
+        await updateRoleFn({ data: { user_id: row.id, role: role as any } });
+      }
+
+      toast.success("Usuário atualizado.");
+      onSaved();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao atualizar usuário.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const showRoleSelect = !row.roles.includes("owner") && !isOwnerEmail(row.email);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
@@ -347,6 +365,20 @@ function EditUserModal({ row, onClose, onSaved }: { row: ProfileRow & { roles: s
           <Field label="E-mail" value={email} onChange={setEmail} type="email" />
           <Field label="CPF" value={cpf} onChange={setCpf} />
           <Field label="Telefone" value={phone} onChange={setPhone} />
+          {showRoleSelect && (
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">Nível de acesso</span>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                {allowedRoles.map((r) => (
+                  <option key={r} value={r}>{roleLabel[r] ?? r}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <p className="text-[11px] text-muted-foreground">
             Observação: a alteração de e-mail aqui ajusta o perfil exibido. O e-mail de login é mantido pelo sistema de autenticação.
           </p>
