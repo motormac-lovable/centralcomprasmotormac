@@ -57,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const isOwner = roles.includes("owner");
+  const sessionUser = session?.user ?? null;
+  // E-mails do Proprietário são sempre Proprietários — sem bloqueio possível.
+  const isOwner = roles.includes("owner") || isOwnerEmail(sessionUser?.email);
   const isAdmin = isOwner || roles.includes("admin");
   const value: AuthState = {
     user: session?.user ?? null,
