@@ -141,10 +141,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     });
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
-    toast.success("Cadastro enviado! Aprovadores notificados.", {
-      description: "Simulação: e-mail enviado para herllon.souza@motormac.com.br e vanessa@motormac.com.br.",
-      duration: 6000,
-    });
+    toast.success("Cadastro realizado! Você já pode entrar.", { duration: 5000 });
     onDone();
   };
 
