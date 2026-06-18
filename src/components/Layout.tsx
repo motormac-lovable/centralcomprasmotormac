@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus } from "lucide-react";
+import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2 } from "lucide-react";
 import type { ReactNode } from "react";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
@@ -39,7 +39,10 @@ export function Layout({ children }: { children: ReactNode }) {
               </>
             )}
             {isAdmin && (
-              <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
+              <>
+                <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
+                <NavLink to="/dev" active={pathname.startsWith("/dev")} icon={<Code2 className="h-4 w-4" />}>Dev</NavLink>
+              </>
             )}
             <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
             {user && <ProfileMenu />}
