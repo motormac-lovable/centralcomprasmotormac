@@ -28,23 +28,35 @@ const colorFor: Record<RequestKind, string> = {
 
 function HistoricoPage() {
   const [items, setItems] = useState<HistoryEntry[]>([]);
+  const { isBuyer } = useAuth();
   useEffect(() => setItems(loadHistory()), []);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-      <div className="flex items-end justify-between mb-8 gap-4">
+      <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Acompanhe todas as requisições já abertas nesta plataforma.
           </p>
         </div>
-        <Link
-          to="/"
-          className="inline-flex items-center justify-center rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition"
-        >
-          Nova solicitação
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {isBuyer && (
+            <Link
+              to="/kanban"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+            >
+              <Trello className="h-4 w-4" />
+              Abrir Kanban
+            </Link>
+          )}
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-muted transition"
+          >
+            Nova solicitação
+          </Link>
+        </div>
       </div>
 
       {items.length === 0 ? (
