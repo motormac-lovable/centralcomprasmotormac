@@ -3,9 +3,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
+import {
+  BlocoInicialPadrao,
+  BLOCO_INICIAL_VAZIO,
+  type BlocoInicial,
+  validateBlocoInicial,
+} from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
-import { isValidEmail, maskCNPJ, maskPhone } from "../lib/masks";
+import { maskCNPJ } from "../lib/masks";
 
 export const Route = createFileRoute("/compras")({
   head: () => ({
@@ -20,31 +26,18 @@ export const Route = createFileRoute("/compras")({
 const operacoes = [
   "Oficina Cummins",
   "Oficina JCB",
-  "Balcão de Vendas de peças Cummins",
-  "Balcão de Vendas de Peças JCB",
-  "Outra",
-];
-const unidades = [
-  "Porto Alegre/RS",
-  "Passo Fundo/RS",
-  "São Gabriel/RS",
-  "São José/SC",
-  "Chapecó/SC",
-  "Colombo/PR",
-  "Maringá/PR",
+  "Balcão Cummins",
+  "Balcão JCB",
   "Outra",
 ];
 
 function ComprasPage() {
   const navigate = useNavigate();
+  const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
-    nome: "",
-    email: "",
-    telefone: "",
     cnpj: "",
     peca: "",
     operacao: "",
-    unidade: "",
     especificacao: "",
     os: "",
     partNumbers: "",
@@ -57,11 +50,8 @@ function ComprasPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const er: Record<string, string> = {};
-    if (!form.nome.trim()) er.nome = "Obrigatório";
-    if (!form.email.trim()) er.email = "Obrigatório";
-    else if (!isValidEmail(form.email)) er.email = "E-mail inválido";
-    if (!form.telefone.trim()) er.telefone = "Obrigatório";
+    const blocoEr = validateBlocoInicial(bloco);
+    const er: Record<string, string> = { ...blocoEr };
     if (form.cnpj.replace(/\D/g, "").length !== 14) er.cnpj = "CNPJ inválido";
     if (!form.peca.trim()) er.peca = "Obrigatório";
     if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
@@ -72,29 +62,24 @@ function ComprasPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
+    const payload = { ...bloco, ...form, files: files.map((f) => f.name) };
     try {
       await createCard({
         kind: "compras",
         title: `Compra: ${form.peca}`,
-        summary: `${form.nome} · ${form.unidade || "Unidade não informada"}`,
-        requester_name: form.nome,
-        requester_email: form.email,
-        unidade: form.unidade,
-        data: { ...form, files: files.map((f) => f.name) },
+        summary: `${bloco.nome} · ${bloco.empresa} · ${bloco.unidade}`,
+        requester_name: bloco.nome,
+        requester_email: bloco.email,
+        unidade: bloco.unidade,
+        empresa: bloco.empresa,
+        data: payload,
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
-    addHistory({
-      kind: "compras",
-      title: `Compra: ${form.peca}`,
-      summary: `${form.nome} · ${form.unidade || "Unidade não informada"}`,
-      data: { ...form, files: files.map((f) => f.name) },
-    });
-    toast.success("Solicitação enviada com sucesso!", {
-      description: "Você pode acompanhar pelo Histórico.",
-    });
+    addHistory({ kind: "compras", title: `Compra: ${form.peca}`, summary: `${bloco.nome} · ${bloco.unidade}`, data: payload });
+    toast.success("Solicitação enviada com sucesso!", { description: "Você pode acompanhar pelo Histórico." });
     navigate({ to: "/historico" });
   };
 
@@ -105,62 +90,28 @@ function ComprasPage() {
       accent="var(--primary)"
     >
       <form onSubmit={submit} className="grid gap-5">
-        <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Nome" required error={errors.nome}>
-            <input className={inputCls} value={form.nome} onChange={(e) => set("nome", e.target.value)} />
-          </Field>
-          <Field label="E-mail" required error={errors.email}>
-            <input type="email" className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
-          </Field>
-          <Field label="Telefone (DDD + número)" required error={errors.telefone}>
-            <input
-              className={inputCls}
-              placeholder="(11) 99999-9999"
-              value={form.telefone}
-              onChange={(e) => set("telefone", maskPhone(e.target.value))}
-            />
-          </Field>
-          <Field label="CNPJ da unidade pagadora" required error={errors.cnpj}>
-            <input
-              className={inputCls}
-              placeholder="00.000.000/0000-00"
-              value={form.cnpj}
-              onChange={(e) => set("cnpj", maskCNPJ(e.target.value))}
-            />
-          </Field>
-        </div>
+        <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
+
+        <Field label="CNPJ da unidade pagadora" required error={errors.cnpj}>
+          <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
+        </Field>
 
         <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
           <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
         </Field>
 
-        <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Para qual operação?">
-            <select className={inputCls} value={form.operacao} onChange={(e) => set("operacao", e.target.value)}>
-              <option value="">Selecione...</option>
-              {operacoes.map((o) => <option key={o}>{o}</option>)}
-            </select>
-          </Field>
-          <Field label="Unidade responsável pela compra">
-            <select className={inputCls} value={form.unidade} onChange={(e) => set("unidade", e.target.value)}>
-              <option value="">Selecione...</option>
-              {unidades.map((o) => <option key={o}>{o}</option>)}
-            </select>
-          </Field>
-        </div>
-
-        <Field label="Especificação técnica da peça" required error={errors.especificacao}>
-          <textarea
-            className={`${inputCls} min-h-28`}
-            value={form.especificacao}
-            onChange={(e) => set("especificacao", e.target.value)}
-          />
+        <Field label="Para qual operação?">
+          <select className={inputCls} value={form.operacao} onChange={(e) => set("operacao", e.target.value)}>
+            <option value="">Selecione...</option>
+            {operacoes.map((o) => <option key={o}>{o}</option>)}
+          </select>
         </Field>
 
-        <Field
-          label="Número da Ordem de Serviço"
-          hint="Quando for peça de balcão, inserir número do contato da providência."
-        >
+        <Field label="Especificação técnica da peça" required error={errors.especificacao}>
+          <textarea className={`${inputCls} min-h-28`} value={form.especificacao} onChange={(e) => set("especificacao", e.target.value)} />
+        </Field>
+
+        <Field label="Número da Ordem de Serviço" hint="Quando for peça de balcão, inserir número do contato da providência.">
           <input className={inputCls} value={form.os} onChange={(e) => set("os", e.target.value)} />
         </Field>
 
@@ -180,21 +131,11 @@ function ComprasPage() {
         </Field>
 
         <Field label="Lista de Part Numbers (PN)">
-          <textarea
-            className={`${inputCls} min-h-20`}
-            placeholder="PN-12345, PN-67890..."
-            value={form.partNumbers}
-            onChange={(e) => set("partNumbers", e.target.value)}
-          />
+          <textarea className={`${inputCls} min-h-20`} placeholder="PN-12345, PN-67890..." value={form.partNumbers} onChange={(e) => set("partNumbers", e.target.value)} />
         </Field>
 
         <Field label="Para qual data a peça é esperada?" required error={errors.dataEsperada}>
-          <input
-            type="date"
-            className={inputCls}
-            value={form.dataEsperada}
-            onChange={(e) => set("dataEsperada", e.target.value)}
-          />
+          <input type="date" className={inputCls} value={form.dataEsperada} onChange={(e) => set("dataEsperada", e.target.value)} />
         </Field>
 
         <div className="flex justify-end pt-2">

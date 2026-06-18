@@ -399,14 +399,14 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const approve = async () => {
-    if (!orderNumber.trim()) {
+    let pedido = orderNumber.trim();
+    if (!pedido) {
       const n = prompt("Informe o número do pedido gerado no ERP (Linx Apollo):");
       if (!n) return;
+      pedido = n;
       setOrderNumber(n);
-      await patch({ order_number: n });
-    } else {
-      await patch({ order_number: orderNumber });
     }
+    await patch({ order_number: pedido, numero_pedido_linx: pedido });
     await onMove(card, "pedidos_gerados");
     onClose();
   };
