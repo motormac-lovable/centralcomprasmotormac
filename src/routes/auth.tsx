@@ -25,12 +25,12 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/inicio" });
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate({ to: isAdmin ? "/admin" : "/inicio" });
+  }, [user, loading, isAdmin, navigate]);
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
