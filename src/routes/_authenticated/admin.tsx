@@ -157,8 +157,13 @@ function AdminPage() {
 
 function RegisteredUsers() {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
+  const { isOwner, user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState<Row | null>(null);
+  const [busy, setBusy] = useState(false);
+  const deleteFn = useServerFn(deleteUserCompletely);
 
   const reload = async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
@@ -185,15 +190,32 @@ function RegisteredUsers() {
   const filtered = rows.filter((r) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
-    return [r.full_name, r.email, (r as any).cpf, (r as any).phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
+    return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
   });
+
+  const isOwnerRow = (u: Row) => u.roles.includes("owner") || isOwnerEmail(u.email);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await deleteFn({ data: { user_id: deleting.id } });
+      toast.success("Usuário excluído com sucesso.");
+      setDeleting(null);
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao excluir usuário.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Usuários registrados</h2>
-          <p className="text-xs text-muted-foreground">Lista completa de cadastros na plataforma com seus respectivos níveis de acesso.</p>
+          <p className="text-xs text-muted-foreground">Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos.</p>
         </div>
         <input
           value={q}
@@ -210,44 +232,177 @@ function RegisteredUsers() {
               <th className="text-left p-4">Contato</th>
               <th className="text-left p-4">Nível(is)</th>
               <th className="text-left p-4">Cadastro</th>
+              <th className="text-right p-4">Ações</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
             )}
-            {filtered.map((u) => (
-              <tr key={u.id} className="border-t">
-                <td className="p-4">
-                  <div className="font-medium">{u.full_name || "—"}</div>
-                  <div className="text-xs text-muted-foreground">{(u as any).cpf || ""}</div>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-1 text-xs"><Mail className="h-3 w-3" />{u.email}</div>
-                  <div className="text-xs text-muted-foreground">{(u as any).phone}</div>
-                </td>
-                <td className="p-4">
-                  {u.roles.length === 0 ? (
-                    <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Sem nível (pendente)</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {u.roles.map((r) => (
-                        <span key={r} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${roleStyle[r] ?? "bg-accent text-accent-foreground"}`}>
-                          {roleLabel[r] ?? r}
-                        </span>
-                      ))}
+            {filtered.map((u) => {
+              const owner = isOwnerRow(u);
+              const isSelf = u.id === user?.id;
+              const canDelete = !owner && !isSelf;
+              return (
+                <tr key={u.id} className="border-t">
+                  <td className="p-4">
+                    <div className="font-medium">{u.full_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{u.cpf || ""}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-1 text-xs"><Mail className="h-3 w-3" />{u.email}</div>
+                    <div className="text-xs text-muted-foreground">{u.phone}</div>
+                  </td>
+                  <td className="p-4">
+                    {u.roles.length === 0 ? (
+                      <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Sem nível (pendente)</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {u.roles.map((r) => (
+                          <span key={r} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${roleStyle[r] ?? "bg-accent text-accent-foreground"}`}>
+                            {roleLabel[r] ?? r}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 text-xs text-muted-foreground">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => setEditing(u)}
+                        className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+                        title="Editar dados do usuário"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </button>
+                      <button
+                        onClick={() => canDelete && setDeleting(u)}
+                        disabled={!canDelete}
+                        className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={owner ? "Proprietários não podem ser excluídos" : isSelf ? "Você não pode excluir o próprio usuário" : "Excluir usuário"}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Excluir
+                      </button>
                     </div>
-                  )}
-                </td>
-                <td className="p-4 text-xs text-muted-foreground">
-                  {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <EditUserModal
+          row={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); reload(); }}
+        />
+      )}
+
+      {deleting && (
+        <ConfirmDeleteModal
+          row={deleting}
+          busy={busy}
+          onCancel={() => setDeleting(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
+  );
+}
+
+function EditUserModal({ row, onClose, onSaved }: { row: ProfileRow & { roles: string[] }; onClose: () => void; onSaved: () => void }) {
+  const [full_name, setFullName] = useState(row.full_name ?? "");
+  const [email, setEmail] = useState(row.email ?? "");
+  const [cpf, setCpf] = useState(row.cpf ?? "");
+  const [phone, setPhone] = useState(row.phone ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!full_name.trim()) return toast.error("Informe o nome.");
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: full_name.trim(), email: email.trim(), cpf: cpf.trim(), phone: phone.trim() })
+      .eq("id", row.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Usuário atualizado.");
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Editar usuário</h3>
+          <button onClick={onClose} className="p-1 hover:bg-accent rounded-md"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-3">
+          <Field label="Nome completo" value={full_name} onChange={setFullName} />
+          <Field label="E-mail" value={email} onChange={setEmail} type="email" />
+          <Field label="CPF" value={cpf} onChange={setCpf} />
+          <Field label="Telefone" value={phone} onChange={setPhone} />
+          <p className="text-[11px] text-muted-foreground">
+            Observação: a alteração de e-mail aqui ajusta o perfil exibido. O e-mail de login é mantido pelo sistema de autenticação.
+          </p>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm">Cancelar</button>
+          <button onClick={save} disabled={saving}
+            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold disabled:opacity-60">
+            {saving ? "Salvando…" : "Salvar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+      />
+    </label>
+  );
+}
+
+function ConfirmDeleteModal({ row, busy, onCancel, onConfirm }: { row: ProfileRow; busy: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+            <Trash2 className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold">Excluir usuário?</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Esta ação removerá permanentemente <strong>{row.full_name || row.email}</strong> e todos os seus dados associados. Não é possível desfazer.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onCancel} disabled={busy} className="rounded-md border px-4 py-2 text-sm">Cancelar</button>
+          <button onClick={onConfirm} disabled={busy}
+            className="rounded-md bg-destructive text-destructive-foreground px-4 py-2 text-sm font-semibold disabled:opacity-60">
+            {busy ? "Excluindo…" : "Excluir definitivamente"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
   );
 }
 
