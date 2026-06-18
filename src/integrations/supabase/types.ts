@@ -62,11 +62,13 @@ export type Database = {
           approver_name: string | null
           assigned_to: string | null
           attachments: Json
+          codigo_unico: string | null
           created_at: string
           data: Json
           empresa: string | null
           id: string
           kind: Database["public"]["Enums"]["card_kind"]
+          numero_pedido_linx: string | null
           observations: Json
           order_number: string | null
           requester_email: string | null
@@ -84,11 +86,13 @@ export type Database = {
           approver_name?: string | null
           assigned_to?: string | null
           attachments?: Json
+          codigo_unico?: string | null
           created_at?: string
           data?: Json
           empresa?: string | null
           id?: string
           kind: Database["public"]["Enums"]["card_kind"]
+          numero_pedido_linx?: string | null
           observations?: Json
           order_number?: string | null
           requester_email?: string | null
@@ -106,11 +110,13 @@ export type Database = {
           approver_name?: string | null
           assigned_to?: string | null
           attachments?: Json
+          codigo_unico?: string | null
           created_at?: string
           data?: Json
           empresa?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["card_kind"]
+          numero_pedido_linx?: string | null
           observations?: Json
           order_number?: string | null
           requester_email?: string | null
@@ -175,6 +181,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      gerar_codigo_unico: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
