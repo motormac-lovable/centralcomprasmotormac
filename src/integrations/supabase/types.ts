@@ -58,46 +58,67 @@ export type Database = {
       }
       kanban_cards: {
         Row: {
+          approver_id: string | null
+          approver_name: string | null
           assigned_to: string | null
+          attachments: Json
           created_at: string
           data: Json
           empresa: string | null
           id: string
           kind: Database["public"]["Enums"]["card_kind"]
+          observations: Json
+          order_number: string | null
           requester_email: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
+          status_changed_at: string
           summary: string | null
+          suppliers: Json
           title: string
           unidade: string | null
           updated_at: string
         }
         Insert: {
+          approver_id?: string | null
+          approver_name?: string | null
           assigned_to?: string | null
+          attachments?: Json
           created_at?: string
           data?: Json
           empresa?: string | null
           id?: string
           kind: Database["public"]["Enums"]["card_kind"]
+          observations?: Json
+          order_number?: string | null
           requester_email?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
+          status_changed_at?: string
           summary?: string | null
+          suppliers?: Json
           title: string
           unidade?: string | null
           updated_at?: string
         }
         Update: {
+          approver_id?: string | null
+          approver_name?: string | null
           assigned_to?: string | null
+          attachments?: Json
           created_at?: string
           data?: Json
           empresa?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["card_kind"]
+          observations?: Json
+          order_number?: string | null
           requester_email?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
+          status_changed_at?: string
           summary?: string | null
+          suppliers?: Json
           title?: string
           unidade?: string | null
           updated_at?: string
@@ -166,7 +187,12 @@ export type Database = {
       app_role: "admin" | "buyer"
       application_status: "pending" | "approved" | "rejected"
       card_kind: "compras" | "contratos" | "frete"
-      card_status: "pending" | "in_progress" | "done" | "rejected"
+      card_status:
+        | "solicitacoes_abertas"
+        | "em_cotacao"
+        | "aguardando_aprovacao"
+        | "cotacoes_rejeitadas"
+        | "pedidos_gerados"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -297,7 +323,13 @@ export const Constants = {
       app_role: ["admin", "buyer"],
       application_status: ["pending", "approved", "rejected"],
       card_kind: ["compras", "contratos", "frete"],
-      card_status: ["pending", "in_progress", "done", "rejected"],
+      card_status: [
+        "solicitacoes_abertas",
+        "em_cotacao",
+        "aguardando_aprovacao",
+        "cotacoes_rejeitadas",
+        "pedidos_gerados",
+      ],
     },
   },
 } as const
