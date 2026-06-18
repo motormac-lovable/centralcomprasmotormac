@@ -321,8 +321,14 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const [email, setEmail] = useState(row.email ?? "");
   const [cpf, setCpf] = useState(row.cpf ?? "");
   const [phone, setPhone] = useState(row.phone ?? "");
-  const currentNonOwnerRole = row.roles.find((r) => r !== "owner") ?? "buyer";
-  const [role, setRole] = useState<string>(currentNonOwnerRole);
+  const currentRole = row.roles.includes("owner") || isOwnerEmail(row.email)
+    ? "owner"
+    : row.roles.includes("admin")
+      ? "admin"
+      : row.roles.includes("buyer")
+        ? "buyer"
+        : "buyer";
+  const [role, setRole] = useState<string>(currentRole);
   const [saving, setSaving] = useState(false);
   const updateRoleFn = useServerFn(updateUserRole);
 
@@ -338,7 +344,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
         .eq("id", row.id);
       if (error) throw error;
 
-      if (role !== currentNonOwnerRole && allowedRoles.includes(role)) {
+      if (role !== currentRole && allowedRoles.includes(role)) {
         await updateRoleFn({ data: { user_id: row.id, role: role as any } });
       }
 
@@ -351,7 +357,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
     }
   };
 
-  const showRoleSelect = !row.roles.includes("owner") && !isOwnerEmail(row.email);
+  const showRoleSelect = true;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>

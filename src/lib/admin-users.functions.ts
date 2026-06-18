@@ -77,19 +77,22 @@ export const updateUserRole = createServerFn({ method: "POST" })
     }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId, claims } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: callerRoles } = await supabase
+    const { data: callerRoles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const { data: callerProfile } = await supabase
+    const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
       .select("email")
       .eq("id", userId)
       .maybeSingle();
+    const { data: callerAuth } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const callerEmail = callerAuth?.user?.email ?? callerProfile?.email ?? (claims as any)?.email ?? "";
     const callerEmailIsOwner =
-      !!callerProfile?.email && OWNER_EMAILS.includes(callerProfile.email.toLowerCase());
+      !!callerEmail && OWNER_EMAILS.includes(callerEmail.toLowerCase());
     const callerIsOwner = callerEmailIsOwner || (callerRoles ?? []).some((r: any) => r.role === "owner");
     const callerIsAdmin = callerIsOwner || (callerRoles ?? []).some((r: any) => r.role === "admin");
     if (!callerIsAdmin) throw new Response("Forbidden", { status: 403 });
@@ -99,33 +102,12 @@ export const updateUserRole = createServerFn({ method: "POST" })
     }
 
 
-    // Bloqueia alteração de Proprietário
-    const { data: targetRoles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user_id);
-    const targetIsOwner = (targetRoles ?? []).some((r: any) => r.role === "owner");
-
-    const { data: targetProfile } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("id", data.user_id)
-      .maybeSingle();
-    const targetEmailIsOwner =
-      !!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase());
-
-    if (targetIsOwner || targetEmailIsOwner) {
-      throw new Response("Não é possível alterar o papel de um Proprietário.", { status: 400 });
-    }
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // Remove papéis anteriores (exceto owner, por segurança)
+    // Remove papéis anteriores para que o cadastro fique com exatamente o nível escolhido.
     await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.user_id)
-      .in("role", ["admin", "buyer"]);
+      .in("role", ["owner", "admin", "buyer"]);
 
     const { error } = await supabaseAdmin
       .from("user_roles")
