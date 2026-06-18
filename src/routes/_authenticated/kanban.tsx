@@ -97,10 +97,12 @@ function KanbanPage() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4 snap-x snap-mandatory">
           {STATUS_COLUMNS.map((col) => (
-            <Column key={col.id} id={col.id} label={col.label} tone={col.tone}
-              cards={cards.filter((c) => c.status === col.id)} onOpen={setOpen} />
+            <div key={col.id} className="snap-start shrink-0 w-[85vw] sm:w-[60vw] md:w-auto">
+              <Column id={col.id} label={col.label} tone={col.tone}
+                cards={cards.filter((c) => c.status === col.id)} onOpen={setOpen} />
+            </div>
           ))}
         </div>
         <DragOverlay>{activeCard && <CardView card={activeCard} dragging />}</DragOverlay>
