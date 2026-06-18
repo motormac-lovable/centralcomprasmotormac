@@ -56,12 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const isOwner = roles.includes("owner");
+  const isAdmin = isOwner || roles.includes("admin");
   const value: AuthState = {
     user: session?.user ?? null,
     session,
     loading,
-    isAdmin: roles.includes("admin"),
-    isBuyer: roles.includes("buyer") || roles.includes("admin"),
+    isOwner,
+    isAdmin,
+    isBuyer: isAdmin || roles.includes("buyer"),
     fullName,
     refresh: () => loadRoles(session?.user.id),
   };
