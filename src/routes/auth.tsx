@@ -230,7 +230,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     });
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
-    toast.success("Cadastro realizado! Você já pode entrar.", { duration: 5000 });
+    toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
     onDone();
   };
 
