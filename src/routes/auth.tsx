@@ -75,6 +75,7 @@ function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const navigate = useNavigate();
 
   const submit = async (e: React.FormEvent) => {
@@ -94,21 +95,93 @@ function SignInForm() {
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-4">
-      <Field label="E-mail" required>
-        <input type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </Field>
-      <Field label="Senha" required>
-        <input type="password" className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} required />
-      </Field>
-      <button
-        type="submit"
-        disabled={busy}
-        className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-      >
-        {busy ? "Entrando..." : "Entrar"}
-      </button>
-    </form>
+    <>
+      <form onSubmit={submit} className="grid gap-4">
+        <Field label="E-mail" required>
+          <input type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </Field>
+        <Field label="Senha" required>
+          <input type="password" className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </Field>
+        <div className="-mt-2 text-right">
+          <button
+            type="button"
+            onClick={() => setForgotOpen(true)}
+            className="text-xs text-primary hover:underline"
+          >
+            Esqueci minha senha
+          </button>
+        </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        >
+          {busy ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
+      {forgotOpen && <ForgotPasswordModal initialEmail={email} onClose={() => setForgotOpen(false)} />}
+    </>
+  );
+}
+
+function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; onClose: () => void }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Um link de redefinição de senha foi enviado para o seu e-mail!");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold mb-1">Recuperação de senha</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Informe seu e-mail e enviaremos um link para criar uma nova senha.
+        </p>
+        <form onSubmit={submit} className="space-y-3">
+          <Field label="E-mail" required>
+            <input
+              type="email"
+              className={inputCls}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+            />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded-md border hover:bg-muted"
+            >
+              Voltar ao login
+            </button>
+            <button
+              type="submit"
+              disabled={busy}
+              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {busy ? "Enviando..." : "Enviar link"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
