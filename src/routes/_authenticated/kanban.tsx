@@ -29,7 +29,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck } as 
 type ColumnFilter = { kind: string; approver: string };
 
 function KanbanPage() {
-  const { isBuyer } = useAuth();
+  const { isBuyer, loading } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -79,6 +79,13 @@ function KanbanPage() {
     [cards],
   );
 
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-16 text-center text-sm text-muted-foreground">
+        Carregando painel…
+      </div>
+    );
+  }
   if (!isBuyer) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
