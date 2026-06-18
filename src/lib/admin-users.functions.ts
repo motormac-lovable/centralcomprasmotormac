@@ -90,7 +90,7 @@ export const updateUserRole = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     const { data: callerAuth } = await supabaseAdmin.auth.admin.getUserById(userId);
-    const callerEmail = callerAuth.user?.email ?? callerProfile?.email ?? (claims as any)?.email ?? "";
+    const callerEmail = callerAuth?.user?.email ?? callerProfile?.email ?? (claims as any)?.email ?? "";
     const callerEmailIsOwner =
       !!callerEmail && OWNER_EMAILS.includes(callerEmail.toLowerCase());
     const callerIsOwner = callerEmailIsOwner || (callerRoles ?? []).some((r: any) => r.role === "owner");
