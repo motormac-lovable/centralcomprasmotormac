@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, FileSignature, Truck, ArrowRight } from "lucide-react";
+import { Package, FileSignature, Truck, Trello, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
