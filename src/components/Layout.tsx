@@ -9,7 +9,7 @@ import { ProfileMenu } from "./ProfileMenu";
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, isAdmin, isBuyer, fullName } = useAuth();
+  const { user, isOwner, isAdmin, isBuyer, fullName } = useAuth();
   const navigate = useNavigate();
 
   const signOut = async () => {
