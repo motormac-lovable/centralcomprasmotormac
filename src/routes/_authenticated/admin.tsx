@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, X, ShieldAlert, Mail } from "lucide-react";
+import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
+type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
+type ProfileRow = { id: string; full_name: string | null; email: string | null };
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Painel Admin — Motormac" }] }),
@@ -14,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isOwner, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
