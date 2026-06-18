@@ -2,6 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
+import {
+  BlocoInicialPadrao,
+  BLOCO_INICIAL_VAZIO,
+  type BlocoInicial,
+  validateBlocoInicial,
+} from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { maskCEP, maskCNPJ, maskMoney } from "../lib/masks";
@@ -18,34 +24,41 @@ export const Route = createFileRoute("/frete")({
 
 function FretePage() {
   const navigate = useNavigate();
+  const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [f, setF] = useState({
     cnpjPagador: "", cnpjRemetente: "", cnpjDestinatario: "",
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
     valorNF: "", pesoBruto: "", volumes: "",
     altura: "", largura: "", comprimento: "", tipoProduto: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const blocoEr = validateBlocoInicial(bloco);
+    setErrors(blocoEr);
+    if (Object.keys(blocoEr).length) {
+      toast.error("Verifique os campos obrigatórios.");
+      return;
+    }
+    const payload = { ...bloco, ...f };
     try {
       await createCard({
         kind: "frete",
         title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`,
         summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`,
-        unidade: f.cidadeOrigem,
-        data: f,
+        requester_name: bloco.nome,
+        requester_email: bloco.email,
+        unidade: bloco.unidade,
+        empresa: bloco.empresa,
+        data: payload,
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
-    addHistory({
-      kind: "frete",
-      title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`,
-      summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`,
-      data: f,
-    });
+    addHistory({ kind: "frete", title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`, summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`, data: payload });
     toast.success("Solicitação enviada com sucesso!");
     navigate({ to: "/historico" });
   };
@@ -57,6 +70,8 @@ function FretePage() {
       accent="oklch(0.6 0.18 150)"
     >
       <form onSubmit={submit} className="grid gap-5">
+        <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
+
         <div className="grid sm:grid-cols-3 gap-5">
           <Field label="CNPJ do pagador do frete">
             <input className={inputCls} value={f.cnpjPagador} onChange={(e) => set("cnpjPagador", maskCNPJ(e.target.value))} />
