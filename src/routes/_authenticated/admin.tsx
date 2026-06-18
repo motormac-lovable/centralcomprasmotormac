@@ -403,8 +403,7 @@ function ConfirmDeleteModal({ row, busy, onCancel, onConfirm }: { row: ProfileRo
     </div>
   );
 }
-  );
-}
+
 
 function OwnerAdminManager() {
   const [admins, setAdmins] = useState<Array<RoleRow & { profile?: ProfileRow }>>([]);
