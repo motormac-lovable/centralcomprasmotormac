@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as FreteRouteImport } from './routes/frete'
 import { Route as ContratosRouteImport } from './routes/contratos'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoricoRoute = HistoricoRouteImport.update({
   id: '/historico',
   path: '/historico',
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inicio': typeof AuthenticatedInicioRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inicio': typeof AuthenticatedInicioRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/reset-password'
     | '/admin'
     | '/dashboard'
     | '/inicio'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/reset-password'
     | '/admin'
     | '/dashboard'
     | '/inicio'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/inicio'
@@ -162,10 +174,18 @@ export interface RootRouteChildren {
   ContratosRoute: typeof ContratosRoute
   FreteRoute: typeof FreteRoute
   HistoricoRoute: typeof HistoricoRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/historico': {
       id: '/historico'
       path: '/historico'
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContratosRoute: ContratosRoute,
   FreteRoute: FreteRoute,
   HistoricoRoute: HistoricoRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
