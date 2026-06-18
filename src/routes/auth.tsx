@@ -85,15 +85,18 @@ function SignInForm() {
     setBusy(false);
     if (error) return toast.error(error.message);
     const uid = data.user?.id;
-    let admin = false;
-    let buyer = false;
+    let owner = false, admin = false, buyer = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      owner = (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
     }
-    if (admin) {
+    if (owner) {
       toast.success("Bem-vindo, Proprietário!");
+      navigate({ to: "/admin" });
+    } else if (admin) {
+      toast.success("Bem-vindo, Administrador!");
       navigate({ to: "/admin" });
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
