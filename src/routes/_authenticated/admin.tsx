@@ -145,7 +145,105 @@ function AdminPage() {
         </table>
       </div>
 
+      <RegisteredUsers />
+
       {isOwner && <OwnerAdminManager />}
+    </div>
+  );
+}
+
+function RegisteredUsers() {
+  type Row = ProfileRow & { roles: string[]; created_at?: string };
+  const [rows, setRows] = useState<Row[]>([]);
+  const [q, setQ] = useState("");
+
+  const reload = async () => {
+    const [{ data: profiles }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, cpf, phone, created_at").order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("user_id, role"),
+    ]);
+    const byUser = new Map<string, string[]>();
+    (roles ?? []).forEach((r: any) => {
+      const arr = byUser.get(r.user_id) ?? [];
+      arr.push(r.role);
+      byUser.set(r.user_id, arr);
+    });
+    setRows((profiles ?? []).map((p: any) => ({ ...p, roles: byUser.get(p.id) ?? [] })));
+  };
+
+  useEffect(() => { reload(); }, []);
+
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const roleStyle: Record<string, string> = {
+    owner: "bg-amber-100 text-amber-800",
+    admin: "bg-blue-100 text-blue-800",
+    buyer: "bg-emerald-100 text-emerald-800",
+  };
+  const filtered = rows.filter((r) => {
+    const s = q.trim().toLowerCase();
+    if (!s) return true;
+    return [r.full_name, r.email, (r as any).cpf, (r as any).phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
+  });
+
+  return (
+    <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Usuários registrados</h2>
+          <p className="text-xs text-muted-foreground">Lista completa de cadastros na plataforma com seus respectivos níveis de acesso.</p>
+        </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por nome, e-mail, CPF…"
+          className="rounded-md border bg-background px-3 py-1.5 text-sm w-full sm:w-72"
+        />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="text-left p-4">Nome</th>
+              <th className="text-left p-4">Contato</th>
+              <th className="text-left p-4">Nível(is)</th>
+              <th className="text-left p-4">Cadastro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
+            )}
+            {filtered.map((u) => (
+              <tr key={u.id} className="border-t">
+                <td className="p-4">
+                  <div className="font-medium">{u.full_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{(u as any).cpf || ""}</div>
+                </td>
+                <td className="p-4">
+                  <div className="flex items-center gap-1 text-xs"><Mail className="h-3 w-3" />{u.email}</div>
+                  <div className="text-xs text-muted-foreground">{(u as any).phone}</div>
+                </td>
+                <td className="p-4">
+                  {u.roles.length === 0 ? (
+                    <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Sem nível (pendente)</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {u.roles.map((r) => (
+                        <span key={r} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${roleStyle[r] ?? "bg-accent text-accent-foreground"}`}>
+                          {roleLabel[r] ?? r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td className="p-4 text-xs text-muted-foreground">
+                  {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
