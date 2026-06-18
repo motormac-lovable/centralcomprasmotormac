@@ -29,8 +29,34 @@ function KanbanPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
-    supabase.from("kanban_cards").select("*").order("created_at", { ascending: false })
-      .then(({ data }) => setCards(data ?? []));
+    let active = true;
+    const load = () =>
+      supabase.from("kanban_cards").select("*").order("created_at", { ascending: false })
+        .then(({ data }) => { if (active) setCards(data ?? []); });
+    load();
+    const channel = supabase
+      .channel("kanban_cards_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "kanban_cards" }, (payload) => {
+        setCards((prev) => {
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as Card;
+            if (prev.some((c) => c.id === row.id)) return prev;
+            toast.success(`Novo cartão: ${row.title}`);
+            return [row, ...prev];
+          }
+          if (payload.eventType === "UPDATE") {
+            const row = payload.new as Card;
+            return prev.map((c) => (c.id === row.id ? row : c));
+          }
+          if (payload.eventType === "DELETE") {
+            const row = payload.old as Card;
+            return prev.filter((c) => c.id !== row.id);
+          }
+          return prev;
+        });
+      })
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(channel); };
   }, []);
 
   if (!isBuyer) {
