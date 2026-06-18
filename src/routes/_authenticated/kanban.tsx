@@ -127,7 +127,7 @@ function KanbanPage() {
   return (
     <div className="mx-auto max-w-[1700px] px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight">Painel Kanban Operacional</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Painel de Compras</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Arraste os cartões entre as colunas. Cada coluna possui filtros e regras de SLA próprias.
         </p>
