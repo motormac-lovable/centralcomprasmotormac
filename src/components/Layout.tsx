@@ -25,7 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-3">
             <img src={logoAsset.url} alt="Motormac" className="h-10 w-auto object-contain" />
             <div className="hidden md:flex flex-col leading-tight">
-              <span className="text-sm font-semibold tracking-tight">Central de Solicitações</span>
+              <span className="text-sm font-semibold tracking-tight">Central de Compras</span>
               <span className="text-xs text-muted-foreground">Plataforma Interna Motormac</span>
             </div>
           </Link>
