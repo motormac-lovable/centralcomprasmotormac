@@ -5,6 +5,7 @@ import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ProfileMenu } from "./ProfileMenu";
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -41,6 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
             )}
             <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
+            {user && <ProfileMenu />}
             {user ? (
               <button
                 onClick={signOut}
