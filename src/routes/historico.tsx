@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileSignature, Package, Truck, Inbox } from "lucide-react";
+import { FileSignature, Package, Truck, Inbox, Trello } from "lucide-react";
 import { kindLabel, loadHistory, type HistoryEntry, type RequestKind } from "../lib/history";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
