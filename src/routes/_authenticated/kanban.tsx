@@ -86,15 +86,7 @@ function KanbanPage() {
       </div>
     );
   }
-  if (!isBuyer) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Compradores</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Aguarde a aprovação do seu cadastro pelos administradores.</p>
-      </div>
-    );
-  }
+  void isBuyer;
 
   const onStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
   const onEnd = async (e: DragEndEvent) => {
