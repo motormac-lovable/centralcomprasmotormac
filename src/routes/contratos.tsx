@@ -3,9 +3,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
+import {
+  BlocoInicialPadrao,
+  BLOCO_INICIAL_VAZIO,
+  type BlocoInicial,
+  validateBlocoInicial,
+} from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
-import { isValidEmail, maskCNPJ, maskMoney } from "../lib/masks";
+import { maskCNPJ, maskMoney } from "../lib/masks";
 
 export const Route = createFileRoute("/contratos")({
   head: () => ({
@@ -17,26 +23,16 @@ export const Route = createFileRoute("/contratos")({
   component: ContratosPage,
 });
 
-const unidades = [
-  "Porto Alegre/RS", "Passo Fundo/RS", "São Gabriel/RS", "São José/SC",
-  "Chapecó/SC", "Colombo/PR", "Maringá/PR",
-];
-const empresas = [
-  "Distribuidora Meridional de Motores Cummins LTDA (DMMC)",
-  "NEST Inovação em energia (NEST)",
-  "Motormac Administração e Locação de Bens (MALB)",
-  "SV Parts",
-];
 const tipos = [
-  "Cadastro de contrato novo",
-  "Inclusão de aditivo de renovação de contrato",
-  "Retificação de saldo de contrato",
+  "Contrato novo",
+  "Aditivo",
+  "Retificação",
 ];
 
 function ContratosPage() {
   const navigate = useNavigate();
+  const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [f, setF] = useState({
-    nome: "", email: "", telefone: "", unidade: "", empresa: "",
     objeto: "", tipo: "", contratoAnterior: "", cnpjFornecedor: "",
     razaoSocial: "", validacaoGestor: "", nomeGestor: "",
     validacaoJuridica: "", dataInicio: "", dataFim: "",
@@ -50,14 +46,11 @@ function ContratosPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const er: Record<string, string> = {};
-    if (!f.nome.trim()) er.nome = "Obrigatório";
-    if (!isValidEmail(f.email)) er.email = "E-mail inválido";
-    if (!f.unidade) er.unidade = "Obrigatório";
-    if (!f.empresa) er.empresa = "Obrigatório";
+    const blocoEr = validateBlocoInicial(bloco);
+    const er: Record<string, string> = { ...blocoEr };
     if (!f.objeto.trim()) er.objeto = "Obrigatório";
     if (!f.tipo) er.tipo = "Obrigatório";
-    if (f.tipo !== "Cadastro de contrato novo" && !f.contratoAnterior.trim())
+    if (f.tipo !== "Contrato novo" && !f.contratoAnterior.trim())
       er.contratoAnterior = "Obrigatório para aditivo/retificação";
     if (!f.razaoSocial.trim()) er.razaoSocial = "Obrigatório";
     if (!f.validacaoGestor) er.validacaoGestor = "Obrigatório";
@@ -74,27 +67,23 @@ function ContratosPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
+    const payload = { ...bloco, ...f, contrato: contrato.map((x) => x.name), financeiro: financeiro.map((x) => x.name) };
     try {
       await createCard({
         kind: "contratos",
         title: `${f.tipo} — ${f.razaoSocial}`,
-        summary: `${f.empresa} · ${f.unidade}`,
-        requester_name: f.nome,
-        requester_email: f.email,
-        unidade: f.unidade,
-        empresa: f.empresa,
-        data: { ...f, contrato: contrato.map((x) => x.name), financeiro: financeiro.map((x) => x.name) },
+        summary: `${bloco.empresa} · ${bloco.unidade}`,
+        requester_name: bloco.nome,
+        requester_email: bloco.email,
+        unidade: bloco.unidade,
+        empresa: bloco.empresa,
+        data: payload,
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
-    addHistory({
-      kind: "contratos",
-      title: `${f.tipo} — ${f.razaoSocial}`,
-      summary: `${f.empresa} · ${f.unidade}`,
-      data: { ...f, contrato: contrato.map((x) => x.name), financeiro: financeiro.map((x) => x.name) },
-    });
+    addHistory({ kind: "contratos", title: `${f.tipo} — ${f.razaoSocial}`, summary: `${bloco.empresa} · ${bloco.unidade}`, data: payload });
     toast.success("Solicitação enviada com sucesso!");
     navigate({ to: "/historico" });
   };
@@ -106,30 +95,8 @@ function ContratosPage() {
       accent="oklch(0.55 0.18 250)"
     >
       <form onSubmit={submit} className="grid gap-5">
-        <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Nome" required error={errors.nome}>
-            <input className={inputCls} value={f.nome} onChange={(e) => set("nome", e.target.value)} />
-          </Field>
-          <Field label="E-mail" required error={errors.email}>
-            <input type="email" className={inputCls} value={f.email} onChange={(e) => set("email", e.target.value)} />
-          </Field>
-          <Field label="Telefone">
-            <input className={inputCls} value={f.telefone} onChange={(e) => set("telefone", e.target.value)} />
-          </Field>
-          <Field label="Unidade de relação contratual" required error={errors.unidade}>
-            <select className={inputCls} value={f.unidade} onChange={(e) => set("unidade", e.target.value)}>
-              <option value="">Selecione...</option>
-              {unidades.map((o) => <option key={o}>{o}</option>)}
-            </select>
-          </Field>
-        </div>
+        <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
 
-        <Field label="Empresa da relação do contrato" required error={errors.empresa}>
-          <select className={inputCls} value={f.empresa} onChange={(e) => set("empresa", e.target.value)}>
-            <option value="">Selecione...</option>
-            {empresas.map((o) => <option key={o}>{o}</option>)}
-          </select>
-        </Field>
 
         <Field label="Objeto do Contrato (em resumo)" required error={errors.objeto}>
           <textarea className={`${inputCls} min-h-24`} value={f.objeto} onChange={(e) => set("objeto", e.target.value)} />
