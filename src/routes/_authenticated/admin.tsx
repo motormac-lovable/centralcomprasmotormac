@@ -34,20 +34,38 @@ function AdminPage() {
     );
   }
 
-  const decide = async (app: App, status: "approved" | "rejected") => {
+  type AppRole = Database["public"]["Enums"]["app_role"];
+  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"];
+  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+
+  const approve = async (app: App) => {
+    const role = selectedRole[app.id] ?? "buyer";
+    if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
+    if (!app.user_id) return toast.error("Solicitação sem usuário vinculado.");
     const { error } = await supabase.from("buyer_applications")
-      .update({ status, decided_by: user?.id, decided_at: new Date().toISOString() })
+      .update({ status: "approved", decided_by: user?.id, decided_at: new Date().toISOString() })
       .eq("id", app.id);
     if (error) return toast.error(error.message);
-    if (status === "approved" && app.user_id) {
-      await supabase.from("user_roles").insert({ user_id: app.user_id, role: "buyer" });
-    }
-    if (status === "rejected" && app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).eq("role", "buyer");
-    }
-    toast.success(status === "approved" ? "Comprador aprovado!" : "Cadastro reprovado.", {
+    // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+    const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
+    if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
+    toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
       description: `Simulação: notificação enviada para ${app.email}.`,
     });
+    reload();
+  };
+
+  const reject = async (app: App) => {
+    const { error } = await supabase.from("buyer_applications")
+      .update({ status: "rejected", decided_by: user?.id, decided_at: new Date().toISOString() })
+      .eq("id", app.id);
+    if (error) return toast.error(error.message);
+    if (app.user_id) {
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+    }
+    toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
   };
 
@@ -95,12 +113,22 @@ function AdminPage() {
                 </td>
                 <td className="p-4 text-right">
                   {a.status === "pending" ? (
-                    <div className="inline-flex gap-2">
-                      <button onClick={() => decide(a, "approved")}
+                    <div className="inline-flex items-center gap-2">
+                      <select
+                        value={selectedRole[a.id] ?? "buyer"}
+                        onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole }))}
+                        className="rounded-md border bg-background px-2 py-1.5 text-xs"
+                        title="Nível a ser atribuído na aprovação"
+                      >
+                        {allowedRoles.map((r) => (
+                          <option key={r} value={r}>{roleLabel[r]}</option>
+                        ))}
+                      </select>
+                      <button onClick={() => approve(a)}
                         className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700">
                         <Check className="h-3.5 w-3.5" /> Aprovar
                       </button>
-                      <button onClick={() => decide(a, "rejected")}
+                      <button onClick={() => reject(a)}
                         className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90">
                         <X className="h-3.5 w-3.5" /> Reprovar
                       </button>
