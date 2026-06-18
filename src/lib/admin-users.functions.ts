@@ -53,3 +53,68 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * Atualiza o papel (role) de um usuário registrado.
+ * Proprietário pode atribuir qualquer papel.
+ * Administrador pode atribuir apenas admin ou buyer.
+ * Proprietários não podem ter seu papel alterado.
+ */
+export const updateUserRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      role: z.enum(["owner", "admin", "buyer"]),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: callerRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const callerIsOwner = (callerRoles ?? []).some((r: any) => r.role === "owner");
+    const callerIsAdmin = callerIsOwner || (callerRoles ?? []).some((r: any) => r.role === "admin");
+    if (!callerIsAdmin) throw new Response("Forbidden", { status: 403 });
+
+    if (!callerIsOwner && data.role === "owner") {
+      throw new Response("Apenas Proprietários podem atribuir o papel de Proprietário.", { status: 403 });
+    }
+
+    // Bloqueia alteração de Proprietário
+    const { data: targetRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id);
+    const targetIsOwner = (targetRoles ?? []).some((r: any) => r.role === "owner");
+
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", data.user_id)
+      .maybeSingle();
+    const targetEmailIsOwner =
+      !!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase());
+
+    if (targetIsOwner || targetEmailIsOwner) {
+      throw new Response("Não é possível alterar o papel de um Proprietário.", { status: 400 });
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Remove papéis anteriores (exceto owner, por segurança)
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.user_id)
+      .in("role", ["admin", "buyer"]);
+
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.user_id, role: data.role });
+    if (error) throw new Response(error.message, { status: 500 });
+
+    return { ok: true };
+  });
