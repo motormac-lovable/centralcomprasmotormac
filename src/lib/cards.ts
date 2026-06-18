@@ -27,11 +27,9 @@ export async function createCard(input: {
   empresa?: string;
   data: Record<string, unknown>;
 }) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("kanban_cards")
-    .insert({ ...input, data: input.data as never })
-    .select()
-    .single();
+    .insert({ ...input, data: input.data as never });
   if (error) throw error;
-  return data;
+  return { ok: true as const };
 }
