@@ -25,12 +25,12 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/inicio" });
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate({ to: isAdmin ? "/admin" : "/inicio" });
+  }, [user, loading, isAdmin, navigate]);
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
@@ -80,11 +80,17 @@ function SignInForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Bem-vindo de volta!");
-    navigate({ to: "/inicio" });
+    const uid = data.user?.id;
+    let admin = false;
+    if (uid) {
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      admin = (roles ?? []).some((r) => r.role === "admin");
+    }
+    toast.success(admin ? "Bem-vindo, Proprietário!" : "Bem-vindo de volta!");
+    navigate({ to: admin ? "/admin" : "/inicio" });
   };
 
   return (
