@@ -29,7 +29,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/inicio" });
   }, [user, loading, navigate]);
 
   return (
@@ -84,7 +84,7 @@ function SignInForm() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Bem-vindo de volta!");
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/inicio" });
   };
 
   return (
