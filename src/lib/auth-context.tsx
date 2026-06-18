@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isOwner: boolean;
   isAdmin: boolean;
   isBuyer: boolean;
   fullName: string;
@@ -16,6 +17,7 @@ const Ctx = createContext<AuthState>({
   user: null,
   session: null,
   loading: true,
+  isOwner: false,
   isAdmin: false,
   isBuyer: false,
   fullName: "",
