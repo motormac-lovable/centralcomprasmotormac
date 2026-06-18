@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, X, ShieldAlert, Mail } from "lucide-react";
+import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
+type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
+type ProfileRow = { id: string; full_name: string | null; email: string | null };
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Painel Admin — Motormac" }] }),
@@ -14,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isOwner, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
@@ -113,6 +115,114 @@ function AdminPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {isOwner && <OwnerAdminManager />}
+    </div>
+  );
+}
+
+function OwnerAdminManager() {
+  const [admins, setAdmins] = useState<Array<RoleRow & { profile?: ProfileRow }>>([]);
+  const [approvedBuyers, setApprovedBuyers] = useState<Array<RoleRow & { profile?: ProfileRow }>>([]);
+
+  const reload = async () => {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("role", ["admin", "buyer"]);
+    const ids = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
+    let profiles: ProfileRow[] = [];
+    if (ids.length) {
+      const { data } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
+      profiles = data ?? [];
+    }
+    const decorate = (r: RoleRow) => ({ ...r, profile: profiles.find((p) => p.id === r.user_id) });
+    setAdmins(((roles ?? []).filter((r) => r.role === "admin") as RoleRow[]).map(decorate));
+    setApprovedBuyers(((roles ?? []).filter((r) => r.role === "buyer") as RoleRow[]).map(decorate));
+  };
+
+  useEffect(() => { reload(); }, []);
+
+  const promote = async (uid: string) => {
+    const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: "admin" });
+    if (error) return toast.error(error.message);
+    toast.success("Comprador promovido a Administrador.");
+    reload();
+  };
+
+  const demote = async (uid: string) => {
+    const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", "admin");
+    if (error) return toast.error(error.message);
+    toast.success("Papel de Administrador removido.");
+    reload();
+  };
+
+  const adminIds = new Set(admins.map((a) => a.user_id));
+  const buyersOnly = approvedBuyers.filter((b) => !adminIds.has(b.user_id));
+
+  return (
+    <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="p-5 border-b flex items-center gap-3 bg-gradient-to-r from-amber-50 to-transparent">
+        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+          <Crown className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Gerenciar Administradores</h2>
+          <p className="text-xs text-muted-foreground">
+            Área exclusiva do Proprietário. Promova um Comprador aprovado a Administrador ou revogue o papel.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
+        <div className="p-5">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-primary" /> Administradores atuais</h3>
+          {admins.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhum administrador além do Proprietário.</p>
+          ) : (
+            <ul className="space-y-2">
+              {admins.map((a) => (
+                <li key={a.user_id} className="flex items-center justify-between rounded-md border p-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{a.profile?.full_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{a.profile?.email}</div>
+                  </div>
+                  <button
+                    onClick={() => demote(a.user_id)}
+                    className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+                  >
+                    <UserMinus className="h-3.5 w-3.5" /> Revogar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="p-5">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Compradores elegíveis</h3>
+          {buyersOnly.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhum comprador disponível para promoção.</p>
+          ) : (
+            <ul className="space-y-2">
+              {buyersOnly.map((b) => (
+                <li key={b.user_id} className="flex items-center justify-between rounded-md border p-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{b.profile?.full_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">{b.profile?.email}</div>
+                  </div>
+                  <button
+                    onClick={() => promote(b.user_id)}
+                    className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" /> Promover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/dev")({
 type LogEntry = { ts: string; level: "info" | "success" | "error"; message: string };
 
 function DevPage() {
-  const { isAdmin, loading } = useAuth();
+  const { isOwner, loading } = useAuth();
   const [cards, setCards] = useState<KanbanCardRow[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([
     { ts: new Date().toISOString(), level: "info", message: "Console técnico inicializado." },
@@ -117,7 +117,7 @@ function DevPage() {
   if (loading) {
     return <div className="mx-auto max-w-2xl px-6 py-16 text-center text-sm text-muted-foreground">Carregando…</div>;
   }
-  if (!isAdmin) {
+  if (!isOwner) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />

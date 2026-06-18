@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isOwner: boolean;
   isAdmin: boolean;
   isBuyer: boolean;
   fullName: string;
@@ -16,6 +17,7 @@ const Ctx = createContext<AuthState>({
   user: null,
   session: null,
   loading: true,
+  isOwner: false,
   isAdmin: false,
   isBuyer: false,
   fullName: "",
@@ -54,12 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const isOwner = roles.includes("owner");
+  const isAdmin = isOwner || roles.includes("admin");
   const value: AuthState = {
     user: session?.user ?? null,
     session,
     loading,
-    isAdmin: roles.includes("admin"),
-    isBuyer: roles.includes("buyer") || roles.includes("admin"),
+    isOwner,
+    isAdmin,
+    isBuyer: isAdmin || roles.includes("buyer"),
     fullName,
     refresh: () => loadRoles(session?.user.id),
   };
