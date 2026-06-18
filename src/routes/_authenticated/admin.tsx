@@ -113,12 +113,22 @@ function AdminPage() {
                 </td>
                 <td className="p-4 text-right">
                   {a.status === "pending" ? (
-                    <div className="inline-flex gap-2">
-                      <button onClick={() => decide(a, "approved")}
+                    <div className="inline-flex items-center gap-2">
+                      <select
+                        value={selectedRole[a.id] ?? "buyer"}
+                        onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole }))}
+                        className="rounded-md border bg-background px-2 py-1.5 text-xs"
+                        title="Nível a ser atribuído na aprovação"
+                      >
+                        {allowedRoles.map((r) => (
+                          <option key={r} value={r}>{roleLabel[r]}</option>
+                        ))}
+                      </select>
+                      <button onClick={() => approve(a)}
                         className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700">
                         <Check className="h-3.5 w-3.5" /> Aprovar
                       </button>
-                      <button onClick={() => decide(a, "rejected")}
+                      <button onClick={() => reject(a)}
                         className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90">
                         <X className="h-3.5 w-3.5" /> Reprovar
                       </button>
