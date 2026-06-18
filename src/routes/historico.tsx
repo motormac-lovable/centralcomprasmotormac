@@ -7,8 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/historico")({
   head: () => ({
     meta: [
-      { title: "Histórico de Solicitações — Motormac" },
-      { name: "description", content: "Acompanhe as solicitações já enviadas pela plataforma." },
+      { title: "Histórico de Compras — Motormac" },
+      { name: "description", content: "Acompanhe as compras já enviadas pela plataforma." },
     ],
   }),
   component: HistoricoPage,
@@ -35,7 +35,7 @@ function HistoricoPage() {
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Histórico de Compras</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Acompanhe todas as requisições já abertas nesta plataforma.
           </p>

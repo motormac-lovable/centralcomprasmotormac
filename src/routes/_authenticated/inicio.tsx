@@ -56,9 +56,9 @@ function InicioPage() {
             <BarChart3 className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Dashboard de Solicitações</h2>
+            <h2 className="text-lg font-semibold">Dashboard de Compras</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Visualize indicadores, gráficos de status, tipos de solicitação e distribuição por unidade.
+              Visualize indicadores, gráficos de status, tipos de compra e distribuição por unidade.
             </p>
           </div>
           <div className="mt-auto pt-3 flex items-center gap-2 text-sm font-medium text-primary">

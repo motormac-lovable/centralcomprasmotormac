@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Central de Compras Motormac" },
-      { name: "description", content: "Plataforma centralizada de checklists e solicitações internas Motormac." },
+      { name: "description", content: "Plataforma centralizada de checklists e compras internas Motormac." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),

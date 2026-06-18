@@ -4,8 +4,8 @@ import { Package, FileSignature, Truck, Trello, ArrowRight } from "lucide-react"
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Hub de Solicitações — Motormac" },
-      { name: "description", content: "Selecione o tipo de solicitação interna: compra de peças, contratos ou frete." },
+      { title: "Hub de Compras — Motormac" },
+      { name: "description", content: "Selecione o tipo de compra interna: peças, contratos ou frete." },
     ],
   }),
   component: Hub,
@@ -54,7 +54,7 @@ function Hub() {
           Plataforma Interna
         </div>
         <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight">
-          Central de <span className="text-primary">Solicitações</span> Motormac
+          Central de <span className="text-primary">Compras</span> Motormac
         </h1>
         <p className="mt-4 text-muted-foreground text-base sm:text-lg">
           Escolha abaixo o tipo de requisição que deseja abrir. Tudo registrado, rastreável e em um só lugar.
