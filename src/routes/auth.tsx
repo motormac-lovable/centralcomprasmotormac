@@ -86,12 +86,22 @@ function SignInForm() {
     if (error) return toast.error(error.message);
     const uid = data.user?.id;
     let admin = false;
+    let buyer = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       admin = (roles ?? []).some((r) => r.role === "admin");
+      buyer = (roles ?? []).some((r) => r.role === "buyer");
     }
-    toast.success(admin ? "Bem-vindo, Proprietário!" : "Bem-vindo de volta!");
-    navigate({ to: admin ? "/admin" : "/inicio" });
+    if (admin) {
+      toast.success("Bem-vindo, Proprietário!");
+      navigate({ to: "/admin" });
+    } else if (buyer) {
+      toast.success("Bem-vindo de volta!");
+      navigate({ to: "/inicio" });
+    } else {
+      toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
+      navigate({ to: "/pending" });
+    }
   };
 
   return (
@@ -220,7 +230,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     });
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
-    toast.success("Cadastro realizado! Você já pode entrar.", { duration: 5000 });
+    toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
     onDone();
   };
 
