@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/dev")({
 type LogEntry = { ts: string; level: "info" | "success" | "error"; message: string };
 
 function DevPage() {
-  const { isAdmin, loading } = useAuth();
+  const { isOwner, loading } = useAuth();
   const [cards, setCards] = useState<KanbanCardRow[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([
     { ts: new Date().toISOString(), level: "info", message: "Console técnico inicializado." },
