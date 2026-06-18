@@ -15,14 +15,22 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Verifica permissão do chamador
+    // Verifica permissão do chamador (papel OU e-mail de Proprietário nativo)
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const isOwner = (roles ?? []).some((r: any) => r.role === "owner");
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .maybeSingle();
+    const callerEmailIsOwner =
+      !!callerProfile?.email && OWNER_EMAILS.includes(callerProfile.email.toLowerCase());
+    const isOwner = callerEmailIsOwner || (roles ?? []).some((r: any) => r.role === "owner");
     const isAdmin = isOwner || (roles ?? []).some((r: any) => r.role === "admin");
     if (!isAdmin) throw new Response("Forbidden", { status: 403 });
+
 
     if (data.user_id === userId) {
       throw new Response("Você não pode excluir o próprio usuário.", { status: 400 });
