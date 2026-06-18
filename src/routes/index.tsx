@@ -36,6 +36,14 @@ const cards = [
     icon: Truck,
     accent: "oklch(0.6 0.18 150)",
   },
+  {
+    to: "/kanban",
+    title: "Painel Kanban",
+    subtitle: "Operacional",
+    description: "Visualize e gerencie todas as solicitações em andamento no quadro Kanban.",
+    icon: Trello,
+    accent: "oklch(0.55 0.15 280)",
+  },
 ] as const;
 
 function Hub() {
