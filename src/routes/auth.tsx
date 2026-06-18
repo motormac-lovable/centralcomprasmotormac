@@ -86,10 +86,12 @@ function SignInForm() {
     setBusy(false);
     if (error) return toast.error(error.message);
     const uid = data.user?.id;
-    let owner = false, admin = false, buyer = false;
+    const emailLogged = data.user?.email ?? email;
+    let owner = isOwnerEmail(emailLogged);
+    let admin = false, buyer = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-      owner = (roles ?? []).some((r) => r.role === "owner");
+      owner = owner || (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
     }
