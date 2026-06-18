@@ -297,16 +297,21 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
   const Icon = iconFor[card.kind];
   return (
     <div className={`rounded-lg border bg-card p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition ${dragging ? "rotate-2 shadow-xl" : ""}`}>
-      <div className="mb-2"><StatusTag card={card} /></div>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+          #{card.codigo_unico ?? "—"}
+        </span>
+        <StatusTag card={card} />
+      </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
         <Icon className="h-3.5 w-3.5" />
         <span className="font-medium uppercase tracking-wider">{KIND_LABEL[card.kind]}</span>
       </div>
       <h4 className="text-sm font-semibold leading-snug line-clamp-2">{card.title}</h4>
       {card.summary && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{card.summary}</p>}
-      {card.status === "pedidos_gerados" && card.order_number && (
+      {card.status === "pedidos_gerados" && (card.numero_pedido_linx || card.order_number) && (
         <div className="mt-2 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950 dark:border-emerald-900 dark:text-emerald-200">
-          Pedido Linx Apollo: #{card.order_number}
+          Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
         </div>
       )}
       {card.approver_name && card.status === "aguardando_aprovacao" && (
@@ -394,14 +399,14 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const approve = async () => {
-    if (!orderNumber.trim()) {
+    let pedido = orderNumber.trim();
+    if (!pedido) {
       const n = prompt("Informe o número do pedido gerado no ERP (Linx Apollo):");
       if (!n) return;
+      pedido = n;
       setOrderNumber(n);
-      await patch({ order_number: n });
-    } else {
-      await patch({ order_number: orderNumber });
     }
+    await patch({ order_number: pedido, numero_pedido_linx: pedido });
     await onMove(card, "pedidos_gerados");
     onClose();
   };
@@ -422,6 +427,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                #{card.codigo_unico ?? "—"}
+              </span>
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{KIND_LABEL[card.kind]}</span>
               <StatusTag card={card} />
             </div>

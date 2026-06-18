@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 
-const MIN_LEN = 8;
+const MIN_LEN = 6;
 
 export function ProfileMenu() {
   const { user, fullName } = useAuth();
