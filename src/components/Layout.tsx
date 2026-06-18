@@ -42,6 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
             )}
             <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
+            {user && <ProfileMenu />}
             {user ? (
               <button
                 onClick={signOut}
