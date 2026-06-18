@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
-import { deleteUserCompletely } from "@/lib/admin-users.functions";
+import { deleteUserCompletely, updateUserRole } from "@/lib/admin-users.functions";
 import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
