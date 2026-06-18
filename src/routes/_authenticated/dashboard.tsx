@@ -41,7 +41,7 @@ function DashboardPage() {
     );
   }
 
-  const open = cards.filter((c) => c.status !== "done" && c.status !== "rejected").length;
+  const open = cards.filter((c) => c.status !== "pedidos_gerados" && c.status !== "cotacoes_rejeitadas").length;
   const statusCounts = STATUS_COLUMNS.map((s) => ({
     name: s.label,
     count: cards.filter((c) => c.status === s.id).length,
