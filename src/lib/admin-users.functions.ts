@@ -83,13 +83,21 @@ export const updateUserRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const callerIsOwner = (callerRoles ?? []).some((r: any) => r.role === "owner");
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .maybeSingle();
+    const callerEmailIsOwner =
+      !!callerProfile?.email && OWNER_EMAILS.includes(callerProfile.email.toLowerCase());
+    const callerIsOwner = callerEmailIsOwner || (callerRoles ?? []).some((r: any) => r.role === "owner");
     const callerIsAdmin = callerIsOwner || (callerRoles ?? []).some((r: any) => r.role === "admin");
     if (!callerIsAdmin) throw new Response("Forbidden", { status: 403 });
 
     if (!callerIsOwner && data.role === "owner") {
       throw new Response("Apenas Proprietários podem atribuir o papel de Proprietário.", { status: 403 });
     }
+
 
     // Bloqueia alteração de Proprietário
     const { data: targetRoles } = await supabase
