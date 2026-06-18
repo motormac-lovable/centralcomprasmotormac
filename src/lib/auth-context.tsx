@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { isOwnerEmail } from "./owner-emails";
 
 interface AuthState {
   user: User | null;
@@ -56,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const isOwner = roles.includes("owner");
+  const sessionUser = session?.user ?? null;
+  // E-mails do Proprietário são sempre Proprietários — sem bloqueio possível.
+  const isOwner = roles.includes("owner") || isOwnerEmail(sessionUser?.email);
   const isAdmin = isOwner || roles.includes("admin");
   const value: AuthState = {
     user: session?.user ?? null,
