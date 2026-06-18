@@ -80,11 +80,17 @@ function SignInForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Bem-vindo de volta!");
-    navigate({ to: "/inicio" });
+    const uid = data.user?.id;
+    let admin = false;
+    if (uid) {
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+      admin = (roles ?? []).some((r) => r.role === "admin");
+    }
+    toast.success(admin ? "Bem-vindo, Proprietário!" : "Bem-vindo de volta!");
+    navigate({ to: admin ? "/admin" : "/inicio" });
   };
 
   return (
