@@ -319,14 +319,24 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
 
 /* ───────────────────────── Modal ───────────────────────── */
 
+type ItemMaterial = {
+  material: string;
+  codigo: string;
+  quantidade: string;
+  unidadeMedida: string;
+};
+
 function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void; onMove: (c: Card, s: Status) => Promise<void> }) {
   const Icon = iconFor[card.kind];
-  const entries = Object.entries((card.data as Record<string, unknown>) ?? {});
+  const rawData = (card.data as Record<string, unknown>) ?? {};
+  const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
+  const entries = Object.entries(rawData).filter(([k]) => k !== "itens");
   const { fullName, user } = useAuth();
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
   const attachments = (card.attachments as unknown as Attachment[]) ?? [];
+
 
   const [obsText, setObsText] = useState("");
   const [orderNumber, setOrderNumber] = useState(card.order_number ?? "");
