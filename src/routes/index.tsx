@@ -38,9 +38,9 @@ const cards = [
   },
   {
     to: "/materiais",
-    title: "Requisição de Materiais e Serviços",
+    title: "Solicitação de Compras",
     subtitle: "Apollo",
-    description: "Solicite materiais e serviços com busca por descrição ou código (Apollo).",
+    description: "Solicite materiais e serviços diversos pelo módulo de Gestão de Materiais.",
     icon: ClipboardList,
     accent: "oklch(0.62 0.18 200)",
   },
