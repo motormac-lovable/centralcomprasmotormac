@@ -127,7 +127,13 @@ function MateriaisPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
-    const payload = { ...bloco, ...form, itens, files: files.map((f) => f.name) };
+    const payload = {
+      ...bloco,
+      ...form,
+      itens,
+      files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+    };
+
     const titulo =
       itens.length === 1
         ? `Materiais: ${itens[0].material}`
