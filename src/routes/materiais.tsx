@@ -21,11 +21,11 @@ import {
 export const Route = createFileRoute("/materiais")({
   head: () => ({
     meta: [
-      { title: "Requisição de Materiais e Serviços — Motormac" },
+      { title: "Solicitação de Compras — Motormac" },
       {
         name: "description",
         content:
-          "Formulário de requisição de materiais e serviços (Apollo) com preenchimento automático por código ou descrição.",
+          "Formulário de solicitação de compras de materiais e serviços diversos pelo módulo de Gestão de Materiais.",
       },
     ],
   }),
@@ -116,8 +116,8 @@ function MateriaisPage() {
 
   return (
     <FormShell
-      title="Requisição de Materiais e Serviços"
-      description="Preencha os dados abaixo para abrir a requisição Apollo de materiais e serviços."
+      title="Solicitação de Compras"
+      description="Preencha os dados abaixo para abrir a solicitação de compras de materiais e serviços diversos."
       accent="oklch(0.62 0.18 200)"
     >
       <form onSubmit={submit} className="grid gap-5">
