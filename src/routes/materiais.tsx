@@ -36,10 +36,10 @@ function MateriaisPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
-    departamento: "Suprimentos",
-    origem: "Estoque",
-    material: "Óleo Diesel",
-    codigo: "102030",
+    departamento: "",
+    origem: "",
+    material: "",
+    codigo: "",
     descricao: "",
     tipo: "Convencional",
     fornecedorNome: "",
@@ -51,9 +51,26 @@ function MateriaisPage() {
   const set = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  // Lógica via dupla material <-> código
-  const codigos = useMemo(() => MATERIAIS_APOLLO.map((m) => m.codigo), []);
-  const descricoes = useMemo(() => MATERIAIS_APOLLO.map((m) => m.descricao), []);
+  // Sugestões filtradas pelo input (datalist com 12k+ entradas trava o browser)
+  const sugestoesDescricoes = useMemo(() => {
+    const q = form.material.trim().toLowerCase();
+    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.descricao);
+    return MATERIAIS_APOLLO.filter((m) =>
+      m.descricao.toLowerCase().includes(q),
+    )
+      .slice(0, 50)
+      .map((m) => m.descricao);
+  }, [form.material]);
+
+  const sugestoesCodigos = useMemo(() => {
+    const q = form.codigo.trim().toLowerCase();
+    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.codigo);
+    return MATERIAIS_APOLLO.filter((m) =>
+      m.codigo.toLowerCase().startsWith(q),
+    )
+      .slice(0, 50)
+      .map((m) => m.codigo);
+  }, [form.codigo]);
 
   const onMaterialChange = (descricao: string) => {
     const m = MATERIAIS_APOLLO.find(
@@ -66,6 +83,7 @@ function MateriaisPage() {
     const m = MATERIAIS_APOLLO.find((x) => x.codigo === codigo);
     setForm((f) => ({ ...f, codigo, material: m ? m.descricao : f.material }));
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +187,7 @@ function MateriaisPage() {
               onChange={(e) => onMaterialChange(e.target.value)}
             />
             <datalist id="apollo-materiais">
-              {descricoes.map((d) => (
+              {sugestoesDescricoes.map((d) => (
                 <option key={d} value={d} />
               ))}
             </datalist>
@@ -188,7 +206,7 @@ function MateriaisPage() {
               onChange={(e) => onCodigoChange(e.target.value)}
             />
             <datalist id="apollo-codigos">
-              {codigos.map((c) => (
+              {sugestoesCodigos.map((c) => (
                 <option key={c} value={c} />
               ))}
             </datalist>
