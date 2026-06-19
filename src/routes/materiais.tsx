@@ -222,16 +222,37 @@ function MateriaisPage() {
           </Field>
         </div>
 
-        <Field label="Quantidade" required error={errors.quantidade}>
-          <input
-            type="number"
-            min={1}
-            step={1}
-            className={inputCls}
-            value={form.quantidade}
-            onChange={(e) => set("quantidade", e.target.value)}
-          />
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Quantidade" required error={errors.quantidade}>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              className={inputCls}
+              value={form.quantidade}
+              onChange={(e) => set("quantidade", e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Unidade de Medida"
+            required
+            hint="Selecione na lista ou digite — somente unidades cadastradas são aceitas."
+            error={errors.unidadeMedida}
+          >
+            <input
+              list="apollo-unidades"
+              className={inputCls}
+              value={form.unidadeMedida}
+              onChange={(e) => set("unidadeMedida", e.target.value.toUpperCase())}
+            />
+            <datalist id="apollo-unidades">
+              {UNIDADES_MEDIDA_APOLLO.map((u) => (
+                <option key={u} value={u} />
+              ))}
+            </datalist>
+          </Field>
+        </div>
 
         <Field label="Descrição" required error={errors.descricao}>
           <textarea
