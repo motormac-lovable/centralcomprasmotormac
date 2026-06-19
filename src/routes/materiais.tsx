@@ -40,6 +40,7 @@ function MateriaisPage() {
     origem: "",
     material: "",
     codigo: "",
+    quantidade: "",
     descricao: "",
     tipo: "Convencional",
     fornecedorNome: "",
