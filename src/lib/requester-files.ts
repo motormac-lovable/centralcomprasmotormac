@@ -26,7 +26,7 @@ export async function uploadRequesterFiles(
   for (const f of files) {
     const safe = f.name.replace(/[^\w.\-]+/g, "_");
     const path = `${uid}/${kind}/${Date.now()}_${safe}`;
-    const { error } = await supabase.storage.from(BUCKET).upload(path, f.file ?? f, {
+    const { error } = await supabase.storage.from(BUCKET).upload(path, f.file, {
       contentType: f.type || "application/octet-stream",
       upsert: false,
     });
