@@ -331,7 +331,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const Icon = iconFor[card.kind];
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
-  const entries = Object.entries(rawData).filter(([k]) => k !== "itens");
+  const entries = Object.entries(rawData).filter(([k]) => k !== "itens" && k !== "files");
   const { fullName, user } = useAuth();
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
