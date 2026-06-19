@@ -319,14 +319,24 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
 
 /* ───────────────────────── Modal ───────────────────────── */
 
+type ItemMaterial = {
+  material: string;
+  codigo: string;
+  quantidade: string;
+  unidadeMedida: string;
+};
+
 function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void; onMove: (c: Card, s: Status) => Promise<void> }) {
   const Icon = iconFor[card.kind];
-  const entries = Object.entries((card.data as Record<string, unknown>) ?? {});
+  const rawData = (card.data as Record<string, unknown>) ?? {};
+  const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
+  const entries = Object.entries(rawData).filter(([k]) => k !== "itens");
   const { fullName, user } = useAuth();
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
   const attachments = (card.attachments as unknown as Attachment[]) ?? [];
+
 
   const [obsText, setObsText] = useState("");
   const [orderNumber, setOrderNumber] = useState(card.order_number ?? "");
@@ -336,6 +346,14 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     const { error } = await supabase.from("kanban_cards").update(p).eq("id", card.id);
     if (error) toast.error(error.message);
   };
+
+  const removeItemMaterial = async (idx: number) => {
+    const next = itensSolicitados.filter((_, i) => i !== idx);
+    await patch({ data: { ...rawData, itens: next } as never });
+    toast.success("Item removido da solicitação.");
+  };
+
+
 
   const addObservation = async () => {
     const text = obsText.trim();
@@ -493,6 +511,56 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               </dl>
             )}
           </section>
+
+          {/* ── Materiais solicitados (apenas para "materiais") ── */}
+          {card.kind === "materiais" && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Itens solicitados ({itensSolicitados.length})
+              </h3>
+              {itensSolicitados.length === 0 ? (
+                <div className="rounded-lg border border-dashed bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-900 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  Nenhum material associado a esta solicitação
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Código</th>
+                        <th className="px-3 py-2 text-left">Descrição</th>
+                        <th className="px-3 py-2 text-right">Qtd.</th>
+                        <th className="px-3 py-2 text-left">Unidade</th>
+                        <th className="px-3 py-2 w-12 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itensSolicitados.map((it, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="px-3 py-2 font-mono text-xs">{it.codigo || "—"}</td>
+                          <td className="px-3 py-2">{it.material || "—"}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.quantidade || "—"}</td>
+                          <td className="px-3 py-2">{it.unidadeMedida || "—"}</td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => removeItemMaterial(i)}
+                              className="text-destructive hover:opacity-80"
+                              aria-label={`Remover item ${i + 1}`}
+                              title="Remover item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
+
 
           {/* ── Observations log (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
