@@ -562,6 +562,11 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             </section>
           )}
 
+          {/* ── Arquivos do solicitante (anexos originários do formulário) ── */}
+          <RequesterFilesSection rawData={rawData} />
+
+
+
 
           {/* ── Observations log (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
