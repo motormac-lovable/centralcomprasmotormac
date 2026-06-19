@@ -1,0 +1,1 @@
+ALTER TYPE public.card_kind ADD VALUE IF NOT EXISTS 'materiais';
