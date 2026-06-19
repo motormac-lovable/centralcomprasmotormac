@@ -16,6 +16,7 @@ import {
   DEPARTAMENTOS_APOLLO,
   ORIGENS_APOLLO,
   MATERIAIS_APOLLO,
+  UNIDADES_MEDIDA_APOLLO,
 } from "../lib/apollo-data";
 
 export const Route = createFileRoute("/materiais")({
