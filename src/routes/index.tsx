@@ -14,7 +14,7 @@ export const Route = createFileRoute("/")({
 const cards = [
   {
     to: "/compras",
-    title: "Solicitação de Compra",
+    title: "Solicitação de Peças",
     subtitle: "Módulo de Peças",
     description: "Abra um pedido de compra de peças para Cummins, JCB e demais operações.",
     icon: Package,

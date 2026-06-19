@@ -16,8 +16,8 @@ import { maskCNPJ } from "../lib/masks";
 export const Route = createFileRoute("/compras")({
   head: () => ({
     meta: [
-      { title: "Solicitação de Compra de Peças — Motormac" },
-      { name: "description", content: "Formulário de solicitação de compra do módulo de peças." },
+      { title: "Solicitação de Peças — Motormac" },
+      { name: "description", content: "Formulário de solicitação de peças do módulo de peças." },
     ],
   }),
   component: ComprasPage,
@@ -85,7 +85,7 @@ function ComprasPage() {
 
   return (
     <FormShell
-      title="Solicitação de Compra do Módulo de Peças"
+      title="Solicitação de Peças"
       description="Preencha os dados abaixo para abrir a requisição junto ao comprador."
       accent="var(--primary)"
     >
