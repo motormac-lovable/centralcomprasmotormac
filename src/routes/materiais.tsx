@@ -128,11 +128,18 @@ function MateriaisPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
+    let uploaded;
+    try {
+      uploaded = await uploadRequesterFiles("materiais", files);
+    } catch (err) {
+      toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      return;
+    }
     const payload = {
       ...bloco,
       ...form,
       itens,
-      files: files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
+      files: uploaded,
     };
 
     const titulo =
