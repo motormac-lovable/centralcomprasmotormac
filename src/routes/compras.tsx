@@ -11,6 +11,7 @@ import {
 } from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
+import { uploadRequesterFiles } from "../lib/requester-files";
 import { maskCNPJ } from "../lib/masks";
 
 export const Route = createFileRoute("/compras")({
