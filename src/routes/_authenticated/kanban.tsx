@@ -347,6 +347,14 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     if (error) toast.error(error.message);
   };
 
+  const removeItemMaterial = async (idx: number) => {
+    const next = itensSolicitados.filter((_, i) => i !== idx);
+    await patch({ data: { ...rawData, itens: next } as never });
+    toast.success("Item removido da solicitação.");
+  };
+
+
+
   const addObservation = async () => {
     const text = obsText.trim();
     if (!text) return;
