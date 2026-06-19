@@ -187,7 +187,7 @@ function MateriaisPage() {
               onChange={(e) => onMaterialChange(e.target.value)}
             />
             <datalist id="apollo-materiais">
-              {descricoes.map((d) => (
+              {sugestoesDescricoes.map((d) => (
                 <option key={d} value={d} />
               ))}
             </datalist>
@@ -206,7 +206,7 @@ function MateriaisPage() {
               onChange={(e) => onCodigoChange(e.target.value)}
             />
             <datalist id="apollo-codigos">
-              {codigos.map((c) => (
+              {sugestoesCodigos.map((c) => (
                 <option key={c} value={c} />
               ))}
             </datalist>
