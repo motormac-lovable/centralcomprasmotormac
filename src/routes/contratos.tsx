@@ -68,7 +68,15 @@ function ContratosPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
-    const payload = { ...bloco, ...f, contrato: contrato.map((x) => x.name), financeiro: financeiro.map((x) => x.name) };
+    let uploadedContrato, uploadedFinanceiro;
+    try {
+      uploadedContrato = await uploadRequesterFiles("contratos", contrato, "Contrato assinado");
+      uploadedFinanceiro = await uploadRequesterFiles("contratos", financeiro, "Validação financeira");
+    } catch (err) {
+      toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      return;
+    }
+    const payload = { ...bloco, ...f, files: [...uploadedContrato, ...uploadedFinanceiro] };
     try {
       await createCard({
         kind: "contratos",
