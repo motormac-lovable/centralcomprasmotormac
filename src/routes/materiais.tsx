@@ -19,6 +19,7 @@ import {
   MATERIAIS_APOLLO,
   UNIDADES_MEDIDA_APOLLO,
 } from "../lib/apollo-data";
+import { uploadRequesterFiles } from "../lib/requester-files";
 
 export const Route = createFileRoute("/materiais")({
   head: () => ({
