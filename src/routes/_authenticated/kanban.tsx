@@ -750,7 +750,7 @@ function CellInput({ value, onChange, placeholder }: { value: string; onChange: 
   );
 }
 
-type RequesterFile = { name: string; size?: number; url?: string; type?: string };
+type RequesterFile = { name: string; size?: number; url?: string; type?: string; path?: string; category?: string };
 
 function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }) {
   const raw = rawData.files;
@@ -759,7 +759,7 @@ function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }
     typeof f === "string" ? { name: f } : (f as RequesterFile),
   );
 
-  const iconFor = (name: string) => {
+  const pickIcon = (name: string) => {
     const ext = name.split(".").pop()?.toLowerCase() ?? "";
     if (["png", "jpg", "jpeg", "webp", "gif", "heic"].includes(ext)) return ImageIcon;
     if (ext === "pdf") return FileText;
@@ -768,34 +768,53 @@ function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }
   const fmtSize = (s?: number) =>
     !s ? "" : s >= 1_048_576 ? `${(s / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(s / 1024))} KB`;
 
+  const open = async (f: RequesterFile) => {
+    if (f.url) {
+      window.open(f.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (f.path) {
+      const { signRequesterFile } = await import("@/lib/requester-files");
+      const url = await signRequesterFile(f.path, 120);
+      if (!url) {
+        toast.error("Não foi possível abrir o arquivo.");
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    toast.error("Anexo sem link disponível.");
+  };
+
   return (
     <section>
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-        <Paperclip className="h-3.5 w-3.5" /> Arquivos e Documentos Anexados ({files.length}/5)
+        <Paperclip className="h-3.5 w-3.5" /> Arquivos e Documentos Anexados ({files.length})
       </h3>
       <div className="grid gap-2 sm:grid-cols-2">
         {files.map((f, i) => {
-          const Icon = iconFor(f.name);
-          const Wrapper = f.url ? "a" : "div";
-          const wrapperProps = f.url
-            ? { href: f.url, target: "_blank", rel: "noopener noreferrer", download: f.name }
-            : {};
+          const Icon = pickIcon(f.name);
+          const clickable = !!(f.url || f.path);
           return (
-            <Wrapper
+            <button
               key={i}
-              {...wrapperProps}
-              className={`flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm transition ${f.url ? "hover:bg-accent hover:border-primary/40 cursor-pointer" : "opacity-80"}`}
-              title={f.url ? "Abrir em nova aba" : "Anexo sem link disponível"}
+              type="button"
+              onClick={() => open(f)}
+              disabled={!clickable}
+              className={`flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm text-left transition ${clickable ? "hover:bg-accent hover:border-primary/40 cursor-pointer" : "opacity-70 cursor-not-allowed"}`}
+              title={clickable ? "Abrir/baixar arquivo" : "Anexo sem link disponível"}
             >
               <div className="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <Icon className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{f.name}</div>
-                <div className="text-[11px] text-muted-foreground">{fmtSize(f.size) || (f.url ? "Clique para abrir" : "Sem link disponível")}</div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {f.category ? `${f.category} · ` : ""}{fmtSize(f.size) || (clickable ? "Clique para abrir" : "Sem link disponível")}
+                </div>
               </div>
-              {f.url && <Download className="h-4 w-4 text-muted-foreground shrink-0" />}
-            </Wrapper>
+              {clickable && <Download className="h-4 w-4 text-muted-foreground shrink-0" />}
+            </button>
           );
         })}
       </div>

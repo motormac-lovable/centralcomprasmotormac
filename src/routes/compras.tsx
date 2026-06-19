@@ -11,6 +11,7 @@ import {
 } from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
+import { uploadRequesterFiles } from "../lib/requester-files";
 import { maskCNPJ } from "../lib/masks";
 
 export const Route = createFileRoute("/compras")({
@@ -62,7 +63,14 @@ function ComprasPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
-    const payload = { ...bloco, ...form, files: files.map((f) => f.name) };
+    let uploaded;
+    try {
+      uploaded = await uploadRequesterFiles("compras", files);
+    } catch (err) {
+      toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      return;
+    }
+    const payload = { ...bloco, ...form, files: uploaded };
     try {
       await createCard({
         kind: "compras",

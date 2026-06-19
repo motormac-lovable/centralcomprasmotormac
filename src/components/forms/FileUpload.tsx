@@ -5,6 +5,7 @@ export interface PickedFile {
   name: string;
   size: number;
   type: string;
+  file: File;
 }
 
 export function FileUpload({
@@ -28,7 +29,7 @@ export function FileUpload({
     for (const f of Array.from(list)) {
       if (next.length >= maxFiles) break;
       if (f.size > maxSizeMB * 1024 * 1024) continue;
-      next.push({ name: f.name, size: f.size, type: f.type });
+      next.push({ name: f.name, size: f.size, type: f.type, file: f });
     }
     onChange(next);
     if (ref.current) ref.current.value = "";
