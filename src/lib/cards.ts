@@ -16,6 +16,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   compras: "Compra de Peças",
   contratos: "Contratos",
   frete: "Frete",
+  materiais: "Materiais e Serviços",
 };
 
 export type Observation = { at: string; author: string; text: string };

@@ -1,4 +1,4 @@
-export type RequestKind = "compras" | "contratos" | "frete";
+export type RequestKind = "compras" | "contratos" | "frete" | "materiais";
 
 export interface HistoryEntry {
   id: string;
@@ -38,4 +38,5 @@ export const kindLabel: Record<RequestKind, string> = {
   compras: "Compra de Peças",
   contratos: "Contratos",
   frete: "Frete",
+  materiais: "Materiais e Serviços",
 };

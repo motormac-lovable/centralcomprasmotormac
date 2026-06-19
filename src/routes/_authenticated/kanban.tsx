@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/kanban")({
   component: KanbanPage,
 });
 
-const iconFor = { compras: Package, contratos: FileSignature, frete: Truck } as const;
+const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, materiais: Package } as const;
 
 type ColumnFilter = { kind: string; approver: string };
 
