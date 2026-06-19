@@ -99,6 +99,9 @@ function MateriaisPage() {
     if (!form.quantidade.trim()) er.quantidade = "Obrigatório";
     if (!/^\d+$/.test(form.quantidade.trim()) || parseInt(form.quantidade, 10) <= 0)
       er.quantidade = "Informe um número inteiro positivo";
+    if (!form.unidadeMedida.trim()) er.unidadeMedida = "Selecione";
+    else if (!UNIDADES_MEDIDA_APOLLO.includes(form.unidadeMedida.trim().toUpperCase()))
+      er.unidadeMedida = "Selecione uma unidade válida da lista";
     if (!form.descricao.trim()) er.descricao = "Obrigatório";
     if (
       form.fornecedorCnpj &&
