@@ -48,7 +48,12 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
           condicao: winner.condicao ?? winner.pagamento ?? "",
         }
       : null,
-    itens: (card.data as Record<string, unknown>) ?? {},
+    itens: (() => {
+      const data = (card.data as Record<string, unknown>) ?? {};
+      if (Array.isArray(data.itens)) return data.itens as Array<Record<string, unknown>>;
+      return data;
+    })(),
+
     aprovador: { id: card.approver_id, nome: card.approver_name },
     apollo_id: card.numero_pedido_linx ?? card.order_number ?? null,
   };
