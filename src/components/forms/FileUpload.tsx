@@ -5,6 +5,7 @@ export interface PickedFile {
   name: string;
   size: number;
   type: string;
+  file: File;
 }
 
 export function FileUpload({
