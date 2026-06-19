@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PendingRouteImport } from './routes/pending'
+import { Route as MateriaisRouteImport } from './routes/materiais'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as FreteRouteImport } from './routes/frete'
 import { Route as ContratosRouteImport } from './routes/contratos'
@@ -32,6 +33,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PendingRoute = PendingRouteImport.update({
   id: '/pending',
   path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MateriaisRoute = MateriaisRouteImport.update({
+  id: '/materiais',
+  path: '/materiais',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoricoRoute = HistoricoRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/contratos': typeof ContratosRoute
   '/frete': typeof FreteRoute
   '/historico': typeof HistoricoRoute
+  '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/materiais'
     | '/pending'
     | '/reset-password'
     | '/admin'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/materiais'
     | '/pending'
     | '/reset-password'
     | '/admin'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/contratos'
     | '/frete'
     | '/historico'
+    | '/materiais'
     | '/pending'
     | '/reset-password'
     | '/_authenticated/admin'
@@ -198,6 +210,7 @@ export interface RootRouteChildren {
   ContratosRoute: typeof ContratosRoute
   FreteRoute: typeof FreteRoute
   HistoricoRoute: typeof HistoricoRoute
+  MateriaisRoute: typeof MateriaisRoute
   PendingRoute: typeof PendingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/pending'
       fullPath: '/pending'
       preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/materiais': {
+      id: '/materiais'
+      path: '/materiais'
+      fullPath: '/materiais'
+      preLoaderRoute: typeof MateriaisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/historico': {
@@ -332,6 +352,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContratosRoute: ContratosRoute,
   FreteRoute: FreteRoute,
   HistoricoRoute: HistoricoRoute,
+  MateriaisRoute: MateriaisRoute,
   PendingRoute: PendingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }

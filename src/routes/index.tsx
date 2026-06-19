@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, FileSignature, Truck, Trello, ArrowRight } from "lucide-react";
+import { Package, FileSignature, Truck, Trello, ArrowRight, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,6 +37,14 @@ const cards = [
     accent: "oklch(0.6 0.18 150)",
   },
   {
+    to: "/materiais",
+    title: "Requisição de Materiais e Serviços",
+    subtitle: "Apollo",
+    description: "Solicite materiais e serviços com busca por descrição ou código (Apollo).",
+    icon: ClipboardList,
+    accent: "oklch(0.62 0.18 200)",
+  },
+  {
     to: "/kanban",
     title: "Painel Kanban",
     subtitle: "Operacional",
@@ -61,7 +69,7 @@ function Hub() {
         </p>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
