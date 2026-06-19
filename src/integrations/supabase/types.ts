@@ -193,7 +193,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "buyer" | "owner"
       application_status: "pending" | "approved" | "rejected"
-      card_kind: "compras" | "contratos" | "frete"
+      card_kind: "compras" | "contratos" | "frete" | "materiais"
       card_status:
         | "solicitacoes_abertas"
         | "em_cotacao"
@@ -329,7 +329,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "buyer", "owner"],
       application_status: ["pending", "approved", "rejected"],
-      card_kind: ["compras", "contratos", "frete"],
+      card_kind: ["compras", "contratos", "frete", "materiais"],
       card_status: [
         "solicitacoes_abertas",
         "em_cotacao",

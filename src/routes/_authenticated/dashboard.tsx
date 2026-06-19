@@ -105,12 +105,12 @@ function DashboardPage() {
     fill: s.tone,
   }));
 
-  const kindCounts = (["compras", "contratos", "frete"] as const).map((k) => ({
+  const kindCounts = (["compras", "contratos", "frete", "materiais"] as const).map((k) => ({
     name: KIND_LABEL[k],
     value: filtered.filter((c) => c.kind === k).length,
   }));
 
-  const valorPorTipo = (["compras", "contratos", "frete"] as const).map((k) => ({
+  const valorPorTipo = (["compras", "contratos", "frete", "materiais"] as const).map((k) => ({
     name: KIND_LABEL[k],
     valor: concluidas.filter((c) => c.kind === k).reduce((s, c) => s + winnerValue(c), 0),
   }));
@@ -216,7 +216,7 @@ function DashboardPage() {
             label="Check list"
             value={fKind}
             onChange={setFKind}
-            options={[{ value: ALL, label: "Todos os check lists" }, ...(["compras", "contratos", "frete"] as Kind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))]}
+            options={[{ value: ALL, label: "Todos os check lists" }, ...(["compras", "contratos", "frete", "materiais"] as Kind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))]}
           />
           <FilterSelect
             label="Unidade"

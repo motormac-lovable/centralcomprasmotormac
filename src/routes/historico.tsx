@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileSignature, Package, Truck, Inbox, Trello } from "lucide-react";
+import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList } from "lucide-react";
 import { kindLabel, loadHistory, type HistoryEntry, type RequestKind } from "../lib/history";
 import { useAuth } from "@/lib/auth-context";
 
@@ -18,12 +18,14 @@ const iconFor: Record<RequestKind, typeof Package> = {
   compras: Package,
   contratos: FileSignature,
   frete: Truck,
+  materiais: ClipboardList,
 };
 
 const colorFor: Record<RequestKind, string> = {
   compras: "var(--primary)",
   contratos: "oklch(0.55 0.18 250)",
   frete: "oklch(0.6 0.18 150)",
+  materiais: "oklch(0.62 0.18 200)",
 };
 
 function HistoricoPage() {
