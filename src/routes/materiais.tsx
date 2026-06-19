@@ -42,6 +42,7 @@ function MateriaisPage() {
     material: "",
     codigo: "",
     quantidade: "",
+    unidadeMedida: "",
     descricao: "",
     tipo: "Convencional",
     fornecedorNome: "",
