@@ -18,7 +18,7 @@ export type LinxPayload = {
     prazo: string;
     condicao: string;
   } | null;
-  itens: Record<string, unknown>;
+  itens: Record<string, unknown> | Array<Record<string, unknown>>;
   aprovador: { id: string | null; nome: string | null };
   apollo_id?: string | null;
 };
