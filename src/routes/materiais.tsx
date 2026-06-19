@@ -217,6 +217,17 @@ function MateriaisPage() {
           </Field>
         </div>
 
+        <Field label="Quantidade" required error={errors.quantidade}>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            className={inputCls}
+            value={form.quantidade}
+            onChange={(e) => set("quantidade", e.target.value)}
+          />
+        </Field>
+
         <Field label="Descrição" required error={errors.descricao}>
           <textarea
             className={`${inputCls} min-h-28`}
