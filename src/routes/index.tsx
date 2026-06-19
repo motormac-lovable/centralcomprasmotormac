@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, FileSignature, Truck, Trello, ArrowRight, ClipboardList } from "lucide-react";
+import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,20 +13,20 @@ export const Route = createFileRoute("/")({
 
 const cards = [
   {
+    to: "/materiais",
+    title: "Solicitação de Compras",
+    subtitle: "Apollo",
+    description: "Solicite materiais e serviços diversos pelo módulo de Gestão de Materiais.",
+    icon: ClipboardList,
+    accent: "oklch(0.62 0.18 200)",
+  },
+  {
     to: "/compras",
     title: "Solicitação de Peças",
     subtitle: "Módulo de Peças",
     description: "Abra um pedido de compra de peças para Cummins, JCB e demais operações.",
     icon: Package,
     accent: "var(--primary)",
-  },
-  {
-    to: "/contratos",
-    title: "Cadastro ou Renovação",
-    subtitle: "Contratos",
-    description: "Envie contratos novos, aditivos de renovação ou retificações de saldo.",
-    icon: FileSignature,
-    accent: "oklch(0.55 0.18 250)",
   },
   {
     to: "/frete",
@@ -37,20 +37,12 @@ const cards = [
     accent: "oklch(0.6 0.18 150)",
   },
   {
-    to: "/materiais",
-    title: "Solicitação de Compras",
-    subtitle: "Apollo",
-    description: "Solicite materiais e serviços diversos pelo módulo de Gestão de Materiais.",
-    icon: ClipboardList,
-    accent: "oklch(0.62 0.18 200)",
-  },
-  {
-    to: "/kanban",
-    title: "Painel Kanban",
-    subtitle: "Operacional",
-    description: "Visualize e gerencie todas as solicitações em andamento no quadro Kanban.",
-    icon: Trello,
-    accent: "oklch(0.55 0.15 280)",
+    to: "/contratos",
+    title: "Cadastro ou Renovação",
+    subtitle: "Contratos",
+    description: "Envie contratos novos, aditivos de renovação ou retificações de saldo.",
+    icon: FileSignature,
+    accent: "oklch(0.55 0.18 250)",
   },
 ] as const;
 
