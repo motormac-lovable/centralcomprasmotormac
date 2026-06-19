@@ -63,7 +63,14 @@ function ComprasPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
-    const payload = { ...bloco, ...form, files: files.map((f) => f.name) };
+    let uploaded;
+    try {
+      uploaded = await uploadRequesterFiles("compras", files);
+    } catch (err) {
+      toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      return;
+    }
+    const payload = { ...bloco, ...form, files: uploaded };
     try {
       await createCard({
         kind: "compras",
