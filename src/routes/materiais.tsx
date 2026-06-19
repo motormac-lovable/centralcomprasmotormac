@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
 import {
@@ -33,60 +34,71 @@ export const Route = createFileRoute("/materiais")({
   component: MateriaisPage,
 });
 
+const MAX_ITENS = 100;
+
+type ItemMaterial = {
+  material: string;
+  codigo: string;
+  quantidade: string;
+  unidadeMedida: string;
+};
+
+const ITEM_VAZIO: ItemMaterial = {
+  material: "",
+  codigo: "",
+  quantidade: "",
+  unidadeMedida: "",
+};
+
 function MateriaisPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
     departamento: "",
     origem: "",
-    material: "",
-    codigo: "",
-    quantidade: "",
-    unidadeMedida: "",
     descricao: "",
     tipo: "Convencional",
     fornecedorNome: "",
     fornecedorCnpj: "",
   });
+  const [itens, setItens] = useState<ItemMaterial[]>([{ ...ITEM_VAZIO }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  // Sugestões filtradas pelo input (datalist com 12k+ entradas trava o browser)
-  const sugestoesDescricoes = useMemo(() => {
-    const q = form.material.trim().toLowerCase();
-    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.descricao);
-    return MATERIAIS_APOLLO.filter((m) =>
-      m.descricao.toLowerCase().includes(q),
-    )
-      .slice(0, 50)
-      .map((m) => m.descricao);
-  }, [form.material]);
+  const updateItem = (idx: number, patch: Partial<ItemMaterial>) =>
+    setItens((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
 
-  const sugestoesCodigos = useMemo(() => {
-    const q = form.codigo.trim().toLowerCase();
-    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.codigo);
-    return MATERIAIS_APOLLO.filter((m) =>
-      m.codigo.toLowerCase().startsWith(q),
-    )
-      .slice(0, 50)
-      .map((m) => m.codigo);
-  }, [form.codigo]);
+  const removeItem = (idx: number) =>
+    setItens((arr) => (arr.length === 1 ? arr : arr.filter((_, i) => i !== idx)));
 
-  const onMaterialChange = (descricao: string) => {
+  const addItem = () => {
+    if (itens.length >= MAX_ITENS) {
+      toast.error(`Limite de ${MAX_ITENS} materiais por solicitação.`);
+      return;
+    }
+    setItens((arr) => [...arr, { ...ITEM_VAZIO }]);
+  };
+
+  const onMaterialChange = (idx: number, descricao: string) => {
     const m = MATERIAIS_APOLLO.find(
       (x) => x.descricao.toLowerCase() === descricao.toLowerCase(),
     );
-    setForm((f) => ({ ...f, material: descricao, codigo: m ? m.codigo : f.codigo }));
+    updateItem(idx, { material: descricao, ...(m ? { codigo: m.codigo } : {}) });
   };
 
-  const onCodigoChange = (codigo: string) => {
+  const onCodigoChange = (idx: number, codigo: string) => {
     const m = MATERIAIS_APOLLO.find((x) => x.codigo === codigo);
-    setForm((f) => ({ ...f, codigo, material: m ? m.descricao : f.material }));
+    updateItem(idx, { codigo, ...(m ? { material: m.descricao } : {}) });
   };
 
+  const ultimoItem = itens[itens.length - 1];
+  const podeAdicionar =
+    itens.length < MAX_ITENS &&
+    ultimoItem.material.trim() !== "" &&
+    ultimoItem.codigo.trim() !== "";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,14 +106,16 @@ function MateriaisPage() {
     const er: Record<string, string> = { ...blocoEr };
     if (!form.departamento) er.departamento = "Selecione";
     if (!form.origem) er.origem = "Selecione";
-    if (!form.material.trim()) er.material = "Obrigatório";
-    if (!form.codigo.trim()) er.codigo = "Obrigatório";
-    if (!form.quantidade.trim()) er.quantidade = "Obrigatório";
-    if (!/^\d+$/.test(form.quantidade.trim()) || parseInt(form.quantidade, 10) <= 0)
-      er.quantidade = "Informe um número inteiro positivo";
-    if (!form.unidadeMedida.trim()) er.unidadeMedida = "Selecione";
-    else if (!UNIDADES_MEDIDA_APOLLO.includes(form.unidadeMedida.trim().toUpperCase()))
-      er.unidadeMedida = "Selecione uma unidade válida da lista";
+    itens.forEach((it, i) => {
+      if (!it.material.trim()) er[`item_${i}_material`] = "Obrigatório";
+      if (!it.codigo.trim()) er[`item_${i}_codigo`] = "Obrigatório";
+      if (!it.quantidade.trim()) er[`item_${i}_quantidade`] = "Obrigatório";
+      else if (!/^\d+$/.test(it.quantidade.trim()) || parseInt(it.quantidade, 10) <= 0)
+        er[`item_${i}_quantidade`] = "Inteiro positivo";
+      if (!it.unidadeMedida.trim()) er[`item_${i}_unidadeMedida`] = "Selecione";
+      else if (!UNIDADES_MEDIDA_APOLLO.includes(it.unidadeMedida.trim().toUpperCase()))
+        er[`item_${i}_unidadeMedida`] = "Unidade inválida";
+    });
     if (!form.descricao.trim()) er.descricao = "Obrigatório";
     if (
       form.fornecedorCnpj &&
@@ -113,11 +127,15 @@ function MateriaisPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
-    const payload = { ...bloco, ...form, files: files.map((f) => f.name) };
+    const payload = { ...bloco, ...form, itens, files: files.map((f) => f.name) };
+    const titulo =
+      itens.length === 1
+        ? `Materiais: ${itens[0].material}`
+        : `Materiais: ${itens[0].material} (+${itens.length - 1})`;
     try {
       await createCard({
         kind: "materiais",
-        title: `Materiais: ${form.material}`,
+        title: titulo,
         summary: `${bloco.nome} · ${bloco.empresa} · ${bloco.unidade}`,
         requester_name: bloco.nome,
         requester_email: bloco.email,
@@ -131,7 +149,7 @@ function MateriaisPage() {
     }
     addHistory({
       kind: "materiais",
-      title: `Materiais: ${form.material}`,
+      title: titulo,
       summary: `${bloco.nome} · ${bloco.unidade}`,
       data: payload,
     });
@@ -182,76 +200,36 @@ function MateriaisPage() {
           </Field>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            label="Material/Serviço solicitado"
-            required
-            hint="Selecione pela descrição — o código será preenchido automaticamente."
-            error={errors.material}
-          >
-            <input
-              list="apollo-materiais"
-              className={inputCls}
-              value={form.material}
-              onChange={(e) => onMaterialChange(e.target.value)}
-            />
-            <datalist id="apollo-materiais">
-              {sugestoesDescricoes.map((d) => (
-                <option key={d} value={d} />
-              ))}
-            </datalist>
-          </Field>
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Materiais solicitados ({itens.length}/{MAX_ITENS})
+            </h3>
+          </div>
 
-          <Field
-            label="Código do material"
-            required
-            hint="Selecione pelo código — a descrição será preenchida automaticamente."
-            error={errors.codigo}
-          >
-            <input
-              list="apollo-codigos"
-              className={inputCls}
-              value={form.codigo}
-              onChange={(e) => onCodigoChange(e.target.value)}
+          {itens.map((it, idx) => (
+            <ItemRow
+              key={idx}
+              idx={idx}
+              item={it}
+              errors={errors}
+              onMaterialChange={onMaterialChange}
+              onCodigoChange={onCodigoChange}
+              updateItem={updateItem}
+              removeItem={removeItem}
+              canRemove={itens.length > 1}
             />
-            <datalist id="apollo-codigos">
-              {sugestoesCodigos.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          </Field>
-        </div>
+          ))}
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Quantidade" required error={errors.quantidade}>
-            <input
-              type="number"
-              min={1}
-              step={1}
-              className={inputCls}
-              value={form.quantidade}
-              onChange={(e) => set("quantidade", e.target.value)}
-            />
-          </Field>
-
-          <Field
-            label="Unidade de Medida"
-            required
-            hint="Selecione na lista ou digite — somente unidades cadastradas são aceitas."
-            error={errors.unidadeMedida}
+          <button
+            type="button"
+            onClick={addItem}
+            disabled={!podeAdicionar}
+            className="inline-flex items-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <input
-              list="apollo-unidades"
-              className={inputCls}
-              value={form.unidadeMedida}
-              onChange={(e) => set("unidadeMedida", e.target.value.toUpperCase())}
-            />
-            <datalist id="apollo-unidades">
-              {UNIDADES_MEDIDA_APOLLO.map((u) => (
-                <option key={u} value={u} />
-              ))}
-            </datalist>
-          </Field>
+            <Plus className="h-4 w-4" />
+            Adicionar material
+          </button>
         </div>
 
         <Field label="Descrição" required error={errors.descricao}>
@@ -320,5 +298,140 @@ function MateriaisPage() {
         </div>
       </form>
     </FormShell>
+  );
+}
+
+function ItemRow({
+  idx,
+  item,
+  errors,
+  onMaterialChange,
+  onCodigoChange,
+  updateItem,
+  removeItem,
+  canRemove,
+}: {
+  idx: number;
+  item: ItemMaterial;
+  errors: Record<string, string>;
+  onMaterialChange: (idx: number, descricao: string) => void;
+  onCodigoChange: (idx: number, codigo: string) => void;
+  updateItem: (idx: number, patch: Partial<ItemMaterial>) => void;
+  removeItem: (idx: number) => void;
+  canRemove: boolean;
+}) {
+  const sugestoesDescricoes = useMemo(() => {
+    const q = item.material.trim().toLowerCase();
+    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.descricao);
+    return MATERIAIS_APOLLO.filter((m) => m.descricao.toLowerCase().includes(q))
+      .slice(0, 50)
+      .map((m) => m.descricao);
+  }, [item.material]);
+
+  const sugestoesCodigos = useMemo(() => {
+    const q = item.codigo.trim().toLowerCase();
+    if (!q) return MATERIAIS_APOLLO.slice(0, 50).map((m) => m.codigo);
+    return MATERIAIS_APOLLO.filter((m) => m.codigo.toLowerCase().startsWith(q))
+      .slice(0, 50)
+      .map((m) => m.codigo);
+  }, [item.codigo]);
+
+  const listIdMat = `apollo-materiais-${idx}`;
+  const listIdCod = `apollo-codigos-${idx}`;
+  const listIdUni = `apollo-unidades-${idx}`;
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-muted-foreground">
+          Item {idx + 1}
+        </span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => removeItem(idx)}
+            className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Remover
+          </button>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Material/Serviço solicitado"
+          required
+          error={errors[`item_${idx}_material`]}
+        >
+          <input
+            list={listIdMat}
+            className={inputCls}
+            value={item.material}
+            onChange={(e) => onMaterialChange(idx, e.target.value)}
+          />
+          <datalist id={listIdMat}>
+            {sugestoesDescricoes.map((d) => (
+              <option key={d} value={d} />
+            ))}
+          </datalist>
+        </Field>
+
+        <Field
+          label="Código do material"
+          required
+          error={errors[`item_${idx}_codigo`]}
+        >
+          <input
+            list={listIdCod}
+            className={inputCls}
+            value={item.codigo}
+            onChange={(e) => onCodigoChange(idx, e.target.value)}
+          />
+          <datalist id={listIdCod}>
+            {sugestoesCodigos.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Quantidade"
+          required
+          error={errors[`item_${idx}_quantidade`]}
+        >
+          <input
+            type="number"
+            min={1}
+            step={1}
+            className={inputCls}
+            value={item.quantidade}
+            onChange={(e) => updateItem(idx, { quantidade: e.target.value })}
+          />
+        </Field>
+
+        <Field
+          label="Unidade de Medida"
+          required
+          error={errors[`item_${idx}_unidadeMedida`]}
+        >
+          <input
+            list={listIdUni}
+            className={inputCls}
+            value={item.unidadeMedida}
+            onChange={(e) =>
+              updateItem(idx, { unidadeMedida: e.target.value.toUpperCase() })
+            }
+          />
+          <datalist id={listIdUni}>
+            {UNIDADES_MEDIDA_APOLLO.map((u) => (
+              <option key={u} value={u} />
+            ))}
+          </datalist>
+        </Field>
+      </div>
+    </div>
   );
 }
