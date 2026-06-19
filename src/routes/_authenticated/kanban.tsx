@@ -7,8 +7,9 @@ import {
 import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
-  CheckCircle2, XCircle, Mail, MessageSquare, Download,
+  CheckCircle2, XCircle, Mail, MessageSquare, Download, FileText, Image as ImageIcon, File as FileIcon,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -330,7 +331,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const Icon = iconFor[card.kind];
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
-  const entries = Object.entries(rawData).filter(([k]) => k !== "itens");
+  const entries = Object.entries(rawData).filter(([k]) => k !== "itens" && k !== "files");
   const { fullName, user } = useAuth();
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
@@ -561,6 +562,11 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             </section>
           )}
 
+          {/* ── Arquivos do solicitante (anexos originários do formulário) ── */}
+          <RequesterFilesSection rawData={rawData} />
+
+
+
 
           {/* ── Observations log (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
@@ -744,7 +750,61 @@ function CellInput({ value, onChange, placeholder }: { value: string; onChange: 
   );
 }
 
+type RequesterFile = { name: string; size?: number; url?: string; type?: string };
+
+function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }) {
+  const raw = rawData.files;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const files: RequesterFile[] = raw.map((f) =>
+    typeof f === "string" ? { name: f } : (f as RequesterFile),
+  );
+
+  const iconFor = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    if (["png", "jpg", "jpeg", "webp", "gif", "heic"].includes(ext)) return ImageIcon;
+    if (ext === "pdf") return FileText;
+    return FileIcon;
+  };
+  const fmtSize = (s?: number) =>
+    !s ? "" : s >= 1_048_576 ? `${(s / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(s / 1024))} KB`;
+
+  return (
+    <section>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+        <Paperclip className="h-3.5 w-3.5" /> Arquivos e Documentos Anexados ({files.length}/5)
+      </h3>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {files.map((f, i) => {
+          const Icon = iconFor(f.name);
+          const Wrapper = f.url ? "a" : "div";
+          const wrapperProps = f.url
+            ? { href: f.url, target: "_blank", rel: "noopener noreferrer", download: f.name }
+            : {};
+          return (
+            <Wrapper
+              key={i}
+              {...wrapperProps}
+              className={`flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5 text-sm transition ${f.url ? "hover:bg-accent hover:border-primary/40 cursor-pointer" : "opacity-80"}`}
+              title={f.url ? "Abrir em nova aba" : "Anexo sem link disponível"}
+            >
+              <div className="w-9 h-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{f.name}</div>
+                <div className="text-[11px] text-muted-foreground">{fmtSize(f.size) || (f.url ? "Clique para abrir" : "Sem link disponível")}</div>
+              </div>
+              {f.url && <Download className="h-4 w-4 text-muted-foreground shrink-0" />}
+            </Wrapper>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function Detail({ label, value }: { label: string; value: string | null | undefined }) {
+
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
