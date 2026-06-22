@@ -849,3 +849,70 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
     </div>
   );
 }
+
+function EmailPreviewModal({
+  card,
+  onClose,
+  onSend,
+}: {
+  card: Card;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
+  const chosen = suppliers.find((s) => s.chosen);
+  const to = card.approver_name ? `${card.approver_name} <aprovador@motormac.com.br>` : "aprovador@motormac.com.br";
+  const subject = `[Aprovação necessária] ${card.codigo_unico ?? card.id.slice(0, 8)} — ${card.title}`;
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col border-2 border-blue-500/40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5 border-b bg-blue-50 dark:bg-blue-950/30 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+            <Mail className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold">Pré-visualização do e-mail de aprovação</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Confira o conteúdo antes de enviar (simulação).</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto text-sm space-y-3">
+          <div className="grid grid-cols-[80px_1fr] gap-2">
+            <span className="text-muted-foreground">Para:</span><span className="font-medium">{to}</span>
+            <span className="text-muted-foreground">Assunto:</span><span className="font-medium">{subject}</span>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4 space-y-2 text-[13px] leading-relaxed">
+            <p>Olá {card.approver_name ?? "responsável"},</p>
+            <p>
+              A solicitação <strong>#{card.codigo_unico ?? "—"}</strong> ({KIND_LABEL[card.kind]}) feita por{" "}
+              <strong>{card.requester_name ?? "—"}</strong> está aguardando sua aprovação.
+            </p>
+            <p><strong>Título:</strong> {card.title}</p>
+            {card.summary && <p><strong>Resumo:</strong> {card.summary}</p>}
+            {chosen && (
+              <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-2">
+                <strong>Fornecedor escolhido:</strong> {chosen.fornecedor} · {chosen.valor} · {chosen.prazo} · {chosen.condicao}
+              </div>
+            )}
+            <p>Acesse o painel para revisar a cotação completa e aprovar ou reprovar.</p>
+            <p className="text-muted-foreground">— Central de Compras Motormac</p>
+          </div>
+        </div>
+        <div className="p-4 border-t flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">Cancelar</button>
+          <button
+            onClick={onSend}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold"
+          >
+            <Mail className="h-4 w-4" /> Enviar agora
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
