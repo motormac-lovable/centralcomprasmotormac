@@ -394,7 +394,8 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     }
     const uploaded: Attachment[] = [];
     for (const file of Array.from(files)) {
-      const path = `${card.id}/${Date.now()}_${file.name}`;
+      const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
+      const path = `${card.id}/${Date.now()}_${safeName}`;
       const { error } = await supabase.storage.from("orcamentos").upload(path, file);
       if (error) { toast.error(`${file.name}: ${error.message}`); continue; }
       uploaded.push({ name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() });
