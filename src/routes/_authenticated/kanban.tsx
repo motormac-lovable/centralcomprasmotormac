@@ -473,17 +473,18 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                  placeholder="Nº do pedido (Linx Apollo)"
-                  className="flex-1 min-w-[180px] rounded-md border bg-background px-3 py-2 text-sm"
-                />
+                <button
+                  onClick={() => setEmailPreview(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold shadow-sm"
+                  title="Enviar e-mail de aprovação"
+                >
+                  <Mail className="h-4 w-4" /> Enviar e-mail de aprovação
+                </button>
                 <button
                   onClick={approve}
                   className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold"
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Aprovar
+                  <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
                 </button>
                 <button
                   onClick={reject}
@@ -492,7 +493,18 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   <XCircle className="h-4 w-4" /> Reprovar
                 </button>
               </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Ao aprovar, o card vai para <strong>Cotações Aprovadas</strong> e aguarda o retorno do ERP Linx Apollo com o número oficial do pedido.
+              </p>
             </section>
+          )}
+
+          {emailPreview && (
+            <EmailPreviewModal
+              card={card}
+              onClose={() => setEmailPreview(false)}
+              onSend={sendApprovalEmail}
+            />
           )}
 
           {/* ── All requester responses (always visible) ── */}
