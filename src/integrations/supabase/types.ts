@@ -199,6 +199,7 @@ export type Database = {
         | "em_cotacao"
         | "aguardando_aprovacao"
         | "cotacoes_rejeitadas"
+        | "cotacoes_aprovadas"
         | "pedidos_gerados"
     }
     CompositeTypes: {
@@ -335,6 +336,7 @@ export const Constants = {
         "em_cotacao",
         "aguardando_aprovacao",
         "cotacoes_rejeitadas",
+        "cotacoes_aprovadas",
         "pedidos_gerados",
       ],
     },

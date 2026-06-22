@@ -135,7 +135,7 @@ function KanbanPage() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-5 lg:overflow-visible snap-x snap-mandatory">
+        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-6 lg:overflow-visible snap-x snap-mandatory">
           {STATUS_COLUMNS.map((col) => (
             <div key={col.id} className="snap-start shrink-0 w-[85vw] sm:w-[55vw] md:w-[40vw] lg:w-auto">
               <Column
@@ -269,6 +269,9 @@ function StatusTag({ card }: { card: Card }) {
   if (card.status === "cotacoes_rejeitadas") {
     return <Tag label="Rejeitada" bg="oklch(0.6 0.24 27)" fg="white" />;
   }
+  if (card.status === "cotacoes_aprovadas") {
+    return <Tag label="Aprovada · aguardando ERP" bg="oklch(0.65 0.18 160)" fg="white" />;
+  }
   if (card.status === "pedidos_gerados") {
     return <Tag label={card.order_number ? `Pedido ${card.order_number}` : "Pedido gerado"} bg="oklch(0.6 0.18 150)" fg="white" />;
   }
@@ -307,8 +310,13 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
           Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
         </div>
       )}
-      {card.approver_name && card.status === "aguardando_aprovacao" && (
-        <div className="mt-2 text-[11px] text-muted-foreground truncate">Aprovador: {card.approver_name}</div>
+      {card.approver_name && (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
+        <div className="mt-2 text-[11px] font-semibold text-primary truncate">
+          👤 Compradora: {card.approver_name}
+        </div>
+      )}
+      {card.requester_name && (
+        <div className="text-[11px] text-muted-foreground truncate">Solicitante: {card.requester_name}</div>
       )}
       <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
         <span className="truncate">{card.unidade ?? "—"}</span>
@@ -340,7 +348,6 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
 
   const [obsText, setObsText] = useState("");
-  const [orderNumber, setOrderNumber] = useState(card.order_number ?? "");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
@@ -410,20 +417,19 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const approve = async () => {
-    let pedido = orderNumber.trim();
-    if (!pedido) {
-      const n = prompt("Informe o número do pedido gerado no ERP (Linx Apollo):");
-      if (!n) return;
-      pedido = n;
-      setOrderNumber(n);
-    }
-    await patch({ order_number: pedido, numero_pedido_linx: pedido });
-    await onMove(card, "pedidos_gerados");
+    await onMove(card, "cotacoes_aprovadas");
+    toast.success("Cotação aprovada · aguardando retorno do ERP Linx Apollo.");
     onClose();
   };
   const reject = async () => {
     await onMove(card, "cotacoes_rejeitadas");
     onClose();
+  };
+
+  const [emailPreview, setEmailPreview] = useState(false);
+  const sendApprovalEmail = () => {
+    toast.success(`📧 E-mail de aprovação enviado para ${card.approver_name ?? "aprovador"}.`);
+    setEmailPreview(false);
   };
 
   return (
@@ -466,17 +472,18 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                  placeholder="Nº do pedido (Linx Apollo)"
-                  className="flex-1 min-w-[180px] rounded-md border bg-background px-3 py-2 text-sm"
-                />
+                <button
+                  onClick={() => setEmailPreview(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold shadow-sm"
+                  title="Enviar e-mail de aprovação"
+                >
+                  <Mail className="h-4 w-4" /> Enviar e-mail de aprovação
+                </button>
                 <button
                   onClick={approve}
                   className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold"
                 >
-                  <CheckCircle2 className="h-4 w-4" /> Aprovar
+                  <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
                 </button>
                 <button
                   onClick={reject}
@@ -485,7 +492,18 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   <XCircle className="h-4 w-4" /> Reprovar
                 </button>
               </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Ao aprovar, o card vai para <strong>Cotações Aprovadas</strong> e aguarda o retorno do ERP Linx Apollo com o número oficial do pedido.
+              </p>
             </section>
+          )}
+
+          {emailPreview && (
+            <EmailPreviewModal
+              card={card}
+              onClose={() => setEmailPreview(false)}
+              onSend={sendApprovalEmail}
+            />
           )}
 
           {/* ── All requester responses (always visible) ── */}
@@ -828,6 +846,73 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="font-medium">{value || "—"}</div>
+    </div>
+  );
+}
+
+function EmailPreviewModal({
+  card,
+  onClose,
+  onSend,
+}: {
+  card: Card;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
+  const chosen = suppliers.find((s) => s.chosen);
+  const to = card.approver_name ? `${card.approver_name} <aprovador@motormac.com.br>` : "aprovador@motormac.com.br";
+  const subject = `[Aprovação necessária] ${card.codigo_unico ?? card.id.slice(0, 8)} — ${card.title}`;
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col border-2 border-blue-500/40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5 border-b bg-blue-50 dark:bg-blue-950/30 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+            <Mail className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold">Pré-visualização do e-mail de aprovação</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Confira o conteúdo antes de enviar (simulação).</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto text-sm space-y-3">
+          <div className="grid grid-cols-[80px_1fr] gap-2">
+            <span className="text-muted-foreground">Para:</span><span className="font-medium">{to}</span>
+            <span className="text-muted-foreground">Assunto:</span><span className="font-medium">{subject}</span>
+          </div>
+          <div className="rounded-lg border bg-muted/20 p-4 space-y-2 text-[13px] leading-relaxed">
+            <p>Olá {card.approver_name ?? "responsável"},</p>
+            <p>
+              A solicitação <strong>#{card.codigo_unico ?? "—"}</strong> ({KIND_LABEL[card.kind]}) feita por{" "}
+              <strong>{card.requester_name ?? "—"}</strong> está aguardando sua aprovação.
+            </p>
+            <p><strong>Título:</strong> {card.title}</p>
+            {card.summary && <p><strong>Resumo:</strong> {card.summary}</p>}
+            {chosen && (
+              <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-2">
+                <strong>Fornecedor escolhido:</strong> {chosen.fornecedor} · {chosen.valor} · {chosen.prazo} · {chosen.condicao}
+              </div>
+            )}
+            <p>Acesse o painel para revisar a cotação completa e aprovar ou reprovar.</p>
+            <p className="text-muted-foreground">— Central de Compras Motormac</p>
+          </div>
+        </div>
+        <div className="p-4 border-t flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">Cancelar</button>
+          <button
+            onClick={onSend}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold"
+          >
+            <Mail className="h-4 w-4" /> Enviar agora
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
