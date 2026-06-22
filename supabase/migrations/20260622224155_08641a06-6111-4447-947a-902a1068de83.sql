@@ -1,0 +1,2 @@
+GRANT USAGE ON SCHEMA app_private TO authenticated, service_role, supabase_storage_admin;
+GRANT EXECUTE ON FUNCTION app_private.has_role(UUID, public.app_role) TO authenticated, service_role, supabase_storage_admin;
