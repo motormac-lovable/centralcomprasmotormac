@@ -11,14 +11,16 @@ export const Route = createFileRoute("/pending")({
 
 function PendingPage() {
   const navigate = useNavigate();
-  const { user, loading, isBuyer, isAdmin } = useAuth();
+  const { user, loading, isBuyer, isAdmin, isSolicitante } = useAuth();
 
   useEffect(() => {
     if (loading) return;
     if (!user) navigate({ to: "/auth" });
     else if (isAdmin) navigate({ to: "/admin" });
     else if (isBuyer) navigate({ to: "/inicio" });
-  }, [user, loading, isBuyer, isAdmin, navigate]);
+    else if (isSolicitante) navigate({ to: "/" });
+  }, [user, loading, isBuyer, isAdmin, isSolicitante, navigate]);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
