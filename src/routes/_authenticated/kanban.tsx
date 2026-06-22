@@ -407,9 +407,17 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const downloadAttachment = async (a: Attachment) => {
-    const { data, error } = await supabase.storage.from("orcamentos").createSignedUrl(a.path, 60);
-    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
-    window.open(data.signedUrl, "_blank");
+    const { data, error } = await supabase.storage
+      .from("orcamentos")
+      .createSignedUrl(a.path, 60, { download: a.name });
+    if (error || !data) { toast.error("Não foi possível baixar o arquivo."); return; }
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    link.download = a.name;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const deleteAttachment = async (a: Attachment) => {
