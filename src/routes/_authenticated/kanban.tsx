@@ -420,6 +420,12 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     link.remove();
   };
 
+  const viewAttachment = async (a: Attachment) => {
+    const { data, error } = await supabase.storage.from("orcamentos").createSignedUrl(a.path, 60);
+    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const deleteAttachment = async (a: Attachment) => {
     await supabase.storage.from("orcamentos").remove([a.path]);
     await patch({ attachments: attachments.filter((x) => x.path !== a.path) as never });
