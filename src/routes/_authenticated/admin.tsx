@@ -52,7 +52,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
     const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
     if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
     toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
