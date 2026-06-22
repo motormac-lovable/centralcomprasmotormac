@@ -67,7 +67,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
     }
     toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
