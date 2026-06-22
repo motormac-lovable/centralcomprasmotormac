@@ -73,9 +73,10 @@ export const updateUserRole = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z.object({
       user_id: z.string().uuid(),
-      role: z.enum(["owner", "admin", "buyer"]),
+      role: z.enum(["owner", "admin", "buyer", "solicitante"]),
     }).parse(data),
   )
+
   .handler(async ({ data, context }) => {
     const { userId, claims } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
