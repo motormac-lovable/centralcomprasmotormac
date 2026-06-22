@@ -10,9 +10,12 @@ interface AuthState {
   isOwner: boolean;
   isAdmin: boolean;
   isBuyer: boolean;
+  isSolicitante: boolean;
+  hasAnyRole: boolean;
   fullName: string;
   refresh: () => Promise<void>;
 }
+
 
 const Ctx = createContext<AuthState>({
   user: null,
@@ -21,9 +24,12 @@ const Ctx = createContext<AuthState>({
   isOwner: false,
   isAdmin: false,
   isBuyer: false,
+  isSolicitante: false,
+  hasAnyRole: false,
   fullName: "",
   refresh: async () => {},
 });
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -61,16 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // E-mails do Proprietário são sempre Proprietários — sem bloqueio possível.
   const isOwner = roles.includes("owner") || isOwnerEmail(sessionUser?.email);
   const isAdmin = isOwner || roles.includes("admin");
+  const isSolicitante = roles.includes("solicitante");
+  const isBuyer = isAdmin || roles.includes("buyer");
+  const hasAnyRole = isOwner || isAdmin || isBuyer || isSolicitante;
   const value: AuthState = {
     user: session?.user ?? null,
     session,
     loading,
     isOwner,
     isAdmin,
-    isBuyer: isAdmin || roles.includes("buyer"),
+    isBuyer,
+    isSolicitante,
+    hasAnyRole,
     fullName,
     refresh: () => loadRoles(session?.user.id),
   };
+
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

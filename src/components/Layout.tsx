@@ -1,22 +1,42 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
 
+// Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
+const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
+
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, isOwner, isAdmin, isBuyer, fullName } = useAuth();
+  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, fullName } = useAuth();
   const navigate = useNavigate();
+
+  // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
+  useEffect(() => {
+    if (loading) return;
+    if (user) return;
+    if (PUBLIC_PATHS.has(pathname)) return;
+    navigate({ to: "/auth" });
+  }, [user, loading, pathname, navigate]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
-    navigate({ to: "/" });
+    navigate({ to: "/auth" });
   };
+
+  // Render mínimo para evitar flash de conteúdo enquanto redireciona.
+  if (!loading && !user && !PUBLIC_PATHS.has(pathname)) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  // Solicitante: navegação estritamente restrita.
+  const showBuyerLinks = isBuyer;
+  const showSolicitanteLinks = isSolicitante && !isBuyer && !isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,15 +50,19 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <nav className="flex items-center gap-1 flex-wrap">
-            <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
-            {isBuyer && (
+            {/* Nova Solicitação — Solicitante, Comprador e Admin */}
+            {(showBuyerLinks || showSolicitanteLinks) && (
+              <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
+            )}
+
+            {/* Visão completa do Comprador */}
+            {showBuyerLinks && (
               <>
                 <NavLink to="/inicio" active={pathname.startsWith("/inicio")} icon={<LayoutGrid className="h-4 w-4" />}>Início</NavLink>
                 <NavLink to="/dashboard" active={pathname.startsWith("/dashboard")} icon={<BarChart3 className="h-4 w-4" />}>Dashboard</NavLink>
+                <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
+                <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
               </>
-            )}
-            {user && (
-              <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
             )}
             {isAdmin && (
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
@@ -46,7 +70,18 @@ export function Layout({ children }: { children: ReactNode }) {
             {isOwner && (
               <NavLink to="/dev" active={pathname.startsWith("/dev")} icon={<Code2 className="h-4 w-4" />}>Dev</NavLink>
             )}
-            <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
+
+            {/* Visão restrita do Solicitante */}
+            {showSolicitanteLinks && (
+              <NavLink
+                to="/minhas-solicitacoes"
+                active={pathname.startsWith("/minhas-solicitacoes")}
+                icon={<ClipboardList className="h-4 w-4" />}
+              >
+                Minhas Solicitações
+              </NavLink>
+            )}
+
             {user && <ProfileMenu />}
             {user ? (
               <button
@@ -76,7 +111,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="flex items-center gap-3">
             {!user && (
               <Link to="/auth" className="inline-flex items-center gap-1 hover:text-foreground">
-                <UserPlus className="h-3 w-3" /> Cadastro de Comprador
+                <UserPlus className="h-3 w-3" /> Cadastro
               </Link>
             )}
             <span>v1.0</span>

@@ -38,9 +38,10 @@ function AdminPage() {
   }
 
   type AppRole = Database["public"]["Enums"]["app_role"];
-  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
-  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"];
+  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"];
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+
 
   const approve = async (app: App) => {
     const role = selectedRole[app.id] ?? "buyer";
@@ -51,7 +52,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
     const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
     if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
     toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
@@ -66,7 +67,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer"]);
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
     }
     toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
@@ -181,12 +182,14 @@ function RegisteredUsers() {
 
   useEffect(() => { reload(); }, []);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
   const roleStyle: Record<string, string> = {
     owner: "bg-amber-100 text-amber-800",
     admin: "bg-blue-100 text-blue-800",
     buyer: "bg-emerald-100 text-emerald-800",
+    solicitante: "bg-violet-100 text-violet-800",
   };
+
   const filtered = rows.filter((r) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
@@ -298,11 +301,12 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
-          allowedRoles={isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"]}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
       )}
+
 
       {deleting && (
         <ConfirmDeleteModal
@@ -327,12 +331,15 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
       ? "admin"
       : row.roles.includes("buyer")
         ? "buyer"
-        : "buyer";
+        : row.roles.includes("solicitante")
+          ? "solicitante"
+          : "buyer";
   const [role, setRole] = useState<string>(currentRole);
   const [saving, setSaving] = useState(false);
   const updateRoleFn = useServerFn(updateUserRole);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+
 
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");

@@ -26,17 +26,21 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isBuyer, isSolicitante } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: isAdmin ? "/admin" : "/inicio" });
-  }, [user, loading, isAdmin, navigate]);
+    if (loading || !user) return;
+    if (isAdmin) navigate({ to: "/admin" });
+    else if (isBuyer) navigate({ to: "/inicio" });
+    else if (isSolicitante) navigate({ to: "/" });
+    else navigate({ to: "/pending" });
+  }, [user, loading, isAdmin, isBuyer, isSolicitante, navigate]);
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Voltar ao Hub
+        <ArrowLeft className="h-4 w-4" /> Voltar
       </Link>
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
@@ -46,11 +50,11 @@ function AuthPage() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {mode === "signin" ? "Entrar na plataforma" : "Cadastro de Comprador"}
+              {mode === "signin" ? "Entrar na plataforma" : "Cadastro de Usuário"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signin"
-                ? "Acesse o Kanban operacional e o Dashboard de indicadores."
+                ? "Acesso liberado após aprovação do proprietário."
                 : "Preencha seus dados — sua solicitação será analisada pelos aprovadores."}
             </p>
           </div>
@@ -58,7 +62,7 @@ function AuthPage() {
         <div className="p-6 sm:p-8">
           {mode === "signin" ? <SignInForm /> : <SignUpForm onDone={() => setMode("signin")} />}
           <div className="mt-6 pt-4 border-t text-sm text-muted-foreground text-center">
-            {mode === "signin" ? "Novo comprador?" : "Já tem cadastro?"}{" "}
+            {mode === "signin" ? "Novo por aqui?" : "Já tem cadastro?"}{" "}
             <button
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
               className="font-medium text-primary hover:underline"
@@ -71,6 +75,7 @@ function AuthPage() {
     </div>
   );
 }
+
 
 function SignInForm() {
   const [email, setEmail] = useState("");
@@ -88,12 +93,13 @@ function SignInForm() {
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
     let owner = isOwnerEmail(emailLogged);
-    let admin = false, buyer = false;
+    let admin = false, buyer = false, solicitante = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       owner = owner || (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
+      solicitante = (roles ?? []).some((r) => r.role === "solicitante");
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
@@ -104,11 +110,15 @@ function SignInForm() {
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
       navigate({ to: "/inicio" });
+    } else if (solicitante) {
+      toast.success("Bem-vindo, Solicitante!");
+      navigate({ to: "/" });
     } else {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
       navigate({ to: "/pending" });
     }
   };
+
 
   return (
     <>
@@ -202,6 +212,7 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
+  const [perfil, setPerfil] = useState<"solicitante" | "comprador">("solicitante");
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -211,7 +222,9 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (types.length === 0) return toast.error("Selecione ao menos um tipo de checklist.");
+    if (perfil === "comprador" && types.length === 0) {
+      return toast.error("Selecione ao menos um tipo de checklist.");
+    }
     if (f.password.length < 8) return toast.error("A senha deve ter ao menos 8 caracteres.");
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
@@ -226,13 +239,15 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       setBusy(false);
       return toast.error(error?.message ?? "Erro ao cadastrar.");
     }
+    // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
+    const checklistTypes = perfil === "solicitante" ? ["solicitante"] : types;
     const { error: appErr } = await supabase.from("buyer_applications").insert({
       user_id: data.user.id,
       full_name: f.full_name,
       cpf: f.cpf,
       phone: f.phone,
       email: f.email,
-      checklist_types: types,
+      checklist_types: checklistTypes,
     });
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
@@ -242,6 +257,26 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={submit} className="grid gap-4">
+      <Field label="Perfil pretendido" required>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {([
+            { id: "solicitante", label: "Solicitante", desc: "Abro pedidos de compra para a equipe de compras." },
+            { id: "comprador", label: "Comprador", desc: "Atuo na operação de cotação e fechamento de compras." },
+          ] as const).map((p) => (
+            <label
+              key={p.id}
+              className={`flex flex-col gap-1 rounded-md border p-3 cursor-pointer transition ${perfil === p.id ? "border-primary bg-accent" : "hover:bg-muted/40"}`}
+            >
+              <div className="flex items-center gap-2">
+                <input type="radio" name="perfil" checked={perfil === p.id} onChange={() => setPerfil(p.id)} className="accent-primary" />
+                <span className="text-sm font-semibold">{p.label}</span>
+              </div>
+              <span className="text-xs text-muted-foreground">{p.desc}</span>
+            </label>
+          ))}
+        </div>
+      </Field>
+
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Nome completo" required>
           <input className={inputCls} value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} required />
@@ -259,16 +294,20 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       <Field label="Senha (mín. 8 caracteres)" required>
         <input type="password" className={inputCls} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required minLength={8} />
       </Field>
-      <Field label="Tipos de checklist que vai atender" required>
-        <div className="grid sm:grid-cols-3 gap-2">
-          {CHECKLISTS.map((c) => (
-            <label key={c.id} className={`flex items-center gap-2 rounded-md border p-3 cursor-pointer transition ${types.includes(c.id) ? "border-primary bg-accent" : "hover:bg-muted/40"}`}>
-              <input type="checkbox" checked={types.includes(c.id)} onChange={() => toggle(c.id)} className="accent-primary" />
-              <span className="text-sm">{c.label}</span>
-            </label>
-          ))}
-        </div>
-      </Field>
+
+      {perfil === "comprador" && (
+        <Field label="Tipos de checklist que vai atender" required>
+          <div className="grid sm:grid-cols-3 gap-2">
+            {CHECKLISTS.map((c) => (
+              <label key={c.id} className={`flex items-center gap-2 rounded-md border p-3 cursor-pointer transition ${types.includes(c.id) ? "border-primary bg-accent" : "hover:bg-muted/40"}`}>
+                <input type="checkbox" checked={types.includes(c.id)} onChange={() => toggle(c.id)} className="accent-primary" />
+                <span className="text-sm">{c.label}</span>
+              </label>
+            ))}
+          </div>
+        </Field>
+      )}
+
       <button
         type="submit"
         disabled={busy}
@@ -278,4 +317,5 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       </button>
     </form>
   );
+
 }
