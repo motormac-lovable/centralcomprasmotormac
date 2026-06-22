@@ -301,11 +301,12 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
-          allowedRoles={isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"]}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
       )}
+
 
       {deleting && (
         <ConfirmDeleteModal
