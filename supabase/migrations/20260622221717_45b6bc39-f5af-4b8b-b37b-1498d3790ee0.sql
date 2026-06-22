@@ -1,0 +1,1 @@
+ALTER TYPE public.card_status ADD VALUE IF NOT EXISTS 'cotacoes_aprovadas' BEFORE 'pedidos_gerados';
