@@ -67,16 +67,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // E-mails do Proprietário são sempre Proprietários — sem bloqueio possível.
   const isOwner = roles.includes("owner") || isOwnerEmail(sessionUser?.email);
   const isAdmin = isOwner || roles.includes("admin");
+  const isSolicitante = roles.includes("solicitante");
+  const isBuyer = isAdmin || roles.includes("buyer");
+  const hasAnyRole = isOwner || isAdmin || isBuyer || isSolicitante;
   const value: AuthState = {
     user: session?.user ?? null,
     session,
     loading,
     isOwner,
     isAdmin,
-    isBuyer: isAdmin || roles.includes("buyer"),
+    isBuyer,
+    isSolicitante,
+    hasAnyRole,
     fullName,
     refresh: () => loadRoles(session?.user.id),
   };
+
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
