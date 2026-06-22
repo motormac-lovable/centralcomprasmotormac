@@ -93,12 +93,13 @@ function SignInForm() {
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
     let owner = isOwnerEmail(emailLogged);
-    let admin = false, buyer = false;
+    let admin = false, buyer = false, solicitante = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       owner = owner || (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
+      solicitante = (roles ?? []).some((r) => r.role === "solicitante");
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
@@ -109,11 +110,15 @@ function SignInForm() {
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
       navigate({ to: "/inicio" });
+    } else if (solicitante) {
+      toast.success("Bem-vindo, Solicitante!");
+      navigate({ to: "/" });
     } else {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
       navigate({ to: "/pending" });
     }
   };
+
 
   return (
     <>
