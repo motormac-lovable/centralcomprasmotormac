@@ -38,9 +38,10 @@ function AdminPage() {
   }
 
   type AppRole = Database["public"]["Enums"]["app_role"];
-  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
-  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer"] : ["admin", "buyer"];
+  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"];
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+
 
   const approve = async (app: App) => {
     const role = selectedRole[app.id] ?? "buyer";
