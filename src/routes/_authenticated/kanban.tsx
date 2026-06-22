@@ -348,7 +348,6 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
 
   const [obsText, setObsText] = useState("");
-  const [orderNumber, setOrderNumber] = useState(card.order_number ?? "");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
