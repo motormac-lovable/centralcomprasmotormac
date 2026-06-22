@@ -418,20 +418,19 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const approve = async () => {
-    let pedido = orderNumber.trim();
-    if (!pedido) {
-      const n = prompt("Informe o número do pedido gerado no ERP (Linx Apollo):");
-      if (!n) return;
-      pedido = n;
-      setOrderNumber(n);
-    }
-    await patch({ order_number: pedido, numero_pedido_linx: pedido });
-    await onMove(card, "pedidos_gerados");
+    await onMove(card, "cotacoes_aprovadas");
+    toast.success("Cotação aprovada · aguardando retorno do ERP Linx Apollo.");
     onClose();
   };
   const reject = async () => {
     await onMove(card, "cotacoes_rejeitadas");
     onClose();
+  };
+
+  const [emailPreview, setEmailPreview] = useState(false);
+  const sendApprovalEmail = () => {
+    toast.success(`📧 E-mail de aprovação enviado para ${card.approver_name ?? "aprovador"}.`);
+    setEmailPreview(false);
   };
 
   return (
