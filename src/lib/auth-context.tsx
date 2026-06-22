@@ -10,9 +10,12 @@ interface AuthState {
   isOwner: boolean;
   isAdmin: boolean;
   isBuyer: boolean;
+  isSolicitante: boolean;
+  hasAnyRole: boolean;
   fullName: string;
   refresh: () => Promise<void>;
 }
+
 
 const Ctx = createContext<AuthState>({
   user: null,
