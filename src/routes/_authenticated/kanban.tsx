@@ -135,7 +135,7 @@ function KanbanPage() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-5 lg:overflow-visible snap-x snap-mandatory">
+        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-6 lg:overflow-visible snap-x snap-mandatory">
           {STATUS_COLUMNS.map((col) => (
             <div key={col.id} className="snap-start shrink-0 w-[85vw] sm:w-[55vw] md:w-[40vw] lg:w-auto">
               <Column
