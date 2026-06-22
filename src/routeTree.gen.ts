@@ -19,6 +19,7 @@ import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedMinhasSolicitacoesRouteImport } from './routes/_authenticated/minhas-solicitacoes'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
 import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated/inicio'
 import { Route as AuthenticatedDevRouteImport } from './routes/_authenticated/dev'
@@ -74,6 +75,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedMinhasSolicitacoesRoute =
+  AuthenticatedMinhasSolicitacoesRouteImport.update({
+    id: '/minhas-solicitacoes',
+    path: '/minhas-solicitacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedKanbanRoute = AuthenticatedKanbanRouteImport.update({
   id: '/kanban',
   path: '/kanban',
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/dev': typeof AuthenticatedDevRoute
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesByTo {
   '/dev': typeof AuthenticatedDevRoute
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/dev': typeof AuthenticatedDevRoute
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
+  '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/inicio'
     | '/kanban'
+    | '/minhas-solicitacoes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/inicio'
     | '/kanban'
+    | '/minhas-solicitacoes'
   id:
     | '__root__'
     | '/'
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dev'
     | '/_authenticated/inicio'
     | '/_authenticated/kanban'
+    | '/_authenticated/minhas-solicitacoes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/minhas-solicitacoes': {
+      id: '/_authenticated/minhas-solicitacoes'
+      path: '/minhas-solicitacoes'
+      fullPath: '/minhas-solicitacoes'
+      preLoaderRoute: typeof AuthenticatedMinhasSolicitacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/kanban': {
       id: '/_authenticated/kanban'
       path: '/kanban'
@@ -331,6 +351,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDevRoute: typeof AuthenticatedDevRoute
   AuthenticatedInicioRoute: typeof AuthenticatedInicioRoute
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
+  AuthenticatedMinhasSolicitacoesRoute: typeof AuthenticatedMinhasSolicitacoesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -339,6 +360,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDevRoute: AuthenticatedDevRoute,
   AuthenticatedInicioRoute: AuthenticatedInicioRoute,
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
+  AuthenticatedMinhasSolicitacoesRoute: AuthenticatedMinhasSolicitacoesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
