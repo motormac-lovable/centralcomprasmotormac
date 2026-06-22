@@ -182,12 +182,14 @@ function RegisteredUsers() {
 
   useEffect(() => { reload(); }, []);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
   const roleStyle: Record<string, string> = {
     owner: "bg-amber-100 text-amber-800",
     admin: "bg-blue-100 text-blue-800",
     buyer: "bg-emerald-100 text-emerald-800",
+    solicitante: "bg-violet-100 text-violet-800",
   };
+
   const filtered = rows.filter((r) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
