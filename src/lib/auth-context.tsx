@@ -24,9 +24,12 @@ const Ctx = createContext<AuthState>({
   isOwner: false,
   isAdmin: false,
   isBuyer: false,
+  isSolicitante: false,
+  hasAnyRole: false,
   fullName: "",
   refresh: async () => {},
 });
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
