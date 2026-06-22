@@ -269,6 +269,9 @@ function StatusTag({ card }: { card: Card }) {
   if (card.status === "cotacoes_rejeitadas") {
     return <Tag label="Rejeitada" bg="oklch(0.6 0.24 27)" fg="white" />;
   }
+  if (card.status === "cotacoes_aprovadas") {
+    return <Tag label="Aprovada · aguardando ERP" bg="oklch(0.65 0.18 160)" fg="white" />;
+  }
   if (card.status === "pedidos_gerados") {
     return <Tag label={card.order_number ? `Pedido ${card.order_number}` : "Pedido gerado"} bg="oklch(0.6 0.18 150)" fg="white" />;
   }
