@@ -43,8 +43,14 @@ export async function uploadRequesterFiles(
 }
 
 /** Resolve a short-lived signed URL for a stored requester attachment. */
-export async function signRequesterFile(path: string, expiresIn = 120): Promise<string | null> {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
+export async function signRequesterFile(
+  path: string,
+  expiresIn = 120,
+  download: string | boolean = false,
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, expiresIn, download ? { download: download as never } : undefined);
   if (error || !data) return null;
   return data.signedUrl;
 }
