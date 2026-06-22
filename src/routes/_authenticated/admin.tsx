@@ -331,12 +331,15 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
       ? "admin"
       : row.roles.includes("buyer")
         ? "buyer"
-        : "buyer";
+        : row.roles.includes("solicitante")
+          ? "solicitante"
+          : "buyer";
   const [role, setRole] = useState<string>(currentRole);
   const [saving, setSaving] = useState(false);
   const updateRoleFn = useServerFn(updateUserRole);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+
 
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");
