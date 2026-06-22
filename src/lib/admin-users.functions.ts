@@ -108,7 +108,8 @@ export const updateUserRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.user_id)
-      .in("role", ["owner", "admin", "buyer"]);
+      .in("role", ["owner", "admin", "buyer", "solicitante"]);
+
 
     const { error } = await supabaseAdmin
       .from("user_roles")
