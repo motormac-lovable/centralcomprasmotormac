@@ -407,9 +407,17 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const downloadAttachment = async (a: Attachment) => {
-    const { data, error } = await supabase.storage.from("orcamentos").createSignedUrl(a.path, 60);
-    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
-    window.open(data.signedUrl, "_blank");
+    const { data, error } = await supabase.storage
+      .from("orcamentos")
+      .createSignedUrl(a.path, 60, { download: a.name });
+    if (error || !data) { toast.error("Não foi possível baixar o arquivo."); return; }
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    link.download = a.name;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const deleteAttachment = async (a: Attachment) => {
@@ -787,19 +795,29 @@ function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }
   const fmtSize = (s?: number) =>
     !s ? "" : s >= 1_048_576 ? `${(s / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(s / 1024))} KB`;
 
+  const triggerDownload = (url: string, filename: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   const open = async (f: RequesterFile) => {
     if (f.url) {
-      window.open(f.url, "_blank", "noopener,noreferrer");
+      triggerDownload(f.url, f.name);
       return;
     }
     if (f.path) {
       const { signRequesterFile } = await import("@/lib/requester-files");
-      const url = await signRequesterFile(f.path, 120);
+      const url = await signRequesterFile(f.path, 120, f.name);
       if (!url) {
-        toast.error("Não foi possível abrir o arquivo.");
+        toast.error("Não foi possível baixar o arquivo.");
         return;
       }
-      window.open(url, "_blank", "noopener,noreferrer");
+      triggerDownload(url, f.name);
       return;
     }
     toast.error("Anexo sem link disponível.");
