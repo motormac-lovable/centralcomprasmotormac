@@ -26,17 +26,21 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isBuyer, isSolicitante } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: isAdmin ? "/admin" : "/inicio" });
-  }, [user, loading, isAdmin, navigate]);
+    if (loading || !user) return;
+    if (isAdmin) navigate({ to: "/admin" });
+    else if (isBuyer) navigate({ to: "/inicio" });
+    else if (isSolicitante) navigate({ to: "/" });
+    else navigate({ to: "/pending" });
+  }, [user, loading, isAdmin, isBuyer, isSolicitante, navigate]);
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Voltar ao Hub
+        <ArrowLeft className="h-4 w-4" /> Voltar
       </Link>
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
@@ -46,11 +50,11 @@ function AuthPage() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {mode === "signin" ? "Entrar na plataforma" : "Cadastro de Comprador"}
+              {mode === "signin" ? "Entrar na plataforma" : "Cadastro de Usuário"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signin"
-                ? "Acesse o Kanban operacional e o Dashboard de indicadores."
+                ? "Acesso liberado após aprovação do proprietário."
                 : "Preencha seus dados — sua solicitação será analisada pelos aprovadores."}
             </p>
           </div>
@@ -58,7 +62,7 @@ function AuthPage() {
         <div className="p-6 sm:p-8">
           {mode === "signin" ? <SignInForm /> : <SignUpForm onDone={() => setMode("signin")} />}
           <div className="mt-6 pt-4 border-t text-sm text-muted-foreground text-center">
-            {mode === "signin" ? "Novo comprador?" : "Já tem cadastro?"}{" "}
+            {mode === "signin" ? "Novo por aqui?" : "Já tem cadastro?"}{" "}
             <button
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
               className="font-medium text-primary hover:underline"
@@ -71,6 +75,7 @@ function AuthPage() {
     </div>
   );
 }
+
 
 function SignInForm() {
   const [email, setEmail] = useState("");
