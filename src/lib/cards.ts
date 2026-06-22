@@ -8,6 +8,7 @@ export const STATUS_COLUMNS: { id: Status; label: string; tone: string; bg: stri
   { id: "solicitacoes_abertas",  label: "Solicitações abertas",   tone: "oklch(0.55 0.18 250)", bg: "transparent" },
   { id: "em_cotacao",            label: "Em cotação",             tone: "oklch(0.75 0.16 85)",  bg: "transparent" },
   { id: "aguardando_aprovacao",  label: "Aguardando Aprovação",   tone: "oklch(0.6 0.18 280)",  bg: "transparent" },
+  { id: "cotacoes_aprovadas",    label: "Cotações Aprovadas",     tone: "oklch(0.65 0.18 160)", bg: "color-mix(in oklab, oklch(0.65 0.18 160) 6%, transparent)" },
   { id: "cotacoes_rejeitadas",   label: "Cotações Rejeitadas",    tone: "oklch(0.6 0.24 27)",   bg: "color-mix(in oklab, oklch(0.6 0.24 27) 6%, transparent)" },
   { id: "pedidos_gerados",       label: "Pedidos gerados",        tone: "oklch(0.6 0.18 150)",  bg: "color-mix(in oklab, oklch(0.6 0.18 150) 6%, transparent)" },
 ];
