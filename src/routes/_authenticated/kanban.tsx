@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
-  CheckCircle2, XCircle, Mail, MessageSquare, Download, FileText, Image as ImageIcon, File as FileIcon,
+  CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -420,6 +420,12 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     link.remove();
   };
 
+  const viewAttachment = async (a: Attachment) => {
+    const { data, error } = await supabase.storage.from("orcamentos").createSignedUrl(a.path, 60);
+    if (error || !data) { toast.error("Não foi possível abrir o arquivo."); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const deleteAttachment = async (a: Attachment) => {
     await supabase.storage.from("orcamentos").remove([a.path]);
     await patch({ attachments: attachments.filter((x) => x.path !== a.path) as never });
@@ -630,48 +636,50 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             </section>
           )}
 
-          {/* ── Attachments (Em cotação and onwards) ── */}
-          {card.status !== "solicitacoes_abertas" && (
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/4)
-              </h3>
-              <div className="space-y-2 mb-3">
-                {attachments.map((a) => (
-                  <div key={a.path} className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="flex-1 truncate">{a.name}</span>
-                    <span className="text-[11px] text-muted-foreground">{(a.size / 1024).toFixed(0)} KB</span>
-                    <button onClick={() => downloadAttachment(a)} className="text-primary hover:underline" aria-label="Baixar">
-                      <Download className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-                {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
-              </div>
-              {attachments.length < 4 && (
-                <>
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    multiple
-                    accept=".pdf,.xls,.xlsx,.csv,image/*"
-                    onChange={(e) => uploadFiles(e.target.files)}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInput.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Adicionar arquivo (PDF / Excel / Imagem)
+          {/* ── Attachments (all columns) ── */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/4)
+            </h3>
+            <div className="space-y-2 mb-3">
+              {attachments.map((a) => (
+                <div key={a.path} className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="flex-1 truncate">{a.name}</span>
+                  <span className="text-[11px] text-muted-foreground">{(a.size / 1024).toFixed(0)} KB</span>
+                  <button onClick={() => viewAttachment(a)} className="text-muted-foreground hover:text-primary" aria-label="Visualizar no navegador" title="Visualizar no navegador">
+                    <Eye className="h-3.5 w-3.5" />
                   </button>
-                </>
-              )}
-            </section>
-          )}
+                  <button onClick={() => downloadAttachment(a)} className="text-primary hover:underline" aria-label="Baixar" title="Baixar no computador">
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover" title="Remover">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
+            </div>
+            {attachments.length < 4 && (
+              <>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  multiple
+                  accept=".pdf,.xls,.xlsx,.csv,image/*"
+                  onChange={(e) => uploadFiles(e.target.files)}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInput.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivo (PDF / Excel / Imagem)
+                </button>
+              </>
+            )}
+          </section>
+
 
           {/* ── Suppliers map (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
