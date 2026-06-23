@@ -661,7 +661,28 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             )}
           </section>
 
-          {/* ── Materiais solicitados (apenas para "materiais") ── */}
+          {/* ── Detalhes da solicitação de Peças ── */}
+          {card.kind === "compras" && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Detalhes da solicitação de Peças
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Detail label="CNPJ da unidade pagadora" value={(rawData.cnpj as string) || "—"} />
+                <Detail label="Peça solicitada" value={(rawData.peca as string) || "—"} />
+                <Detail label="Operação" value={(rawData.operacao as string) || "—"} />
+                <Detail label="Ordem de Serviço" value={(rawData.os as string) || "—"} />
+                <Detail label="Data esperada" value={(rawData.dataEsperada as string) || "—"} />
+                <Detail label="Telefone do solicitante" value={(rawData.telefone as string) || "—"} />
+              </div>
+              <div className="mt-3 grid gap-3 text-sm">
+                <Detail label="Especificação técnica" value={(rawData.especificacao as string) || "—"} />
+                <Detail label="Part Numbers (PN)" value={(rawData.partNumbers as string) || "—"} />
+              </div>
+            </section>
+          )}
+
+
           {card.kind === "materiais" && (
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
