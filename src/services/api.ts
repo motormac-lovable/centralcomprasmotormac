@@ -217,16 +217,16 @@ export function exportCSV(rows: KanbanCardRow[]): void {
     const p = buildLinxPayload(card);
     lines.push(
       [
-        p.codigo_unico,
-        p.tipo,
-        p.unidade ?? "",
-        p.empresa ?? "",
-        p.solicitante.nome ?? "",
-        p.solicitante.email ?? "",
-        p.fornecedor_vencedor?.fornecedor ?? "",
-        p.fornecedor_vencedor?.valor ?? "",
-        p.fornecedor_vencedor?.prazo ?? "",
-        p.apollo_id ?? "",
+        p.identificacao.codigo_unico,
+        p.meta.tipo_card,
+        p.identificacao.unidade ?? "",
+        p.identificacao.empresa ?? "",
+        p.identificacao.solicitante.nome ?? "",
+        p.identificacao.solicitante.email ?? "",
+        p.fornecedor_vencedor?.razao_social ?? "",
+        p.fornecedor_vencedor?.valor_total_cotado ?? "",
+        p.fornecedor_vencedor?.prazo_entrega ?? "",
+        p.meta.apollo_id ?? "",
         card.created_at,
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
