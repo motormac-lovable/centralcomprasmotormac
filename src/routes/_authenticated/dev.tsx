@@ -32,6 +32,9 @@ function DevPage() {
   const [codigoSim, setCodigoSim] = useState("");
   const [simulando, setSimulando] = useState(false);
   const [preview, setPreview] = useState<LinxPayload | null>(null);
+  const [consultaCodigo, setConsultaCodigo] = useState("");
+  const [consultando, setConsultando] = useState(false);
+  const [consultaResposta, setConsultaResposta] = useState<{ status: number; body: unknown } | null>(null);
 
   useEffect(() => {
     let active = true;
