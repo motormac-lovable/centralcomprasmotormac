@@ -154,9 +154,9 @@ function DevPage() {
       <section className="rounded-2xl border bg-card shadow-sm">
         <div className="p-5 border-b flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Extração de dados (Pedidos finalizados)</h2>
+            <h2 className="text-lg font-semibold">Extração de dados (Cotações aprovadas + Pedidos gerados)</h2>
             <p className="text-xs text-muted-foreground">
-              {filtradas.length} de {finalizados.length} solicitações concluídas.
+              {filtradas.length} de {finalizados.length} solicitações prontas para integração / já retornadas pelo ERP.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
