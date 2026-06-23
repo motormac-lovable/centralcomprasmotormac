@@ -316,7 +316,91 @@ function DevPage() {
         )}
       </section>
 
+      {/* API de Consulta de Status (Linx → Plataforma) */}
+      <section className="rounded-2xl border bg-card shadow-sm p-5">
+        <h2 className="text-lg font-semibold mb-1">🔌 API de Consulta de Status (Integração Linx)</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Endpoint REST público que a Linx Apollo consulta pelo Código Único para acompanhar o ciclo da solicitação dentro do Kanban.
+        </p>
+
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3 mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center rounded-md bg-emerald-600 text-white px-2 py-0.5 text-[11px] font-bold">GET</span>
+            <code className="text-[12px] font-mono">/api/solicitacoes/{`{codigo_unico}`}</code>
+          </div>
+          <div className="text-xs">
+            <div className="font-semibold mb-1">Resposta — <span className="text-emerald-700">200 OK</span></div>
+            <pre className="bg-background border rounded p-3 text-[11px] font-mono leading-relaxed overflow-x-auto">{`{
+  "codigo_solicitacao": "0620265",
+  "status_atual": "Cotações Aprovadas",
+  "data_ultima_atualizacao": "2025-06-12T14:32:08.000Z"
+}`}</pre>
+          </div>
+          <div className="text-[11px] text-muted-foreground space-y-1">
+            <div><strong>codigo_solicitacao</strong> — Código Único gerado pela plataforma (MMAAAA + sequencial).</div>
+            <div><strong>status_atual</strong> — Coluna real do card no Kanban. Valores: <em>Solicitação aberta</em>, <em>Em Cotação</em>, <em>Aguardando aprovação</em>, <em>Cotações Rejeitadas</em>, <em>Cotações Aprovadas</em>, <em>Pedido Gerado</em>.</div>
+            <div><strong>data_ultima_atualizacao</strong> — Timestamp ISO 8601 da última mudança de coluna/edição.</div>
+            <div className="pt-1"><strong>Erros:</strong> <code>404</code> quando o código não existe · <code>400</code> quando ausente.</div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <h3 className="text-sm font-semibold mb-2">Testar API de Status</h3>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <input
+              value={consultaCodigo}
+              onChange={(e) => setConsultaCodigo(e.target.value)}
+              placeholder="Ex: 062026123"
+              className="flex-1 min-w-[200px] rounded-md border bg-background px-3 py-2 text-sm font-mono"
+            />
+            <button
+              onClick={handleConsultarApi}
+              disabled={consultando}
+              className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Send className="h-4 w-4" /> {consultando ? "Consultando..." : "Enviar GET"}
+            </button>
+          </div>
+          {cards.length > 0 && (
+            <div className="text-xs text-muted-foreground mb-3">
+              Sugestões:{" "}
+              {cards.slice(0, 6).map((c, i) => (
+                <button
+                  key={c.id}
+                  onClick={() => setConsultaCodigo(c.codigo_unico ?? "")}
+                  className="font-mono text-primary hover:underline"
+                >
+                  #{c.codigo_unico}{i < Math.min(cards.length, 6) - 1 ? ", " : ""}
+                </button>
+              ))}
+            </div>
+          )}
+          {consultaResposta && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">HTTP</span>
+                <span
+                  className={
+                    "inline-flex items-center rounded-md px-2 py-0.5 font-mono font-bold " +
+                    (consultaResposta.status >= 200 && consultaResposta.status < 300
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-red-100 text-red-800")
+                  }
+                >
+                  {consultaResposta.status || "ERR"}
+                </span>
+                <span className="text-muted-foreground">— resposta exatamente como a Linx recebe:</span>
+              </div>
+              <pre className="bg-muted/50 border rounded p-3 text-[12px] font-mono leading-relaxed overflow-x-auto">
+                {JSON.stringify(consultaResposta.body, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Logs */}
+
       <section className="rounded-2xl border bg-card shadow-sm">
         <div className="p-5 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
