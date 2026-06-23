@@ -72,7 +72,11 @@ function DevPage() {
     setLogs((prev) => [{ ts: new Date().toISOString(), level, message }, ...prev].slice(0, 50));
 
   const finalizados = useMemo(
-    () => cards.filter((c) => c.status === "pedidos_gerados"),
+    () =>
+      cards.filter(
+        (c) =>
+          c.status === "cotacoes_aprovadas" || c.status === "pedidos_gerados",
+      ),
     [cards],
   );
 
@@ -150,9 +154,9 @@ function DevPage() {
       <section className="rounded-2xl border bg-card shadow-sm">
         <div className="p-5 border-b flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Extração de dados (Pedidos finalizados)</h2>
+            <h2 className="text-lg font-semibold">Extração de dados (Cotações aprovadas + Pedidos gerados)</h2>
             <p className="text-xs text-muted-foreground">
-              {filtradas.length} de {finalizados.length} solicitações concluídas.
+              {filtradas.length} de {finalizados.length} solicitações prontas para integração / já retornadas pelo ERP.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -199,6 +203,7 @@ function DevPage() {
               <tr>
                 <th className="px-4 py-2 text-left">Código</th>
                 <th className="px-4 py-2 text-left">Tipo</th>
+                <th className="px-4 py-2 text-left">Status</th>
                 <th className="px-4 py-2 text-left">Unidade</th>
                 <th className="px-4 py-2 text-left">Empresa</th>
                 <th className="px-4 py-2 text-left">Fornecedor</th>
@@ -208,14 +213,27 @@ function DevPage() {
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma cotação aprovada ou pedido gerado encontrado.</td></tr>
               )}
               {filtradas.map((c) => {
                 const p = buildLinxPayload(c);
+                const aguardandoRetorno = c.status === "cotacoes_aprovadas";
                 return (
                   <tr key={c.id} className="border-t align-top">
                     <td className="px-4 py-2 font-mono font-semibold">#{c.codigo_unico}</td>
                     <td className="px-4 py-2 capitalize">{c.kind}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                          (aguardandoRetorno
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800")
+                        }
+                      >
+                        {aguardandoRetorno ? "Saindo p/ ERP" : "Retornou do ERP"}
+                      </span>
+                    </td>
                     <td className="px-4 py-2">{c.unidade ?? "—"}</td>
                     <td className="px-4 py-2">{c.empresa ?? "—"}</td>
                     <td className="px-4 py-2">{p.fornecedor_vencedor?.razao_social ?? "—"}</td>
