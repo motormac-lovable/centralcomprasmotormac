@@ -290,8 +290,23 @@ function Tag({ label, bg, fg }: { label: string; bg: string; fg: string }) {
   );
 }
 
+function suggestedBuyer(card: Card): string | null {
+  if (card.kind !== "materiais") return null;
+  const raw = (card.data as Record<string, unknown>) ?? {};
+  const itens = Array.isArray(raw.itens) ? (raw.itens as Array<{ codigo?: string }>) : [];
+  const buyers = new Set<string>();
+  for (const it of itens) {
+    const b = getCompradoraByCodigo(it?.codigo);
+    if (b) buyers.add(b);
+  }
+  if (buyers.size === 0) return null;
+  const list = Array.from(buyers);
+  return list.length === 1 ? list[0] : `${list[0]} (+${list.length - 1})`;
+}
+
 function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }) {
   const Icon = iconFor[card.kind];
+  const suggested = suggestedBuyer(card);
   return (
     <div className={`rounded-lg border bg-card p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition ${dragging ? "rotate-2 shadow-xl" : ""}`}>
       <div className="flex items-center justify-between mb-2 gap-2">
@@ -311,9 +326,15 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
           Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
         </div>
       )}
-      {card.approver_name && (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
-        <div className="mt-2 text-[11px] font-semibold text-primary truncate">
-          👤 Compradora: {card.approver_name}
+      {card.approver_name ? (
+        (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
+          <div className="mt-2 text-[11px] font-semibold text-primary truncate">
+            👤 Compradora: {card.approver_name}
+          </div>
+        )
+      ) : suggested && (
+        <div className="mt-2 text-[11px] font-semibold text-primary/80 truncate" title="Sugestão baseada no material">
+          👤 Compradora sugerida: {suggested}
         </div>
       )}
       {card.requester_name && (
