@@ -193,22 +193,31 @@ function DevPage() {
                 <th className="px-4 py-2 text-left">Empresa</th>
                 <th className="px-4 py-2 text-left">Fornecedor</th>
                 <th className="px-4 py-2 text-left">Pedido Linx</th>
+                <th className="px-4 py-2 text-left">Payload</th>
               </tr>
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
               )}
               {filtradas.map((c) => {
                 const p = buildLinxPayload(c);
                 return (
-                  <tr key={c.id} className="border-t">
+                  <tr key={c.id} className="border-t align-top">
                     <td className="px-4 py-2 font-mono font-semibold">#{c.codigo_unico}</td>
                     <td className="px-4 py-2 capitalize">{c.kind}</td>
                     <td className="px-4 py-2">{c.unidade ?? "—"}</td>
                     <td className="px-4 py-2">{c.empresa ?? "—"}</td>
-                    <td className="px-4 py-2">{p.fornecedor_vencedor?.fornecedor ?? "—"}</td>
+                    <td className="px-4 py-2">{p.fornecedor_vencedor?.razao_social ?? "—"}</td>
                     <td className="px-4 py-2 font-mono text-emerald-700">{c.numero_pedido_linx ?? c.order_number ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => setPreview(p)}
+                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <FileJson className="h-3.5 w-3.5" /> Ver JSON
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
