@@ -30,16 +30,41 @@ function FretePage() {
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
     valorNF: "", pesoBruto: "", volumes: "",
     altura: "", largura: "", comprimento: "", tipoProduto: "",
+    dataColetaPrevista: "", dataEntregaPrevista: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
+  const REQUIRED_FREIGHT_LABELS: Record<string, string> = {
+    cnpjPagador: "CNPJ do pagador do frete",
+    cnpjRemetente: "CNPJ do remetente",
+    cnpjDestinatario: "CNPJ do destinatário",
+    cidadeOrigem: "Cidade de origem",
+    cepOrigem: "CEP de origem",
+    cidadeDestino: "Cidade de destino",
+    cepDestino: "CEP de destino",
+    valorNF: "Valor total da Nota Fiscal",
+    pesoBruto: "Peso bruto",
+    volumes: "Número de volumes",
+    altura: "Altura",
+    largura: "Largura",
+    comprimento: "Comprimento",
+    tipoProduto: "Tipo de produto",
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const blocoEr = validateBlocoInicial(bloco);
-    setErrors(blocoEr);
-    if (Object.keys(blocoEr).length) {
-      toast.error("Verifique os campos obrigatórios.");
+    const freightEr: Record<string, string> = {};
+    for (const key of Object.keys(REQUIRED_FREIGHT_LABELS)) {
+      if (!String((f as Record<string, string>)[key] ?? "").trim()) {
+        freightEr[key] = "Campo obrigatório";
+      }
+    }
+    const allErr = { ...blocoEr, ...freightEr };
+    setErrors(allErr);
+    if (Object.keys(allErr).length) {
+      toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
     const payload = { ...bloco, ...f };
@@ -74,45 +99,45 @@ function FretePage() {
         <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
 
         <div className="grid sm:grid-cols-3 gap-5">
-          <Field label="CNPJ do pagador do frete">
+          <Field label="CNPJ do pagador do frete" required error={errors.cnpjPagador}>
             <input className={inputCls} value={f.cnpjPagador} onChange={(e) => set("cnpjPagador", maskCNPJ(e.target.value))} />
           </Field>
-          <Field label="CNPJ do remetente">
+          <Field label="CNPJ do remetente" required error={errors.cnpjRemetente}>
             <input className={inputCls} value={f.cnpjRemetente} onChange={(e) => set("cnpjRemetente", maskCNPJ(e.target.value))} />
           </Field>
-          <Field label="CNPJ do destinatário">
+          <Field label="CNPJ do destinatário" required error={errors.cnpjDestinatario}>
             <input className={inputCls} value={f.cnpjDestinatario} onChange={(e) => set("cnpjDestinatario", maskCNPJ(e.target.value))} />
           </Field>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Cidade de origem">
+          <Field label="Cidade de origem" required error={errors.cidadeOrigem}>
             <input className={inputCls} value={f.cidadeOrigem} onChange={(e) => set("cidadeOrigem", e.target.value)} />
           </Field>
-          <Field label="CEP de origem">
+          <Field label="CEP de origem" required error={errors.cepOrigem}>
             <input className={inputCls} placeholder="00000-000" value={f.cepOrigem} onChange={(e) => set("cepOrigem", maskCEP(e.target.value))} />
           </Field>
-          <Field label="Cidade de destino">
+          <Field label="Cidade de destino" required error={errors.cidadeDestino}>
             <input className={inputCls} value={f.cidadeDestino} onChange={(e) => set("cidadeDestino", e.target.value)} />
           </Field>
-          <Field label="CEP de destino">
+          <Field label="CEP de destino" required error={errors.cepDestino}>
             <input className={inputCls} placeholder="00000-000" value={f.cepDestino} onChange={(e) => set("cepDestino", maskCEP(e.target.value))} />
           </Field>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
-          <Field label="Valor total da Nota Fiscal">
+          <Field label="Valor total da Nota Fiscal" required error={errors.valorNF}>
             <input className={inputCls} placeholder="R$ 0,00" value={f.valorNF} onChange={(e) => set("valorNF", maskMoney(e.target.value))} />
           </Field>
-          <Field label="Peso bruto (kg)">
+          <Field label="Peso bruto (kg)" required error={errors.pesoBruto}>
             <input className={inputCls} type="number" min="0" step="0.01" value={f.pesoBruto} onChange={(e) => set("pesoBruto", e.target.value)} />
           </Field>
-          <Field label="Número de volumes">
+          <Field label="Número de volumes" required error={errors.volumes}>
             <input className={inputCls} type="number" min="0" value={f.volumes} onChange={(e) => set("volumes", e.target.value)} />
           </Field>
         </div>
 
-        <Field label="Dimensões das embalagens (Altura x Largura x Comprimento) em cm">
+        <Field label="Dimensões das embalagens (Altura x Largura x Comprimento) em cm" required error={errors.altura || errors.largura || errors.comprimento}>
           <div className="grid grid-cols-3 gap-3">
             <input className={inputCls} placeholder="Altura" value={f.altura} onChange={(e) => set("altura", e.target.value)} />
             <input className={inputCls} placeholder="Largura" value={f.largura} onChange={(e) => set("largura", e.target.value)} />
@@ -120,9 +145,19 @@ function FretePage() {
           </div>
         </Field>
 
-        <Field label="Tipo de produto">
+        <Field label="Tipo de produto" required error={errors.tipoProduto}>
           <input className={inputCls} placeholder="Ex: peças automotivas, óleo lubrificante..." value={f.tipoProduto} onChange={(e) => set("tipoProduto", e.target.value)} />
         </Field>
+
+        <div className="grid sm:grid-cols-2 gap-5">
+          <Field label="Data de coleta prevista" hint="Opcional">
+            <input className={inputCls} type="date" value={f.dataColetaPrevista} onChange={(e) => set("dataColetaPrevista", e.target.value)} />
+          </Field>
+          <Field label="Data de entrega prevista" hint="Opcional">
+            <input className={inputCls} type="date" value={f.dataEntregaPrevista} onChange={(e) => set("dataEntregaPrevista", e.target.value)} />
+          </Field>
+        </div>
+
 
         <div className="flex justify-end pt-2">
           <button
