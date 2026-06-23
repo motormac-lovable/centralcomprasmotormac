@@ -101,7 +101,12 @@ function KanbanPage() {
     await moveCard(card, newStatus);
   };
 
-  const moveCard = async (card: Card, newStatus: Status) => {
+  const moveCard = async (card: Card, requestedStatus: Status) => {
+    // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
+    const newStatus: Status =
+      card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
+        ? "pedidos_gerados"
+        : requestedStatus;
     const patch: Partial<Card> = { status: newStatus };
     // Auto-bind approver when entering "Aguardando Aprovação"
     if (newStatus === "aguardando_aprovacao" && !card.approver_id) {
