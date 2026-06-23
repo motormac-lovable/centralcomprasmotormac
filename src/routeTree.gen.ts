@@ -25,6 +25,7 @@ import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDevRouteImport } from './routes/_authenticated/dev'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiSolicitacoesCodigo_unicoRouteImport } from './routes/api/solicitacoes.$codigo_unico'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -106,6 +107,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiSolicitacoesCodigo_unicoRoute =
+  ApiSolicitacoesCodigo_unicoRouteImport.update({
+    id: '/api/solicitacoes/$codigo_unico',
+    path: '/api/solicitacoes/$codigo_unico',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,6 +148,7 @@ export interface FileRoutesByTo {
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -159,6 +168,7 @@ export interface FileRoutesById {
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/kanban'
     | '/minhas-solicitacoes'
+    | '/api/solicitacoes/$codigo_unico'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/kanban'
     | '/minhas-solicitacoes'
+    | '/api/solicitacoes/$codigo_unico'
   id:
     | '__root__'
     | '/'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inicio'
     | '/_authenticated/kanban'
     | '/_authenticated/minhas-solicitacoes'
+    | '/api/solicitacoes/$codigo_unico'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -226,6 +239,7 @@ export interface RootRouteChildren {
   MateriaisRoute: typeof MateriaisRoute
   PendingRoute: typeof PendingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiSolicitacoesCodigo_unicoRoute: typeof ApiSolicitacoesCodigo_unicoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -342,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/solicitacoes/$codigo_unico': {
+      id: '/api/solicitacoes/$codigo_unico'
+      path: '/api/solicitacoes/$codigo_unico'
+      fullPath: '/api/solicitacoes/$codigo_unico'
+      preLoaderRoute: typeof ApiSolicitacoesCodigo_unicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -377,17 +398,8 @@ const rootRouteChildren: RootRouteChildren = {
   MateriaisRoute: MateriaisRoute,
   PendingRoute: PendingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiSolicitacoesCodigo_unicoRoute: ApiSolicitacoesCodigo_unicoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
