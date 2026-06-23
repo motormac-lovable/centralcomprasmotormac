@@ -72,7 +72,11 @@ function DevPage() {
     setLogs((prev) => [{ ts: new Date().toISOString(), level, message }, ...prev].slice(0, 50));
 
   const finalizados = useMemo(
-    () => cards.filter((c) => c.status === "pedidos_gerados"),
+    () =>
+      cards.filter(
+        (c) =>
+          c.status === "cotacoes_aprovadas" || c.status === "pedidos_gerados",
+      ),
     [cards],
   );
 
