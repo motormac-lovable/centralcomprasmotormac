@@ -52,6 +52,7 @@ function FretePage() {
         requester_email: bloco.email,
         unidade: bloco.unidade,
         empresa: bloco.empresa,
+        status: "pedidos_gerados",
         data: payload,
       });
     } catch (err) {
