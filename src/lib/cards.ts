@@ -59,6 +59,7 @@ export async function createCard(input: {
   requester_email?: string;
   unidade?: string;
   empresa?: string;
+  status?: Status;
   data: Record<string, unknown>;
 }) {
   const { error } = await supabase
