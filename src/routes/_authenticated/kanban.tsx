@@ -802,6 +802,27 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               onChoose={chooseSupplier}
             />
           )}
+
+          {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
+          {(card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
+            <section className="pt-4 border-t flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                {card.status === "solicitacoes_abertas"
+                  ? "Avançar moverá o card para Em cotação."
+                  : "Avançar moverá o card para Aguardando Aprovação."}
+              </p>
+              <button
+                onClick={async () => {
+                  const next: Status = card.status === "solicitacoes_abertas" ? "em_cotacao" : "aguardando_aprovacao";
+                  await onMove(card, next);
+                  onClose();
+                }}
+                className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm"
+              >
+                Avançar etapa →
+              </button>
+            </section>
+          )}
         </div>
       </div>
     </div>
