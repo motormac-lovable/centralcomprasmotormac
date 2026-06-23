@@ -108,6 +108,11 @@ function KanbanPage() {
         ? "pedidos_gerados"
         : requestedStatus;
     const patch: Partial<Card> = { status: newStatus };
+    // Frete: número do pedido = código único da solicitação (não precisa do ERP).
+    if (card.kind === "frete" && newStatus === "pedidos_gerados" && !card.numero_pedido_linx) {
+      patch.numero_pedido_linx = card.codigo_unico;
+      patch.order_number = card.codigo_unico;
+    }
     // Auto-bind approver when entering "Aguardando Aprovação"
     if (newStatus === "aguardando_aprovacao" && !card.approver_id) {
       const { data: u } = await supabase.auth.getUser();
