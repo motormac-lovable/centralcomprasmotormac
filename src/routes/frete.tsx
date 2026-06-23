@@ -30,16 +30,41 @@ function FretePage() {
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
     valorNF: "", pesoBruto: "", volumes: "",
     altura: "", largura: "", comprimento: "", tipoProduto: "",
+    dataColetaPrevista: "", dataEntregaPrevista: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
+  const REQUIRED_FREIGHT_LABELS: Record<string, string> = {
+    cnpjPagador: "CNPJ do pagador do frete",
+    cnpjRemetente: "CNPJ do remetente",
+    cnpjDestinatario: "CNPJ do destinatário",
+    cidadeOrigem: "Cidade de origem",
+    cepOrigem: "CEP de origem",
+    cidadeDestino: "Cidade de destino",
+    cepDestino: "CEP de destino",
+    valorNF: "Valor total da Nota Fiscal",
+    pesoBruto: "Peso bruto",
+    volumes: "Número de volumes",
+    altura: "Altura",
+    largura: "Largura",
+    comprimento: "Comprimento",
+    tipoProduto: "Tipo de produto",
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const blocoEr = validateBlocoInicial(bloco);
-    setErrors(blocoEr);
-    if (Object.keys(blocoEr).length) {
-      toast.error("Verifique os campos obrigatórios.");
+    const freightEr: Record<string, string> = {};
+    for (const key of Object.keys(REQUIRED_FREIGHT_LABELS)) {
+      if (!String((f as Record<string, string>)[key] ?? "").trim()) {
+        freightEr[key] = "Campo obrigatório";
+      }
+    }
+    const allErr = { ...blocoEr, ...freightEr };
+    setErrors(allErr);
+    if (Object.keys(allErr).length) {
+      toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
     const payload = { ...bloco, ...f };
