@@ -184,6 +184,13 @@ function DevPage() {
             >
               <Sheet className="h-4 w-4" /> CSV
             </button>
+            <button
+              onClick={() => { setPreview(MOCK_LINX_PAYLOAD); pushLog("info", "Preview de exemplo (mock) aberto."); }}
+              className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-sm hover:bg-muted"
+              title="Visualizar JSON de exemplo com a estrutura completa"
+            >
+              <Eye className="h-4 w-4" /> Ver exemplo (mock)
+            </button>
           </div>
         </div>
         <div className="overflow-x-auto">
