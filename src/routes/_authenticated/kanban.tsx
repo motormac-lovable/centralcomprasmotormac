@@ -16,6 +16,7 @@ import {
   KIND_LABEL, STATUS_COLUMNS, openSlaTag, approvalSlaTag, daysSince,
   type Status, type Observation, type Supplier, type Attachment,
 } from "@/lib/cards";
+import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
