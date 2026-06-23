@@ -203,6 +203,7 @@ function DevPage() {
               <tr>
                 <th className="px-4 py-2 text-left">Código</th>
                 <th className="px-4 py-2 text-left">Tipo</th>
+                <th className="px-4 py-2 text-left">Status</th>
                 <th className="px-4 py-2 text-left">Unidade</th>
                 <th className="px-4 py-2 text-left">Empresa</th>
                 <th className="px-4 py-2 text-left">Fornecedor</th>
@@ -212,14 +213,27 @@ function DevPage() {
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma cotação aprovada ou pedido gerado encontrado.</td></tr>
               )}
               {filtradas.map((c) => {
                 const p = buildLinxPayload(c);
+                const aguardandoRetorno = c.status === "cotacoes_aprovadas";
                 return (
                   <tr key={c.id} className="border-t align-top">
                     <td className="px-4 py-2 font-mono font-semibold">#{c.codigo_unico}</td>
                     <td className="px-4 py-2 capitalize">{c.kind}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                          (aguardandoRetorno
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800")
+                        }
+                      >
+                        {aguardandoRetorno ? "Saindo p/ ERP" : "Retornou do ERP"}
+                      </span>
+                    </td>
                     <td className="px-4 py-2">{c.unidade ?? "—"}</td>
                     <td className="px-4 py-2">{c.empresa ?? "—"}</td>
                     <td className="px-4 py-2">{p.fornecedor_vencedor?.razao_social ?? "—"}</td>
