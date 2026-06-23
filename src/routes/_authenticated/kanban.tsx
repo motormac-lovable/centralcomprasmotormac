@@ -126,13 +126,35 @@ function KanbanPage() {
 
   const activeCard = cards.find((c) => c.id === activeId) || null;
 
+  const [globalQuery, setGlobalQuery] = useState("");
+
   return (
     <div className="mx-auto max-w-[1700px] px-4 sm:px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight">Painel de Compras</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Arraste os cartões entre as colunas. Cada coluna possui filtros e regras de SLA próprias.
-        </p>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-semibold tracking-tight">Painel de Compras</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Arraste os cartões entre as colunas. Cada coluna possui filtros e regras de SLA próprias.
+          </p>
+        </div>
+        <div className="sm:w-80 shrink-0">
+          <div className="relative">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="search"
+              value={globalQuery}
+              onChange={(e) => setGlobalQuery(e.target.value)}
+              placeholder="Buscar em tudo: grupo, comprador, solicitante…"
+              className="w-full text-sm bg-background border rounded-md pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40"
+              aria-label="Filtro global"
+            />
+          </div>
+          {globalQuery && (
+            <p className="text-[11px] text-muted-foreground mt-1 px-1">
+              Filtrando todas as colunas por “{globalQuery}”
+            </p>
+          )}
+        </div>
       </div>
 
       <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd}>
@@ -149,6 +171,7 @@ function KanbanPage() {
                 onFilterChange={(f) => setFilters((prev) => ({ ...prev, [col.id]: f }))}
                 approvers={approvers}
                 onOpen={setOpen}
+                globalQuery={globalQuery}
               />
             </div>
           ))}
@@ -162,19 +185,22 @@ function KanbanPage() {
 }
 
 function Column({
-  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen,
+  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery,
 }: {
   id: Status; label: string; tone: string; bg: string;
   allCards: Card[]; filter: ColumnFilter;
   onFilterChange: (f: ColumnFilter) => void;
   approvers: string[];
   onOpen: (c: Card) => void;
+  globalQuery: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   let filtered = allCards;
   if (filter.kind) filtered = filtered.filter((c) => c.kind === filter.kind);
   if (filter.approver) filtered = filtered.filter((c) => c.approver_name === filter.approver);
+  const q = globalQuery.trim().toLowerCase();
+  if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
 
   // "Solicitações abertas" → oldest first (already sorted asc)
   if (id !== "solicitacoes_abertas") {
@@ -303,6 +329,25 @@ function suggestedBuyer(card: Card): string | null {
   const list = Array.from(buyers);
   return list.length === 1 ? list[0] : `${list[0]} (+${list.length - 1})`;
 }
+
+function cardMatchesQuery(card: Card, q: string): boolean {
+  const parts: string[] = [
+    KIND_LABEL[card.kind] ?? "",
+    card.kind,
+    card.title ?? "",
+    card.summary ?? "",
+    card.requester_name ?? "",
+    card.requester_email ?? "",
+    card.approver_name ?? "",
+    card.unidade ?? "",
+    card.empresa ?? "",
+    card.codigo_unico ?? "",
+    suggestedBuyer(card) ?? "",
+  ];
+  try { parts.push(JSON.stringify(card.data ?? {})); } catch { /* noop */ }
+  return parts.join(" \u0001 ").toLowerCase().includes(q);
+}
+
 
 function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }) {
   const Icon = iconFor[card.kind];
