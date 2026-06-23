@@ -330,6 +330,25 @@ function suggestedBuyer(card: Card): string | null {
   return list.length === 1 ? list[0] : `${list[0]} (+${list.length - 1})`;
 }
 
+function cardMatchesQuery(card: Card, q: string): boolean {
+  const parts: string[] = [
+    KIND_LABEL[card.kind] ?? "",
+    card.kind,
+    card.title ?? "",
+    card.summary ?? "",
+    card.requester_name ?? "",
+    card.requester_email ?? "",
+    card.approver_name ?? "",
+    card.unidade ?? "",
+    card.empresa ?? "",
+    card.codigo_unico ?? "",
+    suggestedBuyer(card) ?? "",
+  ];
+  try { parts.push(JSON.stringify(card.data ?? {})); } catch { /* noop */ }
+  return parts.join(" \u0001 ").toLowerCase().includes(q);
+}
+
+
 function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }) {
   const Icon = iconFor[card.kind];
   const suggested = suggestedBuyer(card);
