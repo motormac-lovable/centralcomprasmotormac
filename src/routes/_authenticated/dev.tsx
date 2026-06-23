@@ -124,6 +124,28 @@ function DevPage() {
     setCodigoSim("");
   };
 
+  const handleConsultarApi = async () => {
+    const codigo = consultaCodigo.trim().replace(/^#/, "");
+    if (!codigo) return toast.error("Informe o código único.");
+    setConsultando(true);
+    setConsultaResposta(null);
+    pushLog("info", `GET /api/solicitacoes/${codigo}`);
+    try {
+      const r = await fetch(`/api/solicitacoes/${encodeURIComponent(codigo)}`, {
+        headers: { Accept: "application/json" },
+      });
+      const body = await r.json().catch(() => ({ error: "Resposta inválida." }));
+      setConsultaResposta({ status: r.status, body });
+      if (r.ok) pushLog("success", `200 OK · status_atual="${(body as { status_atual?: string }).status_atual ?? "?"}"`);
+      else pushLog("error", `${r.status} · ${(body as { error?: string }).error ?? "Falha"}`);
+    } catch (e) {
+      pushLog("error", `Erro de rede: ${(e as Error).message}`);
+      setConsultaResposta({ status: 0, body: { error: (e as Error).message } });
+    } finally {
+      setConsultando(false);
+    }
+  };
+
   if (loading) {
     return <div className="mx-auto max-w-2xl px-6 py-16 text-center text-sm text-muted-foreground">Carregando…</div>;
   }
