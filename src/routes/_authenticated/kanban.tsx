@@ -507,6 +507,17 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     await onMove(card, "cotacoes_rejeitadas");
     onClose();
   };
+  const [simulandoErp, setSimulandoErp] = useState(false);
+  const simulateErp = async () => {
+    if (!card.codigo_unico) { toast.error("Card sem código único."); return; }
+    setSimulandoErp(true);
+    const { simulateLinxWebhook } = await import("@/services/api");
+    const res = await simulateLinxWebhook(card.codigo_unico);
+    setSimulandoErp(false);
+    if (!res.ok) { toast.error(res.error); return; }
+    toast.success(`Pedido Linx #${res.pedido} gerado para #${card.codigo_unico}.`);
+    onClose();
+  };
 
   const [emailPreview, setEmailPreview] = useState(false);
   const sendApprovalEmail = () => {
