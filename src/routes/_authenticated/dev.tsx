@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Code2, Download, FileJson, Sheet, Send, Activity, AlertCircle } from "lucide-react";
+import { Code2, Download, FileJson, Sheet, Send, Activity, AlertCircle, Eye, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -9,6 +9,8 @@ import {
   exportCSV,
   exportJSON,
   simulateLinxWebhook,
+  MOCK_LINX_PAYLOAD,
+  type LinxPayload,
   type KanbanCardRow,
 } from "@/services/api";
 
