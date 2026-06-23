@@ -309,6 +309,48 @@ function DevPage() {
           ))}
         </ul>
       </section>
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="bg-card rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileJson className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">
+                  Payload Linx Apollo — #{preview.identificacao.codigo_unico || "exemplo"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(preview, null, 2));
+                    toast.success("JSON copiado para a área de transferência.");
+                  }}
+                  className="text-xs rounded-md border px-2 py-1 hover:bg-muted"
+                >
+                  Copiar
+                </button>
+                <button
+                  onClick={() => setPreview(null)}
+                  className="rounded-md p-1 hover:bg-muted"
+                  aria-label="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <pre className="overflow-auto p-4 text-[12px] font-mono leading-relaxed bg-muted/30 rounded-b-2xl">
+              {JSON.stringify(preview, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
