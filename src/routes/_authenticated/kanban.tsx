@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
-  CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon,
+  CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon, Send,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -507,6 +507,17 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     await onMove(card, "cotacoes_rejeitadas");
     onClose();
   };
+  const [simulandoErp, setSimulandoErp] = useState(false);
+  const simulateErp = async () => {
+    if (!card.codigo_unico) { toast.error("Card sem código único."); return; }
+    setSimulandoErp(true);
+    const { simulateLinxWebhook } = await import("@/services/api");
+    const res = await simulateLinxWebhook(card.codigo_unico);
+    setSimulandoErp(false);
+    if (!res.ok) { toast.error(res.error); return; }
+    toast.success(`Pedido Linx #${res.pedido} gerado para #${card.codigo_unico}.`);
+    onClose();
+  };
 
   const [emailPreview, setEmailPreview] = useState(false);
   const sendApprovalEmail = () => {
@@ -586,6 +597,25 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               onClose={() => setEmailPreview(false)}
               onSend={sendApprovalEmail}
             />
+          )}
+
+          {card.status === "cotacoes_aprovadas" && (
+            <section className="rounded-xl border-2 border-dashed border-emerald-500/50 bg-emerald-500/5 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                <Send className="h-4 w-4 text-emerald-700" />
+                Integração ERP Linx Apollo
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Cotação aprovada. Aguardando retorno do ERP com o número oficial do pedido. Use o botão abaixo para simular a resposta do webhook do Linx Apollo.
+              </p>
+              <button
+                onClick={simulateErp}
+                disabled={simulandoErp}
+                className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                <Send className="h-4 w-4" /> {simulandoErp ? "Processando..." : "Simular retorno ERP"}
+              </button>
+            </section>
           )}
 
           {/* ── All requester responses (always visible) ── */}
