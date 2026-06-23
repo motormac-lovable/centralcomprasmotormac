@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Code2, Download, FileJson, Sheet, Send, Activity, AlertCircle } from "lucide-react";
+import { Code2, Download, FileJson, Sheet, Send, Activity, AlertCircle, Eye, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -9,6 +9,8 @@ import {
   exportCSV,
   exportJSON,
   simulateLinxWebhook,
+  MOCK_LINX_PAYLOAD,
+  type LinxPayload,
   type KanbanCardRow,
 } from "@/services/api";
 
@@ -29,6 +31,7 @@ function DevPage() {
   const [filtroEmpresa, setFiltroEmpresa] = useState("");
   const [codigoSim, setCodigoSim] = useState("");
   const [simulando, setSimulando] = useState(false);
+  const [preview, setPreview] = useState<LinxPayload | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -181,6 +184,13 @@ function DevPage() {
             >
               <Sheet className="h-4 w-4" /> CSV
             </button>
+            <button
+              onClick={() => { setPreview(MOCK_LINX_PAYLOAD); pushLog("info", "Preview de exemplo (mock) aberto."); }}
+              className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-sm hover:bg-muted"
+              title="Visualizar JSON de exemplo com a estrutura completa"
+            >
+              <Eye className="h-4 w-4" /> Ver exemplo (mock)
+            </button>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -193,22 +203,31 @@ function DevPage() {
                 <th className="px-4 py-2 text-left">Empresa</th>
                 <th className="px-4 py-2 text-left">Fornecedor</th>
                 <th className="px-4 py-2 text-left">Pedido Linx</th>
+                <th className="px-4 py-2 text-left">Payload</th>
               </tr>
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhum pedido finalizado encontrado.</td></tr>
               )}
               {filtradas.map((c) => {
                 const p = buildLinxPayload(c);
                 return (
-                  <tr key={c.id} className="border-t">
+                  <tr key={c.id} className="border-t align-top">
                     <td className="px-4 py-2 font-mono font-semibold">#{c.codigo_unico}</td>
                     <td className="px-4 py-2 capitalize">{c.kind}</td>
                     <td className="px-4 py-2">{c.unidade ?? "—"}</td>
                     <td className="px-4 py-2">{c.empresa ?? "—"}</td>
-                    <td className="px-4 py-2">{p.fornecedor_vencedor?.fornecedor ?? "—"}</td>
+                    <td className="px-4 py-2">{p.fornecedor_vencedor?.razao_social ?? "—"}</td>
                     <td className="px-4 py-2 font-mono text-emerald-700">{c.numero_pedido_linx ?? c.order_number ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => setPreview(p)}
+                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <FileJson className="h-3.5 w-3.5" /> Ver JSON
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -290,6 +309,48 @@ function DevPage() {
           ))}
         </ul>
       </section>
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="bg-card rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileJson className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">
+                  Payload Linx Apollo — #{preview.identificacao.codigo_unico || "exemplo"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(preview, null, 2));
+                    toast.success("JSON copiado para a área de transferência.");
+                  }}
+                  className="text-xs rounded-md border px-2 py-1 hover:bg-muted"
+                >
+                  Copiar
+                </button>
+                <button
+                  onClick={() => setPreview(null)}
+                  className="rounded-md p-1 hover:bg-muted"
+                  aria-label="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <pre className="overflow-auto p-4 text-[12px] font-mono leading-relaxed bg-muted/30 rounded-b-2xl">
+              {JSON.stringify(preview, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
