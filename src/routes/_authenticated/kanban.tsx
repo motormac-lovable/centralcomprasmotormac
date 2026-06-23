@@ -499,8 +499,13 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
 
   const approve = async () => {
-    await onMove(card, "cotacoes_aprovadas");
-    toast.success("Cotação aprovada · aguardando retorno do ERP Linx Apollo.");
+    if (card.kind === "frete") {
+      await onMove(card, "pedidos_gerados");
+      toast.success("Frete aprovado · movido para Pedidos gerados.");
+    } else {
+      await onMove(card, "cotacoes_aprovadas");
+      toast.success("Cotação aprovada · aguardando retorno do ERP Linx Apollo.");
+    }
     onClose();
   };
   const reject = async () => {
