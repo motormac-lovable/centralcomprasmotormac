@@ -31,6 +31,7 @@ function DevPage() {
   const [filtroEmpresa, setFiltroEmpresa] = useState("");
   const [codigoSim, setCodigoSim] = useState("");
   const [simulando, setSimulando] = useState(false);
+  const [preview, setPreview] = useState<LinxPayload | null>(null);
 
   useEffect(() => {
     let active = true;
