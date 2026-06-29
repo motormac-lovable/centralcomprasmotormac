@@ -42,6 +42,16 @@ function totalChosen(card: Card): number {
   return s ? parseValor(s.valor) : 0;
 }
 
+// Valor de referência para alçada: vencedor escolhido, ou menor cotação se ainda não houver escolha.
+function valorReferenciaAlcada(card: Card): number {
+  const chosen = totalChosen(card);
+  if (chosen > 0) return chosen;
+  const arr = (card.suppliers as unknown as Supplier[] | null) ?? [];
+  const valores = arr.map((s) => parseValor(s.valor)).filter((n) => n > 0);
+  if (valores.length === 0) return 0;
+  return Math.min(...valores);
+}
+
 function departamentoOf(card: Card): string | null {
   const data = (card.data as Record<string, unknown>) ?? {};
   const d = data.departamento;
@@ -71,7 +81,7 @@ function AprovacoesPage() {
 
   const visibleCards = useMemo(() => {
     return cards.filter((c) => {
-      const valor = totalChosen(c);
+      const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
 
       // Regra exclusiva do Proprietário: > R$ 200.000,00 só para owner.
@@ -82,10 +92,10 @@ function AprovacoesPage() {
       if (isApprover) {
         // 1. Departamento deve estar entre os vinculados.
         if (!dept || !approverDepartments.includes(dept)) return false;
-        // 2. Valor cumulativo: <= teto.
-        if (valor <= 0) return false;
-        if (valor > approverCeiling) return false;
-        return true;
+        // 2. Sem cotações ainda? Exibe mesmo assim para o aprovador acompanhar a pendência.
+        if (valor === 0) return true;
+        // 3. Valor cumulativo: <= teto.
+        return valor <= approverCeiling;
       }
       return false;
     });
@@ -249,9 +259,11 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
           {card.summary && <p className="text-sm text-muted-foreground mt-0.5">{card.summary}</p>}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs text-muted-foreground">Valor escolhido</div>
-          <div className="text-xl font-bold text-emerald-700">
-            {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          <div className="text-xs text-muted-foreground">{chosen ? "Valor escolhido" : "Aguardando vencedor"}</div>
+          <div className={`text-xl font-bold ${chosen ? "text-emerald-700" : "text-amber-600"}`}>
+            {chosen
+              ? total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+              : suppliers.length === 0 ? "Sem cotações" : "Selecionar no Kanban"}
           </div>
         </div>
       </div>
