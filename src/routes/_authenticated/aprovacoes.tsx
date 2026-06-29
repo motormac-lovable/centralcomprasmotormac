@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, XCircle, ShieldAlert, Filter, Crown, Package, FileText, Truck, ClipboardList } from "lucide-react";
+import { CheckCircle2, XCircle, ShieldAlert, Filter, Crown, Package, FileText, Truck, ClipboardList, Paperclip, Download, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import type { Database } from "@/integrations/supabase/types";
-import { KIND_LABEL, type Supplier } from "@/lib/cards";
+import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -32,30 +32,29 @@ function parseValor(v: unknown): number {
   return isFinite(n) ? n : 0;
 }
 
+function suppliersOf(card: Card): Supplier[] {
+  return (card.suppliers as unknown as Supplier[] | null) ?? [];
+}
+
 function chosenSupplier(card: Card): Supplier | null {
-  const arr = (card.suppliers as unknown as Supplier[] | null) ?? [];
-  return arr.find((s) => s.chosen) ?? null;
+  return suppliersOf(card).find((s) => s.chosen) ?? null;
 }
 
-function totalChosen(card: Card): number {
-  const s = chosenSupplier(card);
-  return s ? parseValor(s.valor) : 0;
-}
-
-// Valor de referência para alçada: vencedor escolhido, ou menor cotação se ainda não houver escolha.
 function valorReferenciaAlcada(card: Card): number {
-  const chosen = totalChosen(card);
-  if (chosen > 0) return chosen;
-  const arr = (card.suppliers as unknown as Supplier[] | null) ?? [];
-  const valores = arr.map((s) => parseValor(s.valor)).filter((n) => n > 0);
-  if (valores.length === 0) return 0;
-  return Math.min(...valores);
+  const ch = chosenSupplier(card);
+  if (ch) return parseValor(ch.valor);
+  const valores = suppliersOf(card).map((s) => parseValor(s.valor)).filter((n) => n > 0);
+  return valores.length ? Math.min(...valores) : 0;
 }
 
 function departamentoOf(card: Card): string | null {
   const data = (card.data as Record<string, unknown>) ?? {};
   const d = data.departamento;
   return typeof d === "string" && d.trim() ? d.trim() : null;
+}
+
+function attachmentsOf(card: Card): Attachment[] {
+  return (card.attachments as unknown as Attachment[] | null) ?? [];
 }
 
 function AprovacoesPage() {
@@ -83,18 +82,11 @@ function AprovacoesPage() {
     return cards.filter((c) => {
       const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
-
-      // Regra exclusiva do Proprietário: > R$ 200.000,00 só para owner.
       if (valor > TETO_OWNER_EXCLUSIVO) return isOwner;
-
-      if (isOwner) return true; // Proprietário enxerga tudo.
-
+      if (isOwner) return true;
       if (isApprover) {
-        // 1. Departamento deve estar entre os vinculados.
         if (!dept || !approverDepartments.includes(dept)) return false;
-        // 2. Sem cotações ainda? Exibe mesmo assim para o aprovador acompanhar a pendência.
         if (valor === 0) return true;
-        // 3. Valor cumulativo: <= teto.
         return valor <= approverCeiling;
       }
       return false;
@@ -106,26 +98,46 @@ function AprovacoesPage() {
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Aprovadores</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Esta tela é visível apenas para usuários com o perfil <strong>Aprovador</strong>.
-        </p>
       </div>
     );
   }
 
-  const approve = async (card: Card) => {
+  const approve = async (card: Card, selectedSupplierId: string, justificativa: string) => {
     setBusyId(card.id);
     const author = fullName || user?.email || "Aprovador";
+    const list = suppliersOf(card);
+    const updatedSuppliers = list.map((s) => ({ ...s, chosen: s.id === selectedSupplierId }));
+    const chosen = updatedSuppliers.find((s) => s.id === selectedSupplierId);
+    const cheapest = [...list].sort((a, b) => parseValor(a.valor) - parseValor(b.valor))[0];
+    const isCheapest = cheapest?.id === selectedSupplierId;
+
     const obs = ((card.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    const log = [
-      ...obs,
-      { at: new Date().toISOString(), author, text: `✅ Cotação APROVADA pelo aprovador ${author}.` },
-    ];
+    const logText = isCheapest
+      ? `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`
+      : `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
+    const log = [...obs, { at: new Date().toISOString(), author, text: logText }];
+
+    const dataObj = ((card.data as Record<string, unknown>) ?? {});
+    const nextData = {
+      ...dataObj,
+      aprovacao: {
+        fornecedor_escolhido_id: selectedSupplierId,
+        fornecedor_escolhido: chosen?.fornecedor ?? null,
+        valor_escolhido: chosen?.valor ?? null,
+        is_menor_custo: isCheapest,
+        justificativa_custo_maior: isCheapest ? null : justificativa,
+        aprovador: author,
+        aprovado_em: new Date().toISOString(),
+      },
+    };
+
     const nextStatus = card.kind === "frete" ? "pedidos_gerados" : "cotacoes_aprovadas";
     const { error } = await supabase
       .from("kanban_cards")
       .update({
         status: nextStatus,
+        suppliers: updatedSuppliers as never,
+        data: nextData as never,
         observations: log as never,
         approver_id: user?.id ?? null,
         approver_name: author,
@@ -141,10 +153,7 @@ function AprovacoesPage() {
     if (!rejecting) return;
     const author = fullName || user?.email || "Aprovador";
     const obs = ((rejecting.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    const log = [
-      ...obs,
-      { at: new Date().toISOString(), author, text: `❌ Cotação REJEITADA pelo aprovador ${author}. Motivo: ${motivo}` },
-    ];
+    const log = [...obs, { at: new Date().toISOString(), author, text: `❌ Cotação REJEITADA por ${author}. Motivo: ${motivo}` }];
     setBusyId(rejecting.id);
     const { error } = await supabase
       .from("kanban_cards")
@@ -170,7 +179,7 @@ function AprovacoesPage() {
           Painel de Cotações para Aprovação
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Aprovação 100% nativa — sem e-mails. Você vê apenas as cotações dentro da sua alçada e departamentos vinculados.
+          Aprovação 100% nativa — sem e-mails. Selecione o fornecedor vencedor diretamente no mapa comparativo.
         </p>
       </div>
 
@@ -180,13 +189,11 @@ function AprovacoesPage() {
           <div className="flex items-center gap-2">
             <strong>Departamentos:</strong>
             <div className="flex flex-wrap gap-1">
-              {approverDepartments.length === 0 && <span className="text-xs text-red-600">Nenhum vinculado — solicite ao Proprietário.</span>}
+              {approverDepartments.length === 0 && <span className="text-xs text-red-600">Nenhum vinculado.</span>}
               {approverDepartments.slice(0, 6).map((d) => (
                 <span key={d} className="text-[11px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-full">{d}</span>
               ))}
-              {approverDepartments.length > 6 && (
-                <span className="text-[11px] text-muted-foreground">+{approverDepartments.length - 6}</span>
-              )}
+              {approverDepartments.length > 6 && (<span className="text-[11px] text-muted-foreground">+{approverDepartments.length - 6}</span>)}
             </div>
           </div>
         </div>
@@ -195,7 +202,7 @@ function AprovacoesPage() {
       {isOwner && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm flex items-center gap-2">
           <Crown className="h-4 w-4 text-amber-700" />
-          <span>Visão de Proprietário: você visualiza inclusive cotações acima de R$ 200.000,00 (alçada exclusiva).</span>
+          <span>Visão de Proprietário: visualiza inclusive cotações acima de R$ 200.000,00.</span>
         </div>
       )}
 
@@ -212,7 +219,7 @@ function AprovacoesPage() {
               key={card.id}
               card={card}
               busy={busyId === card.id}
-              onApprove={() => approve(card)}
+              onApprove={(sid, just) => approve(card, sid, just)}
               onReject={() => setRejecting(card)}
             />
           ))}
@@ -220,24 +227,33 @@ function AprovacoesPage() {
       )}
 
       {rejecting && (
-        <RejectModal
-          card={rejecting}
-          busy={busyId === rejecting.id}
-          onCancel={() => setRejecting(null)}
-          onConfirm={confirmReject}
-        />
+        <RejectModal card={rejecting} busy={busyId === rejecting.id} onCancel={() => setRejecting(null)} onConfirm={confirmReject} />
       )}
     </div>
   );
 }
 
-function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: boolean; onApprove: () => void; onReject: () => void }) {
+function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
   const Icon = KIND_ICON[card.kind];
-  const chosen = chosenSupplier(card);
-  const total = totalChosen(card);
   const dept = departamentoOf(card);
-  const suppliers = ((card.suppliers as unknown as Supplier[] | null) ?? []);
+  const suppliers = suppliersOf(card);
   const data = (card.data as Record<string, unknown>) ?? {};
+  const attachments = attachmentsOf(card);
+
+  const initialChosenId = suppliers.find((s) => s.chosen)?.id ?? "";
+  const [selectedId, setSelectedId] = useState<string>(initialChosenId);
+  const [justificativa, setJustificativa] = useState<string>("");
+
+  const cheapest = useMemo(() => {
+    const withValor = suppliers.map((s) => ({ s, v: parseValor(s.valor) })).filter((x) => x.v > 0);
+    if (!withValor.length) return null;
+    return withValor.reduce((a, b) => (b.v < a.v ? b : a)).s;
+  }, [suppliers]);
+
+  const selectedSupplier = suppliers.find((s) => s.id === selectedId) ?? null;
+  const isCheapest = selectedSupplier && cheapest && selectedSupplier.id === cheapest.id;
+  const needsJustificativa = !!selectedSupplier && !isCheapest;
+  const canApprove = !!selectedSupplier && (!needsJustificativa || justificativa.trim().length >= 5);
 
   return (
     <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
@@ -247,23 +263,19 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-              #{card.codigo_unico ?? "—"}
-            </span>
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {KIND_LABEL[card.kind]}
-            </span>
+            <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">#{card.codigo_unico ?? "—"}</span>
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{KIND_LABEL[card.kind]}</span>
             {dept && <span className="text-[11px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-full">{dept}</span>}
           </div>
           <h3 className="text-lg font-semibold mt-1">{card.title}</h3>
           {card.summary && <p className="text-sm text-muted-foreground mt-0.5">{card.summary}</p>}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs text-muted-foreground">{chosen ? "Valor escolhido" : "Aguardando vencedor"}</div>
-          <div className={`text-xl font-bold ${chosen ? "text-emerald-700" : "text-amber-600"}`}>
-            {chosen
-              ? total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-              : suppliers.length === 0 ? "Sem cotações" : "Selecionar no Kanban"}
+          <div className="text-xs text-muted-foreground">{selectedSupplier ? "Valor selecionado" : "Selecione um fornecedor"}</div>
+          <div className={`text-xl font-bold ${selectedSupplier ? "text-emerald-700" : "text-amber-600"}`}>
+            {selectedSupplier
+              ? parseValor(selectedSupplier.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+              : suppliers.length === 0 ? "Sem cotações" : "—"}
           </div>
         </div>
       </div>
@@ -273,9 +285,7 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Solicitante</div>
           <div>{card.requester_name ?? "—"}</div>
           <div className="text-xs text-muted-foreground">{card.requester_email ?? "—"}</div>
-          <div className="text-xs text-muted-foreground">
-            {[card.unidade, card.empresa].filter(Boolean).join(" · ") || "—"}
-          </div>
+          <div className="text-xs text-muted-foreground">{[card.unidade, card.empresa].filter(Boolean).join(" · ") || "—"}</div>
         </div>
         <div className="space-y-1">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Aberto em</div>
@@ -286,14 +296,15 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
       </div>
 
       {suppliers.length > 0 && (
-        <div className="px-5 pb-4">
+        <div className="px-5 pb-2">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-            Mapa Comparativo de Fornecedores
+            Mapa Comparativo de Fornecedores — selecione o vencedor
           </div>
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-muted/40">
                 <tr>
+                  <th className="text-left p-2 w-12">Vencedor</th>
                   <th className="text-left p-2">Fornecedor</th>
                   <th className="text-left p-2">Valor</th>
                   <th className="text-left p-2">Prazo</th>
@@ -301,17 +312,53 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
                 </tr>
               </thead>
               <tbody>
-                {suppliers.map((s) => (
-                  <tr key={s.id} className={`border-t ${s.chosen ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}>
-                    <td className="p-2">{s.chosen && "⭐ "}{s.fornecedor}</td>
-                    <td className="p-2">{s.valor}</td>
-                    <td className="p-2">{s.prazo}</td>
-                    <td className="p-2">{s.condicao}</td>
-                  </tr>
-                ))}
+                {suppliers.map((s) => {
+                  const isMin = cheapest?.id === s.id;
+                  const checked = selectedId === s.id;
+                  return (
+                    <tr key={s.id} className={`border-t cursor-pointer hover:bg-muted/30 ${checked ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}
+                        onClick={() => setSelectedId(s.id)}>
+                      <td className="p-2">
+                        <input
+                          type="radio"
+                          name={`winner-${card.id}`}
+                          checked={checked}
+                          onChange={() => setSelectedId(s.id)}
+                          className="h-4 w-4 accent-emerald-600"
+                        />
+                      </td>
+                      <td className="p-2">
+                        {s.fornecedor}
+                        {isMin && <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">menor custo</span>}
+                      </td>
+                      <td className="p-2">{s.valor}</td>
+                      <td className="p-2">{s.prazo}</td>
+                      <td className="p-2">{s.condicao}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {needsJustificativa && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
+              <label className="text-xs font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Justificativa para escolha de fornecedor com custo maior <span className="text-red-600">*</span>
+              </label>
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                Você escolheu {selectedSupplier?.fornecedor} ({selectedSupplier?.valor}) em vez do menor custo: {cheapest?.fornecedor} ({cheapest?.valor}).
+              </p>
+              <textarea
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                rows={3}
+                placeholder="Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."
+                className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -336,24 +383,73 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
         </div>
       )}
 
+      <div className="px-5 pb-4">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+          <Paperclip className="h-3.5 w-3.5" /> Anexos da Cotação ({attachments.length})
+        </div>
+        {attachments.length === 0 ? (
+          <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+            Nenhum orçamento ou proposta anexada pelo comprador.
+          </div>
+        ) : (
+          <ul className="rounded-lg border divide-y">
+            {attachments.map((a) => <AttachmentRow key={a.path} att={a} />)}
+          </ul>
+        )}
+      </div>
+
       <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
-        <button
-          onClick={onReject}
-          disabled={busy}
-          className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
-        >
+        <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
           <XCircle className="h-4 w-4" /> Rejeitar cotação
         </button>
         <button
-          onClick={onApprove}
-          disabled={busy || !chosen}
-          title={!chosen ? "Selecione um fornecedor vencedor no Kanban primeiro." : ""}
-          className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+          onClick={() => canApprove && onApprove(selectedId, justificativa.trim())}
+          disabled={busy || !canApprove}
+          title={
+            !selectedSupplier ? "Selecione um fornecedor vencedor."
+            : needsJustificativa && justificativa.trim().length < 5 ? "Informe a justificativa (mín. 5 caracteres)."
+            : ""
+          }
+          className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
         </button>
       </div>
     </div>
+  );
+}
+
+function AttachmentRow({ att }: { att: Attachment }) {
+  const [busy, setBusy] = useState(false);
+  const open = async (download: boolean) => {
+    setBusy(true);
+    const { data, error } = await supabase.storage
+      .from("orcamentos")
+      .createSignedUrl(att.path, 120, download ? { download: att.name } : undefined);
+    setBusy(false);
+    if (error || !data) return toast.error("Não foi possível obter o arquivo.");
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    if (download) link.download = att.name;
+    else link.target = "_blank";
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+  const sizeKb = att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : "";
+  return (
+    <li className="flex items-center gap-2 px-3 py-2 text-xs">
+      <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="flex-1 truncate">{att.name}</span>
+      {sizeKb && <span className="text-muted-foreground">{sizeKb}</span>}
+      <button onClick={() => open(false)} disabled={busy} className="inline-flex items-center gap-1 px-2 py-1 rounded border hover:bg-muted">
+        <Eye className="h-3 w-3" /> Visualizar
+      </button>
+      <button onClick={() => open(true)} disabled={busy} className="inline-flex items-center gap-1 px-2 py-1 rounded border hover:bg-muted">
+        <Download className="h-3 w-3" /> Baixar
+      </button>
+    </li>
   );
 }
 
@@ -366,20 +462,10 @@ function RejectModal({ card, busy, onCancel, onConfirm }: { card: Card; busy: bo
         <p className="text-xs text-muted-foreground mb-4">
           Card <span className="font-mono">#{card.codigo_unico}</span> — informe a justificativa (será registrada no histórico).
         </p>
-        <textarea
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          rows={4}
-          placeholder="Motivo da rejeição…"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-        />
+        <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={4} placeholder="Motivo da rejeição…" className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={onCancel} disabled={busy} className="rounded-md border px-4 py-2 text-sm">Cancelar</button>
-          <button
-            onClick={() => motivo.trim() && onConfirm(motivo.trim())}
-            disabled={busy || !motivo.trim()}
-            className="rounded-md bg-red-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 hover:bg-red-700"
-          >
+          <button onClick={() => motivo.trim() && onConfirm(motivo.trim())} disabled={busy || !motivo.trim()} className="rounded-md bg-red-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 hover:bg-red-700">
             {busy ? "Registrando…" : "Confirmar rejeição"}
           </button>
         </div>
