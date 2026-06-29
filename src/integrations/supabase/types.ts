@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      approver_settings: {
+        Row: {
+          created_at: string
+          departments: string[]
+          teto_alcada: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          departments?: string[]
+          teto_alcada?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          departments?: string[]
+          teto_alcada?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       buyer_applications: {
         Row: {
           checklist_types: string[]
@@ -191,7 +215,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "buyer" | "owner" | "solicitante"
+      app_role: "admin" | "buyer" | "owner" | "solicitante" | "aprovador"
       application_status: "pending" | "approved" | "rejected"
       card_kind: "compras" | "contratos" | "frete" | "materiais"
       card_status:
@@ -328,7 +352,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "buyer", "owner", "solicitante"],
+      app_role: ["admin", "buyer", "owner", "solicitante", "aprovador"],
       application_status: ["pending", "approved", "rejected"],
       card_kind: ["compras", "contratos", "frete", "materiais"],
       card_status: [

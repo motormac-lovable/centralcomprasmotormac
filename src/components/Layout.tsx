@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList } from "lucide-react";
+import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList, CheckSquare } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
@@ -12,7 +12,7 @@ const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, fullName } = useAuth();
+  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, fullName } = useAuth();
   const navigate = useNavigate();
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
@@ -36,7 +36,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   // Solicitante: navegação estritamente restrita.
   const showBuyerLinks = isBuyer;
-  const showSolicitanteLinks = isSolicitante && !isBuyer && !isAdmin;
+  const showSolicitanteLinks = isSolicitante && !isBuyer && !isAdmin && !isApprover;
+  const showApproverLinks = isApprover && !isBuyer && !isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -81,6 +82,19 @@ export function Layout({ children }: { children: ReactNode }) {
                 Minhas Solicitações
               </NavLink>
             )}
+
+            {/* Visão restrita do Aprovador */}
+            {(isApprover || showApproverLinks) && (
+              <NavLink
+                to="/aprovacoes"
+                active={pathname.startsWith("/aprovacoes")}
+                icon={<CheckSquare className="h-4 w-4" />}
+              >
+                Aprovações
+              </NavLink>
+            )}
+
+
 
             {user && <ProfileMenu />}
             {user ? (
