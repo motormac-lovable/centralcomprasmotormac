@@ -38,6 +38,7 @@ function KanbanPage() {
   const [filters, setFilters] = useState<Record<Status, ColumnFilter>>(() =>
     STATUS_COLUMNS.reduce((acc, c) => ({ ...acc, [c.id]: { kind: "", approver: "" } }), {} as Record<Status, ColumnFilter>),
   );
+  const [globalQuery, setGlobalQuery] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
@@ -152,8 +153,6 @@ function KanbanPage() {
   };
 
   const activeCard = cards.find((c) => c.id === activeId) || null;
-
-  const [globalQuery, setGlobalQuery] = useState("");
 
   return (
     <div className="mx-auto max-w-[1700px] px-4 sm:px-6 py-8">
