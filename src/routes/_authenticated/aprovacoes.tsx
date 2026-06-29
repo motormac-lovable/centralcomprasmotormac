@@ -81,7 +81,7 @@ function AprovacoesPage() {
 
   const visibleCards = useMemo(() => {
     return cards.filter((c) => {
-      const valor = totalChosen(c);
+      const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
 
       // Regra exclusiva do Proprietário: > R$ 200.000,00 só para owner.
@@ -92,10 +92,10 @@ function AprovacoesPage() {
       if (isApprover) {
         // 1. Departamento deve estar entre os vinculados.
         if (!dept || !approverDepartments.includes(dept)) return false;
-        // 2. Valor cumulativo: <= teto.
-        if (valor <= 0) return false;
-        if (valor > approverCeiling) return false;
-        return true;
+        // 2. Sem cotações ainda? Exibe mesmo assim para o aprovador acompanhar a pendência.
+        if (valor === 0) return true;
+        // 3. Valor cumulativo: <= teto.
+        return valor <= approverCeiling;
       }
       return false;
     });
