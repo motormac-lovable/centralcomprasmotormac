@@ -259,9 +259,11 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
           {card.summary && <p className="text-sm text-muted-foreground mt-0.5">{card.summary}</p>}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs text-muted-foreground">Valor escolhido</div>
-          <div className="text-xl font-bold text-emerald-700">
-            {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          <div className="text-xs text-muted-foreground">{chosen ? "Valor escolhido" : "Aguardando vencedor"}</div>
+          <div className={`text-xl font-bold ${chosen ? "text-emerald-700" : "text-amber-600"}`}>
+            {chosen
+              ? total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+              : suppliers.length === 0 ? "Sem cotações" : "Selecionar no Kanban"}
           </div>
         </div>
       </div>
