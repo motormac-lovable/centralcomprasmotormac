@@ -298,7 +298,7 @@ function Column({
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id });
   const [historyOpen, setHistoryOpen] = useState(false);
-  const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas";
+  const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
   return (
     <>
       <div
