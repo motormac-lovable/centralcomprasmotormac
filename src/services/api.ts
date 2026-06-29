@@ -222,16 +222,27 @@ export const MOCK_LINX_PAYLOAD: LinxPayload = {
     prazo_entrega: "5 dias úteis",
     condicao_pagamento: "28 DDL",
   },
+  aprovacao: {
+    fornecedor_escolhido: "Lubrificantes Sul Ltda.",
+    valor_final: "R$ 4.820,00",
+    is_menor_custo: true,
+    justificativa_custo_maior: null,
+    aprovador: "Vanessa Motormac",
+    aprovado_em: new Date().toISOString(),
+  },
   aprovador: {
     id: "00000000-0000-0000-0000-000000000000",
     nome: "Vanessa Motormac",
   },
+  status_atual: "Cotações Aprovadas",
+  data_ultima_atualizacao: new Date().toISOString(),
   meta: {
     tipo_card: "materiais",
     apollo_id: null,
     created_at: new Date().toISOString(),
   },
 };
+
 
 export function exportJSON(rows: KanbanCardRow[]): void {
   const payload = rows.map(buildLinxPayload);
