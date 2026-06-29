@@ -26,16 +26,17 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin, isBuyer, isSolicitante } = useAuth();
+  const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
     if (loading || !user) return;
     if (isAdmin) navigate({ to: "/admin" });
     else if (isBuyer) navigate({ to: "/inicio" });
+    else if (isApprover) navigate({ to: "/aprovacoes" });
     else if (isSolicitante) navigate({ to: "/" });
     else navigate({ to: "/pending" });
-  }, [user, loading, isAdmin, isBuyer, isSolicitante, navigate]);
+  }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, navigate]);
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
