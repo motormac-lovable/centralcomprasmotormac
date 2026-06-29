@@ -601,11 +601,16 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
             {rows.map((r, i) => (
               <li key={i} className="pl-4 relative">
                 <span
-                  className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background"
+                  className={`absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-background ${r.estimated ? "bg-amber-500" : "bg-primary"}`}
                   aria-hidden
                 />
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
                   {r.label}
+                  {r.estimated && (
+                    <span className="text-[9px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-1.5 py-0 rounded">
+                      estimado
+                    </span>
+                  )}
                 </div>
                 <div className={`text-sm mt-0.5 ${r.mono ? "font-mono font-semibold" : "font-medium"} text-foreground break-words`}>
                   {r.value}
