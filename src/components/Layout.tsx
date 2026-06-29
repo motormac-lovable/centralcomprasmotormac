@@ -83,8 +83,8 @@ export function Layout({ children }: { children: ReactNode }) {
               </NavLink>
             )}
 
-            {/* Visão restrita do Aprovador */}
-            {(isApprover || showApproverLinks) && (
+            {/* Painel exclusivo do Aprovador (e Proprietário para alçada >R$ 200k) */}
+            {(isApprover || isOwner) && (
               <NavLink
                 to="/aprovacoes"
                 active={pathname.startsWith("/aprovacoes")}
@@ -93,6 +93,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 Aprovações
               </NavLink>
             )}
+
 
 
 
