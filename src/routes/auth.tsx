@@ -40,7 +40,11 @@ function AuthPage() {
   }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, navigate]);
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 sm:px-6 py-10">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 sm:px-6 py-10 gap-6">
+      <div className="flex flex-col items-center gap-3">
+        <img src={logoAsset.url} alt="Motormac" className="h-16 w-auto object-contain" />
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Central de Compras Motormac</h1>
+      </div>
       <div className="w-full max-w-xl rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
         <div className="p-6 sm:p-8 border-b flex items-start gap-3">
