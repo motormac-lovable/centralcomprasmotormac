@@ -28,7 +28,11 @@ export type Supplier = {
   prazo: string;
   condicao: string;
   chosen: boolean;
+  cnpj?: string;
+  email?: string;
+  telefone?: string;
 };
+
 export type Attachment = { name: string; path: string; size: number; uploaded_at: string };
 
 export function daysSince(iso: string): number {
