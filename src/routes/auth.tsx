@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
 import { Field, inputCls } from "@/components/forms/FormShell";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/auth")({
@@ -40,9 +40,6 @@ function AuthPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-10">
-      <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Voltar
-      </Link>
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
         <div className="p-6 sm:p-8 border-b flex items-start gap-3">
