@@ -22,6 +22,15 @@ export type LinxFornecedorVencedor = {
   condicao_pagamento: string;
 } | null;
 
+export type LinxAprovacao = {
+  fornecedor_escolhido: string | null;
+  valor_final: string | null;
+  is_menor_custo: boolean | null;
+  justificativa_custo_maior: string | null;
+  aprovador: string | null;
+  aprovado_em: string | null;
+} | null;
+
 export type LinxPayload = {
   identificacao: {
     codigo_unico: string;
@@ -43,13 +52,26 @@ export type LinxPayload = {
   };
   itens: LinxItem[];
   fornecedor_vencedor: LinxFornecedorVencedor;
+  aprovacao: LinxAprovacao;
   aprovador: { id: string | null; nome: string | null };
+  status_atual: string;
+  data_ultima_atualizacao: string;
   meta: {
     tipo_card: KanbanCardRow["kind"];
     apollo_id: string | null;
     created_at: string;
   };
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  solicitacoes_abertas: "Solicitação aberta",
+  em_cotacao: "Em Cotação",
+  aguardando_aprovacao: "Aguardando aprovação",
+  cotacoes_rejeitadas: "Cotações Rejeitadas",
+  cotacoes_aprovadas: "Cotações Aprovadas",
+  pedidos_gerados: "Pedido Gerado",
+};
+
 
 type RawItem = {
   codigo?: string;
