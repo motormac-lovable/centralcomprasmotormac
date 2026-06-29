@@ -42,6 +42,16 @@ function totalChosen(card: Card): number {
   return s ? parseValor(s.valor) : 0;
 }
 
+// Valor de referência para alçada: vencedor escolhido, ou menor cotação se ainda não houver escolha.
+function valorReferenciaAlcada(card: Card): number {
+  const chosen = totalChosen(card);
+  if (chosen > 0) return chosen;
+  const arr = (card.suppliers as unknown as Supplier[] | null) ?? [];
+  const valores = arr.map((s) => parseValor(s.valor)).filter((n) => n > 0);
+  if (valores.length === 0) return 0;
+  return Math.min(...valores);
+}
+
 function departamentoOf(card: Card): string | null {
   const data = (card.data as Record<string, unknown>) ?? {};
   const d = data.departamento;
