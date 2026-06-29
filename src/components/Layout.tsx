@@ -42,15 +42,15 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 border-b bg-card/85 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3">
+        <div className="mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-6">
+          <Link to="/" className="flex items-center gap-3 shrink-0">
             <img src={logoAsset.url} alt="Motormac" className="h-10 w-auto object-contain" />
-            <div className="hidden md:flex flex-col leading-tight">
+            <div className="hidden lg:flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">Central de Compras</span>
               <span className="text-xs text-muted-foreground">Plataforma Interna Motormac</span>
             </div>
           </Link>
-          <nav className="flex items-center gap-1 flex-wrap">
+          <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto">
             {/* Nova Solicitação — Solicitante, Aprovador, Comprador e Admin */}
             {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
