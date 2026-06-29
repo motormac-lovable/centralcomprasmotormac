@@ -147,7 +147,10 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
     },
     itens,
     fornecedor_vencedor,
+    aprovacao: buildAprovacaoBlock(data, fornecedor_vencedor),
     aprovador: { id: card.approver_id, nome: card.approver_name },
+    status_atual: STATUS_LABEL[card.status] ?? card.status,
+    data_ultima_atualizacao: card.status_changed_at ?? card.updated_at ?? card.created_at,
     meta: {
       tipo_card: card.kind,
       apollo_id: card.numero_pedido_linx ?? card.order_number ?? null,
@@ -155,6 +158,25 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
     },
   };
 }
+
+function buildAprovacaoBlock(
+  data: Record<string, unknown>,
+  fornecedor_vencedor: LinxFornecedorVencedor,
+): LinxAprovacao {
+  const a = (data.aprovacao as Record<string, unknown> | undefined) ?? null;
+  if (!a) return null;
+  return {
+    fornecedor_escolhido:
+      (a.fornecedor_escolhido as string) ?? fornecedor_vencedor?.razao_social ?? null,
+    valor_final:
+      (a.valor_escolhido as string) ?? fornecedor_vencedor?.valor_total_cotado ?? null,
+    is_menor_custo: typeof a.is_menor_custo === "boolean" ? a.is_menor_custo : null,
+    justificativa_custo_maior: (a.justificativa_custo_maior as string) ?? null,
+    aprovador: (a.aprovador as string) ?? null,
+    aprovado_em: (a.aprovado_em as string) ?? null,
+  };
+}
+
 
 export const MOCK_LINX_PAYLOAD: LinxPayload = {
   identificacao: {
