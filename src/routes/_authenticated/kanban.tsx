@@ -1216,7 +1216,7 @@ function NewSupplierModal({
   );
 }
 
-function SupplierField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function SupplierField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
