@@ -34,10 +34,10 @@ export function Layout({ children }: { children: ReactNode }) {
     return <div className="min-h-screen bg-background" />;
   }
 
-  // Solicitante: navegação estritamente restrita.
+  // Aprovador também pode emitir solicitações (acessa formulários e seu histórico pessoal).
   const showBuyerLinks = isBuyer;
-  const showSolicitanteLinks = isSolicitante && !isBuyer && !isAdmin && !isApprover;
-  const showApproverLinks = isApprover && !isBuyer && !isAdmin;
+  const canRequest = isSolicitante || isApprover || isBuyer;
+  const showMinhasSolicitacoes = (isSolicitante || isApprover) && !isBuyer && !isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -51,8 +51,8 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <nav className="flex items-center gap-1 flex-wrap">
-            {/* Nova Solicitação — Solicitante, Comprador e Admin */}
-            {(showBuyerLinks || showSolicitanteLinks) && (
+            {/* Nova Solicitação — Solicitante, Aprovador, Comprador e Admin */}
+            {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
             )}
 
@@ -72,8 +72,8 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/dev" active={pathname.startsWith("/dev")} icon={<Code2 className="h-4 w-4" />}>Dev</NavLink>
             )}
 
-            {/* Visão restrita do Solicitante */}
-            {showSolicitanteLinks && (
+            {/* Histórico pessoal — Solicitante e Aprovador (compradores usam o histórico completo) */}
+            {showMinhasSolicitacoes && (
               <NavLink
                 to="/minhas-solicitacoes"
                 active={pathname.startsWith("/minhas-solicitacoes")}
