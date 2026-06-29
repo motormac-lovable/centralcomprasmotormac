@@ -446,23 +446,34 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
   );
 }
 
-function AttachmentRow({ att }: { att: Attachment }) {
+function AttachmentRow({ att, bucket }: { att: { name: string; path: string; size?: number }; bucket: string }) {
   const [busy, setBusy] = useState(false);
   const open = async (download: boolean) => {
     setBusy(true);
     const { data, error } = await supabase.storage
-      .from("orcamentos")
-      .createSignedUrl(att.path, 120, download ? { download: att.name } : undefined);
+      .from(bucket)
+      .createSignedUrl(att.path, 120);
     setBusy(false);
     if (error || !data) return toast.error("Não foi possível obter o arquivo.");
-    const link = document.createElement("a");
-    link.href = data.signedUrl;
-    if (download) link.download = att.name;
-    else link.target = "_blank";
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    if (!download) {
+      window.open(data.signedUrl, "_blank", "noopener");
+      return;
+    }
+    try {
+      const res = await fetch(data.signedUrl);
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = att.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(data.signedUrl, "_blank", "noopener");
+    }
   };
   const sizeKb = att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : "";
   return (
@@ -479,6 +490,7 @@ function AttachmentRow({ att }: { att: Attachment }) {
     </li>
   );
 }
+
 
 function RejectModal({ card, busy, onCancel, onConfirm }: { card: Card; busy: boolean; onCancel: () => void; onConfirm: (motivo: string) => void }) {
   const [motivo, setMotivo] = useState("");
