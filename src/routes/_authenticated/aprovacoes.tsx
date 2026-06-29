@@ -383,20 +383,47 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
         </div>
       )}
 
-      <div className="px-5 pb-4">
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1">
-          <Paperclip className="h-3.5 w-3.5" /> Anexos da Cotação ({attachments.length})
-        </div>
-        {attachments.length === 0 ? (
-          <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-            Nenhum orçamento ou proposta anexada pelo comprador.
-          </div>
-        ) : (
-          <ul className="rounded-lg border divide-y">
-            {attachments.map((a) => <AttachmentRow key={a.path} att={a} />)}
-          </ul>
-        )}
-      </div>
+      {(() => {
+        const requesterFiles = Array.isArray(data.files)
+          ? (data.files as Array<{ name?: string; path?: string; size?: number }>)
+              .filter((f) => f && typeof f.path === "string")
+              .map((f) => ({ name: String(f.name ?? f.path), path: String(f.path), size: f.size }))
+          : [];
+        return (
+          <>
+            <div className="px-5 pb-4">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                <Paperclip className="h-3.5 w-3.5" /> Anexos do Solicitante ({requesterFiles.length})
+              </div>
+              {requesterFiles.length === 0 ? (
+                <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+                  Nenhum arquivo enviado pelo solicitante.
+                </div>
+              ) : (
+                <ul className="rounded-lg border divide-y">
+                  {requesterFiles.map((a) => <AttachmentRow key={a.path} att={a} bucket="solicitacao-anexos" />)}
+                </ul>
+              )}
+            </div>
+
+            <div className="px-5 pb-4">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                <Paperclip className="h-3.5 w-3.5" /> Anexos da Cotação ({attachments.length})
+              </div>
+              {attachments.length === 0 ? (
+                <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+                  Nenhum orçamento ou proposta anexada pelo comprador.
+                </div>
+              ) : (
+                <ul className="rounded-lg border divide-y">
+                  {attachments.map((a) => <AttachmentRow key={a.path} att={a} bucket="orcamentos" />)}
+                </ul>
+              )}
+            </div>
+          </>
+        );
+      })()}
+
 
       <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
         <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
