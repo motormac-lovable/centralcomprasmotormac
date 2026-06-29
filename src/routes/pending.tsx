@@ -11,15 +11,16 @@ export const Route = createFileRoute("/pending")({
 
 function PendingPage() {
   const navigate = useNavigate();
-  const { user, loading, isBuyer, isAdmin, isSolicitante } = useAuth();
+  const { user, loading, isBuyer, isAdmin, isSolicitante, isApprover } = useAuth();
 
   useEffect(() => {
     if (loading) return;
     if (!user) navigate({ to: "/auth" });
     else if (isAdmin) navigate({ to: "/admin" });
     else if (isBuyer) navigate({ to: "/inicio" });
+    else if (isApprover) navigate({ to: "/aprovacoes" });
     else if (isSolicitante) navigate({ to: "/" });
-  }, [user, loading, isBuyer, isAdmin, isSolicitante, navigate]);
+  }, [user, loading, isBuyer, isAdmin, isSolicitante, isApprover, navigate]);
 
 
   const signOut = async () => {
