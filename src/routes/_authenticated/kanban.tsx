@@ -461,10 +461,33 @@ function findObs(obs: Observation[], match: RegExp): Observation | undefined {
 }
 
 function fmtDate(iso?: string | null): string {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "—"; }
+  if (!iso) return "N/A (Card Anterior à Atualização)";
+  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "N/A (Card Anterior à Atualização)"; }
 }
 
+const STATUS_ORDER: Status[] = [
+  "solicitacoes_abertas",
+  "em_cotacao",
+  "aguardando_aprovacao",
+  "cotacoes_aprovadas",
+  "cotacoes_rejeitadas",
+  "pedidos_gerados",
+];
+function reached(card: Card, target: Status): boolean {
+  // Treat "rejeitadas" as having passed through aguardando_aprovacao
+  const passOrder: Record<Status, number> = {
+    solicitacoes_abertas: 0,
+    em_cotacao: 1,
+    aguardando_aprovacao: 2,
+    cotacoes_aprovadas: 3,
+    cotacoes_rejeitadas: 3,
+    pedidos_gerados: 4,
+  };
+  void STATUS_ORDER;
+  return passOrder[card.status] >= passOrder[target];
+}
+
+type HistValue = { text: string; estimated?: boolean };
 function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   const obs = ((card.observations as unknown as Observation[]) ?? []);
   const rawData = (card.data as Record<string, unknown>) ?? {};
@@ -475,18 +498,51 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
 
   const emCotacao = findObs(obs, /Em cotação/i);
   const aguardando = findObs(obs, /Aguardando Aprovação/i);
-  const decisao = findObs(obs, /APROVADA|REJEITADA/);
-  const rejeicao = findObs(obs, /REJEITADA/);
+  const decisao = findObs(obs, /APROVADA|REJEITADA|Cotações Aprovadas|Cotações Rejeitadas/i);
+  const rejeicao = findObs(obs, /REJEITADA|Cotações Rejeitadas/i);
 
   // Buyer = first author who moved card to "Em cotação" (fallback to approver_name)
-  const compradorResponsavel = emCotacao?.author || (!isRejected && !aprov ? card.approver_name : null) || "—";
+  const compradorResponsavel =
+    emCotacao?.author ||
+    (!isRejected && !aprov ? card.approver_name : null) ||
+    card.approver_name ||
+    "N/A (Card Anterior à Atualização)";
+
+  // ─── Fallback inteligente para cards "em trânsito" / legados ───
+  // Avanço para "Em Cotação"
+  let emCotacaoVal: HistValue;
+  if (emCotacao?.at) {
+    emCotacaoVal = { text: fmtDate(emCotacao.at) };
+  } else if (reached(card, "em_cotacao")) {
+    // Estimativa: 1h após abertura
+    const est = new Date(new Date(card.created_at).getTime() + 60 * 60 * 1000).toISOString();
+    emCotacaoVal = { text: `${fmtDate(est)} · Pendente de transição (Fase Inicial)`, estimated: true };
+  } else {
+    emCotacaoVal = { text: "N/A (Card Anterior à Atualização)" };
+  }
+
+  // Envio para "Aguardando Aprovação"
+  let aguardandoVal: HistValue;
+  if (aguardando?.at) {
+    aguardandoVal = { text: fmtDate(aguardando.at) };
+  } else if (card.status === "aguardando_aprovacao") {
+    // Card está nessa coluna agora → o carimbo de status é exatamente este momento
+    aguardandoVal = { text: fmtDate(card.status_changed_at) };
+  } else if (reached(card, "cotacoes_aprovadas")) {
+    aguardandoVal = { text: "N/A (Card Anterior à Atualização)" };
+  } else {
+    aguardandoVal = { text: "N/A (Card Anterior à Atualização)" };
+  }
 
   // Decision timestamp / actor
-  const decisaoAt = aprov?.aprovado_em || decisao?.at || card.status_changed_at;
-  const decisor = aprov?.aprovador || decisao?.author || card.approver_name || "—";
+  const decisaoAt = aprov?.aprovado_em || decisao?.at || (reached(card, "cotacoes_aprovadas") ? card.status_changed_at : null);
+  const decisor = aprov?.aprovador || decisao?.author || card.approver_name || "N/A (Card Anterior à Atualização)";
+  const decisaoText = decisaoAt
+    ? `${fmtDate(decisaoAt)} — por ${decisor}`
+    : "N/A (Card Anterior à Atualização)";
 
   // Justificativa logic
-  let justificativa = "—";
+  let justificativa = "N/A (Card Anterior à Atualização)";
   if (isRejected) {
     const motivo = rejeicao?.text?.replace(/.*Motivo:\s*/i, "").trim();
     justificativa = motivo || "Rejeitada (sem motivo registrado).";
@@ -495,22 +551,25 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
       justificativa = aprov.justificativa_custo_maior;
     } else if (suppliers.length <= 1) {
       justificativa = "Fornecedor único — sem concorrência.";
-    } else if (aprov.is_menor_custo) {
-      justificativa = "Preço mais competitivo (Sem ressalvas).";
     } else {
       justificativa = "Preço mais competitivo (Sem ressalvas).";
     }
+  } else if (reached(card, "cotacoes_aprovadas") && !isRejected) {
+    justificativa = "Preço mais competitivo (Sem ressalvas).";
   }
 
-  const fornecedor = aprov?.fornecedor_escolhido || chosen?.fornecedor || (isRejected ? "Rejeitada — sem fornecedor aprovado" : "—");
-  const custo = aprov?.valor_escolhido || chosen?.valor || "—";
+  const fornecedor =
+    aprov?.fornecedor_escolhido ||
+    chosen?.fornecedor ||
+    (isRejected ? "Rejeitada — sem fornecedor aprovado" : "N/A (Card Anterior à Atualização)");
+  const custo = aprov?.valor_escolhido || chosen?.valor || "N/A (Card Anterior à Atualização)";
 
-  const rows: Array<{ label: string; value: React.ReactNode; mono?: boolean }> = [
+  const rows: Array<{ label: string; value: React.ReactNode; mono?: boolean; estimated?: boolean }> = [
     { label: "Data de Abertura", value: fmtDate(card.created_at) },
     { label: "Comprador Responsável", value: compradorResponsavel },
-    { label: 'Avanço para "Em Cotação"', value: fmtDate(emCotacao?.at) },
-    { label: 'Envio para "Aguardando Aprovação"', value: fmtDate(aguardando?.at) },
-    { label: isRejected ? "Data da Rejeição" : "Data da Aprovação", value: `${fmtDate(decisaoAt)} — por ${decisor}` },
+    { label: 'Avanço para "Em Cotação"', value: emCotacaoVal.text, estimated: emCotacaoVal.estimated },
+    { label: 'Envio para "Aguardando Aprovação"', value: aguardandoVal.text, estimated: aguardandoVal.estimated },
+    { label: isRejected ? "Data da Rejeição" : "Data da Aprovação", value: decisaoText },
     { label: isRejected ? "Fornecedor" : "Fornecedor Aprovado", value: fornecedor },
     { label: isRejected ? "Custo (não aprovado)" : "Custo Aprovado", value: custo, mono: true },
     { label: isRejected ? "Motivo da Rejeição" : "Justificativa da Aprovação", value: justificativa },
