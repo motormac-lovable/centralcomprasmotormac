@@ -297,14 +297,34 @@ function Column({
 
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id });
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas";
   return (
-    <div
-      ref={setNodeRef} {...attributes} {...listeners}
-      onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
-      className={`${isDragging ? "opacity-30" : ""}`}
-    >
-      <CardView card={card} />
-    </div>
+    <>
+      <div
+        ref={setNodeRef} {...attributes} {...listeners}
+        onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
+        className={`${isDragging ? "opacity-30" : ""}`}
+      >
+        <CardView
+          card={card}
+          footerSlot={
+            showDetails ? (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); setHistoryOpen(true); }}
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md px-1.5 py-0.5 border border-transparent hover:border-primary/20 transition"
+                aria-label="Ver histórico detalhado"
+              >
+                🔍 Detalhes
+              </button>
+            ) : null
+          }
+        />
+      </div>
+      {historyOpen && <HistoryModal card={card} onClose={() => setHistoryOpen(false)} />}
+    </>
   );
 }
 
