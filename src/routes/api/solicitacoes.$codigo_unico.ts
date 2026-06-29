@@ -51,10 +51,9 @@ export const Route = createFileRoute("/api/solicitacoes/$codigo_unico")({
         const payload = buildLinxPayload(data);
         const body = {
           codigo_solicitacao: payload.identificacao.codigo_unico,
-          status_atual: payload.status_atual,
-          data_ultima_atualizacao: payload.data_ultima_atualizacao,
           ...payload,
         };
+
         return new Response(JSON.stringify(body), { status: 200, headers: CORS });
       },
     },
