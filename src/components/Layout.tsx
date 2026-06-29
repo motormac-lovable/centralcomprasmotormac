@@ -44,7 +44,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b bg-card/85 backdrop-blur-md">
         <div className="mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-6">
           <Link to="/" className="flex items-center gap-3 shrink-0">
-            <img src={logoAsset.url} alt="Motormac" className="h-10 w-auto object-contain" />
+            <img src={logoAsset.url} alt="Motormac" className="h-12 w-auto object-contain" />
             <div className="hidden lg:flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">Central de Compras</span>
               <span className="text-xs text-muted-foreground">Plataforma Interna Motormac</span>
