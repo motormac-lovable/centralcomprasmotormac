@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
 import { deleteUserCompletely, updateUserRole } from "@/lib/admin-users.functions";
+import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
@@ -38,8 +39,8 @@ function AdminPage() {
   }
 
   type AppRole = Database["public"]["Enums"]["app_role"];
-  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
-  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"];
+  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
+  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador"] : ["admin", "buyer", "solicitante", "aprovador"];
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
 
 
@@ -182,12 +183,13 @@ function RegisteredUsers() {
 
   useEffect(() => { reload(); }, []);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
   const roleStyle: Record<string, string> = {
     owner: "bg-amber-100 text-amber-800",
     admin: "bg-blue-100 text-blue-800",
     buyer: "bg-emerald-100 text-emerald-800",
     solicitante: "bg-violet-100 text-violet-800",
+    aprovador: "bg-cyan-100 text-cyan-800",
   };
 
   const filtered = rows.filter((r) => {
@@ -301,7 +303,7 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
-          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante"] : ["admin", "buyer", "solicitante"]}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador"] : ["admin", "buyer", "solicitante", "aprovador"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
@@ -320,6 +322,8 @@ function RegisteredUsers() {
   );
 }
 
+const TETO_OPCOES = [2000, 5000, 10000, 30000, 200000];
+
 function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRow & { roles: string[] }; allowedRoles: string[]; onClose: () => void; onSaved: () => void }) {
   const [full_name, setFullName] = useState(row.full_name ?? "");
   const [email, setEmail] = useState(row.email ?? "");
@@ -329,20 +333,43 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
     ? "owner"
     : row.roles.includes("admin")
       ? "admin"
-      : row.roles.includes("buyer")
-        ? "buyer"
-        : row.roles.includes("solicitante")
-          ? "solicitante"
-          : "buyer";
+      : row.roles.includes("aprovador")
+        ? "aprovador"
+        : row.roles.includes("buyer")
+          ? "buyer"
+          : row.roles.includes("solicitante")
+            ? "solicitante"
+            : "buyer";
   const [role, setRole] = useState<string>(currentRole);
   const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [teto, setTeto] = useState<number>(2000);
+  const [deptFilter, setDeptFilter] = useState("");
   const updateRoleFn = useServerFn(updateUserRole);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
 
+  // Carrega configuração existente do Aprovador
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("approver_settings")
+        .select("departments, teto_alcada")
+        .eq("user_id", row.id)
+        .maybeSingle();
+      if (data) {
+        setDepartments((data.departments as string[]) ?? []);
+        setTeto(Number(data.teto_alcada) || 2000);
+      }
+    })();
+  }, [row.id]);
 
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");
+    if (role === "aprovador") {
+      if (departments.length === 0) return toast.error("Selecione ao menos um departamento vinculado.");
+      if (!TETO_OPCOES.includes(teto)) return toast.error("Selecione um teto de alçada válido.");
+    }
     setSaving(true);
     try {
       const { error } = await supabase
@@ -355,6 +382,13 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
         await updateRoleFn({ data: { user_id: row.id, role: role as any } });
       }
 
+      if (role === "aprovador") {
+        const { error: cfgErr } = await (supabase as any)
+          .from("approver_settings")
+          .upsert({ user_id: row.id, departments, teto_alcada: teto }, { onConflict: "user_id" });
+        if (cfgErr) throw cfgErr;
+      }
+
       toast.success("Usuário atualizado.");
       onSaved();
     } catch (e: any) {
@@ -364,11 +398,16 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
     }
   };
 
-  const showRoleSelect = true;
+  const toggleDept = (d: string) =>
+    setDepartments((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+
+  const filteredDepts = deptFilter
+    ? DEPARTAMENTOS_APOLLO.filter((d) => d.toLowerCase().includes(deptFilter.toLowerCase()))
+    : DEPARTAMENTOS_APOLLO;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Editar usuário</h3>
           <button onClick={onClose} className="p-1 hover:bg-accent rounded-md"><X className="h-4 w-4" /></button>
@@ -378,20 +417,68 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
           <Field label="E-mail" value={email} onChange={setEmail} type="email" />
           <Field label="CPF" value={cpf} onChange={setCpf} />
           <Field label="Telefone" value={phone} onChange={setPhone} />
-          {showRoleSelect && (
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Nível de acesso</span>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-              >
-                {allowedRoles.map((r) => (
-                  <option key={r} value={r}>{roleLabel[r] ?? r}</option>
-                ))}
-              </select>
-            </label>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">Nível de acesso</span>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              {allowedRoles.map((r) => (
+                <option key={r} value={r}>{roleLabel[r] ?? r}</option>
+              ))}
+            </select>
+          </label>
+
+          {role === "aprovador" && (
+            <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50/50 p-3 space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Governança do Aprovador</div>
+
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Teto de Alçada Permitido</span>
+                <select
+                  value={teto}
+                  onChange={(e) => setTeto(Number(e.target.value))}
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                >
+                  {TETO_OPCOES.map((v) => (
+                    <option key={v} value={v}>
+                      {v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Departamentos Vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
+                </span>
+                <input
+                  type="text"
+                  value={deptFilter}
+                  onChange={(e) => setDeptFilter(e.target.value)}
+                  placeholder="Filtrar departamentos…"
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                />
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border bg-background p-2 space-y-1">
+                  {filteredDepts.slice(0, 200).map((d) => (
+                    <label key={d} className="flex items-center gap-2 text-xs hover:bg-muted/60 rounded px-1 py-0.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={departments.includes(d)}
+                        onChange={() => toggleDept(d)}
+                      />
+                      <span className="truncate">{d}</span>
+                    </label>
+                  ))}
+                  {filteredDepts.length > 200 && (
+                    <p className="text-[10px] text-muted-foreground p-1">Refine a busca para ver mais resultados.</p>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
+
           <p className="text-[11px] text-muted-foreground">
             Observação: a alteração de e-mail aqui ajusta o perfil exibido. O e-mail de login é mantido pelo sistema de autenticação.
           </p>
