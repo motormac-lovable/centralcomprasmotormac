@@ -113,16 +113,33 @@ function KanbanPage() {
       patch.numero_pedido_linx = card.codigo_unico;
       patch.order_number = card.codigo_unico;
     }
-    // Auto-bind approver when entering "Aguardando Aprovação"
-    if (newStatus === "aguardando_aprovacao" && !card.approver_id) {
-      const { data: u } = await supabase.auth.getUser();
-      if (u.user) {
-        const { data: prof } = await supabase.from("profiles").select("full_name,email").eq("id", u.user.id).maybeSingle();
-        patch.approver_id = u.user.id;
-        patch.approver_name = prof?.full_name || prof?.email || u.user.email || "Aprovador";
-        toast.info(`📧 Notificação simulada enviada para ${patch.approver_name}`);
-      }
+
+    // Resolve current actor for the transition log
+    const { data: u } = await supabase.auth.getUser();
+    let actorName = "Usuário";
+    if (u.user) {
+      const { data: prof } = await supabase
+        .from("profiles").select("full_name,email").eq("id", u.user.id).maybeSingle();
+      actorName = prof?.full_name || prof?.email || u.user.email || "Usuário";
     }
+
+    // Auto-bind approver when entering "Aguardando Aprovação"
+    if (newStatus === "aguardando_aprovacao" && !card.approver_id && u.user) {
+      patch.approver_id = u.user.id;
+      patch.approver_name = actorName;
+      toast.info(`📧 Notificação simulada enviada para ${actorName}`);
+    }
+
+    // Append a transition log entry to observations (used by History panel)
+    const targetLabel = STATUS_COLUMNS.find((s) => s.id === newStatus)?.label ?? newStatus;
+    const prevObs = ((card.observations as unknown as Observation[]) ?? []);
+    const transitionLog: Observation = {
+      at: new Date().toISOString(),
+      author: actorName,
+      text: `➡️ Movido para "${targetLabel}" por ${actorName}.`,
+    };
+    patch.observations = [...prevObs, transitionLog] as never;
+
     // Optimistic update
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
     const { error } = await supabase.from("kanban_cards").update(patch).eq("id", card.id);
@@ -130,7 +147,7 @@ function KanbanPage() {
       toast.error("Falha ao mover: " + error.message);
       setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
     } else {
-      toast.success(`Movido para "${STATUS_COLUMNS.find((s) => s.id === newStatus)?.label}"`);
+      toast.success(`Movido para "${targetLabel}"`);
     }
   };
 
