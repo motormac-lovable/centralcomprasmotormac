@@ -22,6 +22,15 @@ export type LinxFornecedorVencedor = {
   condicao_pagamento: string;
 } | null;
 
+export type LinxAprovacao = {
+  fornecedor_escolhido: string | null;
+  valor_final: string | null;
+  is_menor_custo: boolean | null;
+  justificativa_custo_maior: string | null;
+  aprovador: string | null;
+  aprovado_em: string | null;
+} | null;
+
 export type LinxPayload = {
   identificacao: {
     codigo_unico: string;
@@ -43,13 +52,26 @@ export type LinxPayload = {
   };
   itens: LinxItem[];
   fornecedor_vencedor: LinxFornecedorVencedor;
+  aprovacao: LinxAprovacao;
   aprovador: { id: string | null; nome: string | null };
+  status_atual: string;
+  data_ultima_atualizacao: string;
   meta: {
     tipo_card: KanbanCardRow["kind"];
     apollo_id: string | null;
     created_at: string;
   };
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  solicitacoes_abertas: "Solicitação aberta",
+  em_cotacao: "Em Cotação",
+  aguardando_aprovacao: "Aguardando aprovação",
+  cotacoes_rejeitadas: "Cotações Rejeitadas",
+  cotacoes_aprovadas: "Cotações Aprovadas",
+  pedidos_gerados: "Pedido Gerado",
+};
+
 
 type RawItem = {
   codigo?: string;
@@ -125,7 +147,10 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
     },
     itens,
     fornecedor_vencedor,
+    aprovacao: buildAprovacaoBlock(data, fornecedor_vencedor),
     aprovador: { id: card.approver_id, nome: card.approver_name },
+    status_atual: STATUS_LABEL[card.status] ?? card.status,
+    data_ultima_atualizacao: card.status_changed_at ?? card.updated_at ?? card.created_at,
     meta: {
       tipo_card: card.kind,
       apollo_id: card.numero_pedido_linx ?? card.order_number ?? null,
@@ -133,6 +158,25 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
     },
   };
 }
+
+function buildAprovacaoBlock(
+  data: Record<string, unknown>,
+  fornecedor_vencedor: LinxFornecedorVencedor,
+): LinxAprovacao {
+  const a = (data.aprovacao as Record<string, unknown> | undefined) ?? null;
+  if (!a) return null;
+  return {
+    fornecedor_escolhido:
+      (a.fornecedor_escolhido as string) ?? fornecedor_vencedor?.razao_social ?? null,
+    valor_final:
+      (a.valor_escolhido as string) ?? fornecedor_vencedor?.valor_total_cotado ?? null,
+    is_menor_custo: typeof a.is_menor_custo === "boolean" ? a.is_menor_custo : null,
+    justificativa_custo_maior: (a.justificativa_custo_maior as string) ?? null,
+    aprovador: (a.aprovador as string) ?? null,
+    aprovado_em: (a.aprovado_em as string) ?? null,
+  };
+}
+
 
 export const MOCK_LINX_PAYLOAD: LinxPayload = {
   identificacao: {
@@ -178,16 +222,27 @@ export const MOCK_LINX_PAYLOAD: LinxPayload = {
     prazo_entrega: "5 dias úteis",
     condicao_pagamento: "28 DDL",
   },
+  aprovacao: {
+    fornecedor_escolhido: "Lubrificantes Sul Ltda.",
+    valor_final: "R$ 4.820,00",
+    is_menor_custo: true,
+    justificativa_custo_maior: null,
+    aprovador: "Vanessa Motormac",
+    aprovado_em: new Date().toISOString(),
+  },
   aprovador: {
     id: "00000000-0000-0000-0000-000000000000",
     nome: "Vanessa Motormac",
   },
+  status_atual: "Cotações Aprovadas",
+  data_ultima_atualizacao: new Date().toISOString(),
   meta: {
     tipo_card: "materiais",
     apollo_id: null,
     created_at: new Date().toISOString(),
   },
 };
+
 
 export function exportJSON(rows: KanbanCardRow[]): void {
   const payload = rows.map(buildLinxPayload);
