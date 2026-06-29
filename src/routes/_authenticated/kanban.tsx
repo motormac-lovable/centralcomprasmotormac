@@ -396,7 +396,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
 }
 
 
-function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }) {
+function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging?: boolean; footerSlot?: React.ReactNode }) {
   const Icon = iconFor[card.kind];
   const suggested = suggestedBuyer(card);
   return (
@@ -435,6 +435,134 @@ function CardView({ card, dragging = false }: { card: Card; dragging?: boolean }
       <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
         <span className="truncate">{card.unidade ?? "—"}</span>
         <span>{new Date(card.created_at).toLocaleDateString("pt-BR")}</span>
+      </div>
+      {footerSlot && (
+        <div className="mt-2 pt-2 border-t flex justify-start">
+          {footerSlot}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────── History Modal (Detalhes) ─────────────────── */
+
+type AprovacaoMeta = {
+  fornecedor_escolhido?: string | null;
+  valor_escolhido?: string | null;
+  is_menor_custo?: boolean | null;
+  justificativa_custo_maior?: string | null;
+  aprovador?: string | null;
+  aprovado_em?: string | null;
+};
+
+function findObs(obs: Observation[], match: RegExp): Observation | undefined {
+  return obs.find((o) => match.test(o.text || ""));
+}
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "—"; }
+}
+
+function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
+  const obs = ((card.observations as unknown as Observation[]) ?? []);
+  const rawData = (card.data as Record<string, unknown>) ?? {};
+  const aprov = (rawData.aprovacao as AprovacaoMeta | undefined) ?? undefined;
+  const suppliers = ((card.suppliers as unknown as Supplier[]) ?? []);
+  const chosen = suppliers.find((s) => s.chosen) ?? null;
+  const isRejected = card.status === "cotacoes_rejeitadas";
+
+  const emCotacao = findObs(obs, /Em cotação/i);
+  const aguardando = findObs(obs, /Aguardando Aprovação/i);
+  const decisao = findObs(obs, /APROVADA|REJEITADA/);
+  const rejeicao = findObs(obs, /REJEITADA/);
+
+  // Buyer = first author who moved card to "Em cotação" (fallback to approver_name)
+  const compradorResponsavel = emCotacao?.author || (!isRejected && !aprov ? card.approver_name : null) || "—";
+
+  // Decision timestamp / actor
+  const decisaoAt = aprov?.aprovado_em || decisao?.at || card.status_changed_at;
+  const decisor = aprov?.aprovador || decisao?.author || card.approver_name || "—";
+
+  // Justificativa logic
+  let justificativa = "—";
+  if (isRejected) {
+    const motivo = rejeicao?.text?.replace(/.*Motivo:\s*/i, "").trim();
+    justificativa = motivo || "Rejeitada (sem motivo registrado).";
+  } else if (aprov) {
+    if (aprov.justificativa_custo_maior && aprov.justificativa_custo_maior.trim()) {
+      justificativa = aprov.justificativa_custo_maior;
+    } else if (suppliers.length <= 1) {
+      justificativa = "Fornecedor único — sem concorrência.";
+    } else if (aprov.is_menor_custo) {
+      justificativa = "Preço mais competitivo (Sem ressalvas).";
+    } else {
+      justificativa = "Preço mais competitivo (Sem ressalvas).";
+    }
+  }
+
+  const fornecedor = aprov?.fornecedor_escolhido || chosen?.fornecedor || (isRejected ? "Rejeitada — sem fornecedor aprovado" : "—");
+  const custo = aprov?.valor_escolhido || chosen?.valor || "—";
+
+  const rows: Array<{ label: string; value: React.ReactNode; mono?: boolean }> = [
+    { label: "Data de Abertura", value: fmtDate(card.created_at) },
+    { label: "Comprador Responsável", value: compradorResponsavel },
+    { label: 'Avanço para "Em Cotação"', value: fmtDate(emCotacao?.at) },
+    { label: 'Envio para "Aguardando Aprovação"', value: fmtDate(aguardando?.at) },
+    { label: isRejected ? "Data da Rejeição" : "Data da Aprovação", value: `${fmtDate(decisaoAt)} — por ${decisor}` },
+    { label: isRejected ? "Fornecedor" : "Fornecedor Aprovado", value: fornecedor },
+    { label: isRejected ? "Custo (não aprovado)" : "Custo Aprovado", value: custo, mono: true },
+    { label: isRejected ? "Motivo da Rejeição" : "Justificativa da Aprovação", value: justificativa },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-background rounded-xl shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-5 border-b flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">🔍</span>
+              <h3 className="text-lg font-semibold tracking-tight">Detalhes da Solicitação</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-mono font-semibold text-primary">#{card.codigo_unico ?? "—"}</span>
+              {" · "}{KIND_LABEL[card.kind]} · {card.title}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto">
+          <ol className="relative border-l border-border ml-2 space-y-4">
+            {rows.map((r, i) => (
+              <li key={i} className="pl-4 relative">
+                <span
+                  className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background"
+                  aria-hidden
+                />
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {r.label}
+                </div>
+                <div className={`text-sm mt-0.5 ${r.mono ? "font-mono font-semibold" : "font-medium"} text-foreground break-words`}>
+                  {r.value}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="p-4 border-t flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-md border px-4 py-2 text-sm hover:bg-muted"
+          >
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
   );
