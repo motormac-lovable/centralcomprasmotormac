@@ -7,6 +7,7 @@ import { isOwnerEmail } from "@/lib/owner-emails";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
+import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
