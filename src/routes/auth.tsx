@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
 import { Field, inputCls } from "@/components/forms/FormShell";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
 
 export const Route = createFileRoute("/auth")({
