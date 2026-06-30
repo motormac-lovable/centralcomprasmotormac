@@ -62,7 +62,7 @@ function AuthPage() {
             <p className="text-sm text-muted-foreground mt-1">
               {mode === "signin"
                 ? "Acesso liberado após aprovação do proprietário."
-                : "Preencha seus dados — sua solicitação será analisada pelos aprovadores."}
+                : "Preencha seus dados - sua solicitação será avaliada pelo time de Compras."}
             </p>
           </div>
         </div>
