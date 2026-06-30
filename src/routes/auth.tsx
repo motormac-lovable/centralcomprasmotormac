@@ -232,7 +232,6 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   const [types, setTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [deptFilter, setDeptFilter] = useState("");
-  const [deptFilter, setDeptFilter] = useState("");
   const [busy, setBusy] = useState(false);
 
   const toggle = (id: string) =>
