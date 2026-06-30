@@ -262,7 +262,10 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
 
   const selectedSupplier = suppliers.find((s) => s.id === selectedId) ?? null;
   const isCheapest = selectedSupplier && cheapest && selectedSupplier.id === cheapest.id;
-  const needsJustificativa = !!selectedSupplier && !isCheapest;
+  const isSingleSupplier = suppliers.length <= 1;
+  const needsCustoMaior = !!selectedSupplier && !isSingleSupplier && !isCheapest;
+  const needsFornUnico = !!selectedSupplier && isSingleSupplier;
+  const needsJustificativa = needsCustoMaior || needsFornUnico;
   const canApprove = !!selectedSupplier && (!needsJustificativa || justificativa.trim().length >= 5);
 
   return (
