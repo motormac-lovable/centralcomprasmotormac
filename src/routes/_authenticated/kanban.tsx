@@ -39,6 +39,8 @@ function KanbanPage() {
     STATUS_COLUMNS.reduce((acc, c) => ({ ...acc, [c.id]: { kind: "", approver: "" } }), {} as Record<Status, ColumnFilter>),
   );
   const [globalQuery, setGlobalQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
