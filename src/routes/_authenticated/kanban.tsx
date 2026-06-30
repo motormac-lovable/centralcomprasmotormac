@@ -108,6 +108,23 @@ function KanbanPage() {
       card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
         ? "pedidos_gerados"
         : requestedStatus;
+
+    // Regra de compliance: para avançar a "Aguardando Aprovação" é obrigatório
+    // ter ≥1 fornecedor no mapa comparativo E ≥1 anexo de orçamento.
+    if (newStatus === "aguardando_aprovacao") {
+      const suppliers = ((card.suppliers as unknown as Supplier[]) ?? []);
+      const attachments = ((card.attachments as unknown as Attachment[]) ?? []);
+      if (suppliers.length < 1 || attachments.length < 1) {
+        toast.error(
+          suppliers.length < 1 && attachments.length < 1
+            ? "Cadastre ao menos 1 fornecedor no mapa comparativo e anexe ao menos 1 orçamento antes de avançar."
+            : suppliers.length < 1
+            ? "Cadastre ao menos 1 fornecedor no mapa comparativo antes de avançar."
+            : "Anexe ao menos 1 orçamento antes de avançar.",
+        );
+        return;
+      }
+    }
     const patch: Partial<Card> = { status: newStatus };
     // Frete: número do pedido = código único da solicitação (não precisa do ERP).
     if (card.kind === "frete" && newStatus === "pedidos_gerados" && !card.numero_pedido_linx) {
@@ -1138,6 +1155,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
+              attachments={attachments}
               author={fullName || user?.email || "Comprador"}
               onMove={onMove}
               onClose={onClose}
@@ -1505,10 +1523,11 @@ function EmailPreviewModal({
 /* ─────────────── Advance Stage Section (Buyer) ─────────────── */
 
 function AdvanceStageSection({
-  card, suppliers, author, onMove, onClose, patch, rawData, observations,
+  card, suppliers, attachments, author, onMove, onClose, patch, rawData, observations,
 }: {
   card: Card;
   suppliers: Supplier[];
+  attachments: Attachment[];
   author: string;
   onMove: (c: Card, s: Status) => Promise<void>;
   onClose: () => void;
@@ -1521,7 +1540,16 @@ function AdvanceStageSection({
   const [busy, setBusy] = useState(false);
 
   const isToCotacao = card.status === "solicitacoes_abertas";
-  const isSingleSupplier = !isToCotacao && suppliers.length <= 1;
+  const hasSupplier = suppliers.length >= 1;
+  const hasAttachment = attachments.length >= 1;
+  const blocked = !isToCotacao && (!hasSupplier || !hasAttachment);
+  const isSingleSupplier = !isToCotacao && hasSupplier && hasAttachment && suppliers.length <= 1;
+
+  const blockReason = !hasSupplier && !hasAttachment
+    ? "É necessário cadastrar pelo menos 1 fornecedor no mapa comparativo e anexar pelo menos 1 orçamento."
+    : !hasSupplier
+    ? "Cadastre pelo menos 1 fornecedor no mapa comparativo para avançar."
+    : "Anexe pelo menos 1 orçamento para avançar.";
 
   const doAdvance = async () => {
     setBusy(true);
@@ -1529,7 +1557,6 @@ function AdvanceStageSection({
       const next: Status = isToCotacao ? "em_cotacao" : "aguardando_aprovacao";
 
       if (isSingleSupplier) {
-        // Persist compliance justification + log BEFORE moving
         const at = new Date().toISOString();
         const compliance = (rawData.compliance as Record<string, unknown> | undefined) ?? {};
         const nextData = {
@@ -1595,32 +1622,47 @@ function AdvanceStageSection({
   }
 
   return (
-    <section className="pt-4 border-t flex items-center justify-between gap-3">
-      <p className="text-xs text-muted-foreground">
-        {isToCotacao
-          ? "Avançar moverá o card para Em cotação."
-          : isSingleSupplier
-          ? "Apenas 1 fornecedor cotado — será necessária justificativa para avançar."
-          : "Avançar moverá o card para Aguardando Aprovação."}
-      </p>
-      <button
-        onClick={async () => {
-          if (isSingleSupplier) { setAskingJust(true); return; }
-          setBusy(true);
-          try {
-            const next: Status = isToCotacao ? "em_cotacao" : "aguardando_aprovacao";
-            await onMove(card, next);
-            onClose();
-          } finally {
-            setBusy(false);
-          }
-        }}
-        disabled={busy}
-        className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
-      >
-        Avançar etapa →
-      </button>
+    <section className="pt-4 border-t space-y-2">
+      {blocked && (
+        <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-950/20 px-3 py-2 text-xs text-red-800 dark:text-red-200 flex items-start gap-2">
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{blockReason}</span>
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {isToCotacao
+            ? "Avançar moverá o card para Em cotação."
+            : blocked
+            ? "Avanço bloqueado até cumprir os requisitos acima."
+            : isSingleSupplier
+            ? "Apenas 1 fornecedor cotado — será necessária justificativa para avançar."
+            : "Avançar moverá o card para Aguardando Aprovação."}
+        </p>
+        <button
+          onClick={async () => {
+            if (blocked) {
+              toast.error(blockReason);
+              return;
+            }
+            if (isSingleSupplier) { setAskingJust(true); return; }
+            setBusy(true);
+            try {
+              const next: Status = isToCotacao ? "em_cotacao" : "aguardando_aprovacao";
+              await onMove(card, next);
+              onClose();
+            } finally {
+              setBusy(false);
+            }
+          }}
+          disabled={busy || blocked}
+          className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
+        >
+          Avançar etapa →
+        </button>
+      </div>
     </section>
   );
 }
+
 
