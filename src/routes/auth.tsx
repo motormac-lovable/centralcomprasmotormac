@@ -331,6 +331,59 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
         </Field>
       )}
 
+      {perfil === "aprovador" && (
+        <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50/50 p-3 space-y-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
+            Alçada de Aprovação pretendida
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            A definição final fica a critério do Proprietário/Administrador, que poderá ajustar departamentos, alçada ou perfil ao aprovar seu cadastro.
+          </p>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">Teto de alçada pretendido</span>
+            <select
+              value={teto}
+              onChange={(e) => setTeto(Number(e.target.value))}
+              className={inputCls + " mt-1"}
+            >
+              {TETO_OPCOES.map((v) => (
+                <option key={v} value={v}>
+                  até {v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span className="text-xs font-medium text-muted-foreground">
+              Departamentos vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
+            </span>
+            <input
+              type="text"
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+              placeholder="Filtrar departamentos…"
+              className={inputCls + " mt-1"}
+            />
+            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border bg-background p-2 space-y-1">
+              {filteredDepts.slice(0, 200).map((d) => (
+                <label key={d} className="flex items-center gap-2 text-xs hover:bg-muted/60 rounded px-1 py-0.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={departments.includes(d)}
+                    onChange={() => toggleDept(d)}
+                  />
+                  <span className="truncate">{d}</span>
+                </label>
+              ))}
+              {filteredDepts.length > 200 && (
+                <p className="text-[10px] text-muted-foreground p-1">Refine a busca para ver mais resultados.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
       <button
         type="submit"
         disabled={busy}
