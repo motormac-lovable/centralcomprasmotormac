@@ -12,7 +12,7 @@ const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, fullName } = useAuth();
+  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
