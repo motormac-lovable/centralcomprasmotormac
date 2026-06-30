@@ -261,7 +261,7 @@ function KanbanPage() {
 }
 
 function Column({
-  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery,
+  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery, dateFrom, dateTo,
 }: {
   id: Status; label: string; tone: string; bg: string;
   allCards: Card[]; filter: ColumnFilter;
@@ -269,6 +269,8 @@ function Column({
   approvers: string[];
   onOpen: (c: Card) => void;
   globalQuery: string;
+  dateFrom: string;
+  dateTo: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -277,6 +279,14 @@ function Column({
   if (filter.approver) filtered = filtered.filter((c) => c.approver_name === filter.approver);
   const q = globalQuery.trim().toLowerCase();
   if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
+  if (dateFrom) {
+    const from = new Date(dateFrom + "T00:00:00").getTime();
+    filtered = filtered.filter((c) => new Date(c.created_at).getTime() >= from);
+  }
+  if (dateTo) {
+    const to = new Date(dateTo + "T23:59:59.999").getTime();
+    filtered = filtered.filter((c) => new Date(c.created_at).getTime() <= to);
+  }
 
   // "Solicitações abertas" → oldest first (already sorted asc)
   if (id !== "solicitacoes_abertas") {
