@@ -77,7 +77,7 @@ function FretePage() {
         requester_email: bloco.email,
         unidade: bloco.unidade,
         empresa: bloco.empresa,
-        status: "pedidos_gerados",
+        // Fretes seguem o fluxo padrão: abertura → cotação → aprovação do gestor → pedido
         data: payload,
       });
     } catch (err) {
