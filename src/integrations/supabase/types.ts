@@ -49,6 +49,8 @@ export type Database = {
           full_name: string
           id: string
           phone: string
+          requested_ceiling: number | null
+          requested_departments: string[]
           status: Database["public"]["Enums"]["application_status"]
           user_id: string | null
         }
@@ -62,6 +64,8 @@ export type Database = {
           full_name: string
           id?: string
           phone: string
+          requested_ceiling?: number | null
+          requested_departments?: string[]
           status?: Database["public"]["Enums"]["application_status"]
           user_id?: string | null
         }
@@ -75,6 +79,8 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string
+          requested_ceiling?: number | null
+          requested_departments?: string[]
           status?: Database["public"]["Enums"]["application_status"]
           user_id?: string | null
         }

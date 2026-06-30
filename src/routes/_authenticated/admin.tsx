@@ -45,7 +45,8 @@ function AdminPage() {
 
 
   const approve = async (app: App) => {
-    const role = selectedRole[app.id] ?? "buyer";
+    const fallback: AppRole = app.checklist_types.includes("aprovador") ? "aprovador" : app.checklist_types.includes("solicitante") ? "solicitante" : "buyer";
+    const role = selectedRole[app.id] ?? fallback;
     if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
     if (!app.user_id) return toast.error("Solicitação sem usuário vinculado.");
     const { error } = await supabase.from("buyer_applications")
@@ -53,9 +54,21 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
     const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
     if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
+    // Se aprovador, materializa as alçadas solicitadas pelo candidato.
+    if (role === "aprovador") {
+      const reqDepts = ((app as any).requested_departments as string[] | null) ?? [];
+      const reqCeil = Number((app as any).requested_ceiling ?? 0);
+      const { error: cfgErr } = await (supabase as any)
+        .from("approver_settings")
+        .upsert(
+          { user_id: app.user_id, departments: reqDepts, teto_alcada: reqCeil || 2000 },
+          { onConflict: "user_id" },
+        );
+      if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
+    }
     toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
       description: `Simulação: notificação enviada para ${app.email}.`,
     });
@@ -68,7 +81,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
     }
     toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
@@ -112,6 +125,17 @@ function AdminPage() {
                       <span key={t} className="text-[11px] bg-accent text-accent-foreground px-2 py-0.5 rounded-full">{t}</span>
                     ))}
                   </div>
+                  {a.checklist_types.includes("aprovador") && (
+                    <div className="mt-1 text-[11px] text-cyan-800">
+                      <div>
+                        Alçada pretendida:{" "}
+                        <strong>
+                          {Number((a as any).requested_ceiling ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </strong>
+                      </div>
+                      <div>Depto(s): {((a as any).requested_departments ?? []).join(", ") || "—"}</div>
+                    </div>
+                  )}
                 </td>
                 <td className="p-4">
                   <StatusPill status={a.status} />
@@ -120,7 +144,7 @@ function AdminPage() {
                   {a.status === "pending" ? (
                     <div className="inline-flex items-center gap-2">
                       <select
-                        value={selectedRole[a.id] ?? "buyer"}
+                        value={selectedRole[a.id] ?? (a.checklist_types.includes("aprovador") ? "aprovador" : a.checklist_types.includes("solicitante") ? "solicitante" : "buyer")}
                         onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole }))}
                         className="rounded-md border bg-background px-2 py-1.5 text-xs"
                         title="Nível a ser atribuído na aprovação"

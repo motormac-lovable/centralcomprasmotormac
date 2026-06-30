@@ -7,7 +7,10 @@ import { isOwnerEmail } from "@/lib/owner-emails";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
+import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
+
+const TETO_OPCOES = [2000, 5000, 10000, 30000, 200000];
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -215,18 +218,31 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [perfil, setPerfil] = useState<"solicitante" | "comprador">("solicitante");
+  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador">("solicitante");
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [teto, setTeto] = useState<number>(TETO_OPCOES[0]);
+  const [deptFilter, setDeptFilter] = useState("");
   const [busy, setBusy] = useState(false);
 
   const toggle = (id: string) =>
     setTypes((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
 
+  const toggleDept = (d: string) =>
+    setDepartments((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]));
+
+  const filteredDepts = deptFilter
+    ? DEPARTAMENTOS_APOLLO.filter((d) => d.toLowerCase().includes(deptFilter.toLowerCase()))
+    : DEPARTAMENTOS_APOLLO;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (perfil === "comprador" && types.length === 0) {
       return toast.error("Selecione ao menos um tipo de checklist.");
+    }
+    if (perfil === "aprovador" && departments.length === 0) {
+      return toast.error("Selecione ao menos um departamento de alçada.");
     }
     if (f.password.length < 8) return toast.error("A senha deve ter ao menos 8 caracteres.");
     setBusy(true);
@@ -243,7 +259,8 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       return toast.error(error?.message ?? "Erro ao cadastrar.");
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
-    const checklistTypes = perfil === "solicitante" ? ["solicitante"] : types;
+    const checklistTypes =
+      perfil === "solicitante" ? ["solicitante"] : perfil === "aprovador" ? ["aprovador"] : types;
     const { error: appErr } = await supabase.from("buyer_applications").insert({
       user_id: data.user.id,
       full_name: f.full_name,
@@ -251,7 +268,9 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       phone: f.phone,
       email: f.email,
       checklist_types: checklistTypes,
-    });
+      requested_departments: perfil === "aprovador" ? departments : [],
+      requested_ceiling: perfil === "aprovador" ? teto : null,
+    } as any);
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
@@ -261,10 +280,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="grid gap-4">
       <Field label="Perfil pretendido" required>
-        <div className="grid sm:grid-cols-2 gap-2">
+        <div className="grid sm:grid-cols-3 gap-2">
           {([
             { id: "solicitante", label: "Solicitante", desc: "Abro pedidos de compra para a equipe de compras." },
             { id: "comprador", label: "Comprador", desc: "Atuo na operação de cotação e fechamento de compras." },
+            { id: "aprovador", label: "Aprovador", desc: "Aprovo cotações dentro da minha alçada e departamentos." },
           ] as const).map((p) => (
             <label
               key={p.id}
@@ -310,6 +330,59 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
           </div>
         </Field>
       )}
+
+      {perfil === "aprovador" && (
+        <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50/50 p-3 space-y-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
+            Alçada de Aprovação pretendida
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            A definição final fica a critério do Proprietário/Administrador, que poderá ajustar departamentos, alçada ou perfil ao aprovar seu cadastro.
+          </p>
+          <label className="block">
+            <span className="text-xs font-medium text-muted-foreground">Teto de alçada pretendido</span>
+            <select
+              value={teto}
+              onChange={(e) => setTeto(Number(e.target.value))}
+              className={inputCls + " mt-1"}
+            >
+              {TETO_OPCOES.map((v) => (
+                <option key={v} value={v}>
+                  até {v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span className="text-xs font-medium text-muted-foreground">
+              Departamentos vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
+            </span>
+            <input
+              type="text"
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+              placeholder="Filtrar departamentos…"
+              className={inputCls + " mt-1"}
+            />
+            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border bg-background p-2 space-y-1">
+              {filteredDepts.slice(0, 200).map((d) => (
+                <label key={d} className="flex items-center gap-2 text-xs hover:bg-muted/60 rounded px-1 py-0.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={departments.includes(d)}
+                    onChange={() => toggleDept(d)}
+                  />
+                  <span className="truncate">{d}</span>
+                </label>
+              ))}
+              {filteredDepts.length > 200 && (
+                <p className="text-[10px] text-muted-foreground p-1">Refine a busca para ver mais resultados.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <button
         type="submit"
