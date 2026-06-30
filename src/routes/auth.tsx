@@ -280,7 +280,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       email: f.email,
       checklist_types: checklistTypes,
       requested_departments: perfil === "aprovador" ? departments : [],
-      requested_ceiling: perfil === "aprovador" ? teto : null,
+      requested_ceiling: null,
     } as any);
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
