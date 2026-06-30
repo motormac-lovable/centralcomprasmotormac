@@ -622,6 +622,15 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
               </li>
             ))}
           </ol>
+
+          {/* ── Compliance Section ── */}
+          <ComplianceSection
+            card={card}
+            compliance={compliance}
+            aprov={aprov}
+            suppliers={suppliers}
+            isRejected={isRejected}
+          />
         </div>
         <div className="p-4 border-t flex justify-end">
           <button
