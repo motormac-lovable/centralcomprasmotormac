@@ -49,7 +49,7 @@ function AuthPage() {
         <img src={logoAsset.url} alt="Motormac" className="h-[5.2rem] w-auto object-contain" />
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Central de Compras Motormac</h1>
       </div>
-      <div className="w-full max-w-xl rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="w-full max-w-5xl rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
         <div className="p-6 sm:p-8 border-b flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-accent text-primary">
@@ -293,10 +293,10 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       <Field label="Perfil pretendido" required>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {([
-            { id: "solicitante", label: "Solicitante", desc: "Abro pedidos de compra para a equipe de compras." },
+            { id: "solicitante", label: "Solicitante", desc: "Solicito compras para necessidades da minha área." },
             { id: "comprador", label: "Comprador", desc: "Atuo na operação de cotação e fechamento de compras." },
             { id: "aprovador", label: "Aprovador", desc: "Aprovo cotações dentro da minha alçada e departamentos." },
-            { id: "auditor", label: "Auditor", desc: "Apenas leitura. Não aprova nem altera cadastros e perfis." },
+            { id: "auditor", label: "Auditor", desc: "Audita o processo, buscando conformidade." },
           ] as const).map((p) => (
             <label
               key={p.id}
