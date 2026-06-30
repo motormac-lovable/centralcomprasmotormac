@@ -39,6 +39,8 @@ function KanbanPage() {
     STATUS_COLUMNS.reduce((acc, c) => ({ ...acc, [c.id]: { kind: "", approver: "" } }), {} as Record<Status, ColumnFilter>),
   );
   const [globalQuery, setGlobalQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
@@ -180,7 +182,7 @@ function KanbanPage() {
             Arraste os cartões entre as colunas. Cada coluna possui filtros e regras de SLA próprias.
           </p>
         </div>
-        <div className="sm:w-80 shrink-0">
+        <div className="sm:w-[28rem] shrink-0 space-y-2">
           <div className="relative">
             <Filter className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -192,9 +194,38 @@ function KanbanPage() {
               aria-label="Filtro global"
             />
           </div>
-          {globalQuery && (
-            <p className="text-[11px] text-muted-foreground mt-1 px-1">
-              Filtrando todas as colunas por “{globalQuery}”
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-medium text-muted-foreground shrink-0">De</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="flex-1 min-w-0 text-sm bg-background border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring/40"
+              aria-label="Data inicial"
+            />
+            <label className="text-[11px] font-medium text-muted-foreground shrink-0">até</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="flex-1 min-w-0 text-sm bg-background border rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring/40"
+              aria-label="Data final"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline shrink-0"
+              >
+                limpar
+              </button>
+            )}
+          </div>
+          {(globalQuery || dateFrom || dateTo) && (
+            <p className="text-[11px] text-muted-foreground px-1">
+              {globalQuery && <>Texto: “{globalQuery}”</>}
+              {globalQuery && (dateFrom || dateTo) && " · "}
+              {(dateFrom || dateTo) && <>Período: {dateFrom || "início"} → {dateTo || "hoje"}</>}
             </p>
           )}
         </div>
@@ -215,6 +246,8 @@ function KanbanPage() {
                 approvers={approvers}
                 onOpen={setOpen}
                 globalQuery={globalQuery}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
               />
             </div>
           ))}
@@ -228,7 +261,7 @@ function KanbanPage() {
 }
 
 function Column({
-  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery,
+  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery, dateFrom, dateTo,
 }: {
   id: Status; label: string; tone: string; bg: string;
   allCards: Card[]; filter: ColumnFilter;
@@ -236,6 +269,8 @@ function Column({
   approvers: string[];
   onOpen: (c: Card) => void;
   globalQuery: string;
+  dateFrom: string;
+  dateTo: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -244,6 +279,14 @@ function Column({
   if (filter.approver) filtered = filtered.filter((c) => c.approver_name === filter.approver);
   const q = globalQuery.trim().toLowerCase();
   if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
+  if (dateFrom) {
+    const from = new Date(dateFrom + "T00:00:00").getTime();
+    filtered = filtered.filter((c) => new Date(c.created_at).getTime() >= from);
+  }
+  if (dateTo) {
+    const to = new Date(dateTo + "T23:59:59.999").getTime();
+    filtered = filtered.filter((c) => new Date(c.created_at).getTime() <= to);
+  }
 
   // "Solicitações abertas" → oldest first (already sorted asc)
   if (id !== "solicitacoes_abertas") {
