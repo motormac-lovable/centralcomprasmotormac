@@ -261,7 +261,10 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
     const checklistTypes =
-      perfil === "solicitante" ? ["solicitante"] : perfil === "aprovador" ? ["aprovador"] : types;
+      perfil === "solicitante" ? ["solicitante"]
+        : perfil === "aprovador" ? ["aprovador"]
+        : perfil === "auditor" ? ["auditor"]
+        : types;
     const { error: appErr } = await supabase.from("buyer_applications").insert({
       user_id: data.user.id,
       full_name: f.full_name,
