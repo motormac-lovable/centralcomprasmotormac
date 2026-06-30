@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus, Pencil, Trash2 } from "lucide-react";
+import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus, Pencil, Trash2, Ban, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
 type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
-type ProfileRow = { id: string; full_name: string | null; email: string | null; cpf?: string | null; phone?: string | null };
+type ProfileRow = { id: string; full_name: string | null; email: string | null; cpf?: string | null; phone?: string | null; is_active?: boolean | null };
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Painel Admin — Motormac" }] }),
@@ -198,7 +198,7 @@ function RegisteredUsers() {
 
   const reload = async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, cpf, phone, created_at").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, full_name, email, cpf, phone, is_active, created_at").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const byUser = new Map<string, string[]>();
@@ -245,6 +245,16 @@ function RegisteredUsers() {
     }
   };
 
+  const toggleActive = async (u: Row) => {
+    const newState = !(u.is_active ?? true);
+    const verb = newState ? "reativar" : "inativar";
+    if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?`)) return;
+    const { error } = await supabase.from("profiles").update({ is_active: newState } as any).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    toast.success(newState ? "Usuário reativado." : "Usuário inativado. Acesso bloqueado até reativação.");
+    reload();
+  };
+
   return (
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -278,10 +288,17 @@ function RegisteredUsers() {
               const owner = isOwnerRow(u);
               const isSelf = u.id === user?.id;
               const canDelete = !owner && !isSelf;
+              const canToggle = !owner && !isSelf;
+              const active = u.is_active ?? true;
               return (
-                <tr key={u.id} className="border-t">
+                <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
                   <td className="p-4">
-                    <div className="font-medium">{u.full_name || "—"}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {u.full_name || "—"}
+                      {!active && (
+                        <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Inativo</span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">{u.cpf || ""}</div>
                   </td>
                   <td className="p-4">
@@ -312,6 +329,18 @@ function RegisteredUsers() {
                         title="Editar dados do usuário"
                       >
                         <Pencil className="h-3.5 w-3.5" /> Editar
+                      </button>
+                      <button
+                        onClick={() => canToggle && toggleActive(u)}
+                        disabled={!canToggle}
+                        className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                          active
+                            ? "bg-amber-500 text-white hover:bg-amber-600"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
+                        title={owner ? "Proprietários não podem ser inativados" : isSelf ? "Você não pode inativar o próprio usuário" : active ? "Inativar acesso" : "Reativar acesso"}
+                      >
+                        {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
                       </button>
                       <button
                         onClick={() => canDelete && setDeleting(u)}

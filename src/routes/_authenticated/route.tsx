@@ -8,13 +8,22 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
 
-    // E-mails do Proprietário sempre passam, sem checar papel.
+    // E-mails do Proprietário sempre passam, sem checar papel nem status.
     if (isOwnerEmail(data.user.email)) {
-      // Garante que o papel 'owner' exista (idempotente, tolera erro de RLS).
       try {
         await supabase.from("user_roles").insert({ user_id: data.user.id, role: "owner" });
       } catch { /* ignorado: já existe ou bloqueado */ }
       return { user: data.user };
+    }
+
+    // Bloqueia usuários inativados pelo Admin.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_active")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile && (profile as any).is_active === false) {
+      throw redirect({ to: "/pending" });
     }
 
     const { data: roles } = await supabase

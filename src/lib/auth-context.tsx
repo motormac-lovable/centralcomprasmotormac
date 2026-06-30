@@ -13,6 +13,7 @@ interface AuthState {
   isSolicitante: boolean;
   isApprover: boolean;
   isAuditor: boolean;
+  isActive: boolean;
   approverDepartments: string[];
   approverCeiling: number;
   hasAnyRole: boolean;
@@ -31,6 +32,7 @@ const Ctx = createContext<AuthState>({
   isSolicitante: false,
   isApprover: false,
   isAuditor: false,
+  isActive: true,
   approverDepartments: [],
   approverCeiling: 0,
   hasAnyRole: false,
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [fullName, setFullName] = useState("");
   const [approverDepartments, setApproverDepartments] = useState<string[]>([]);
   const [approverCeiling, setApproverCeiling] = useState<number>(0);
+  const [isActive, setIsActive] = useState<boolean>(true);
 
   const loadRoles = async (uid: string | undefined) => {
     if (!uid) {
@@ -53,15 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setFullName("");
       setApproverDepartments([]);
       setApproverCeiling(0);
+      setIsActive(true);
       return;
     }
     const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", uid),
-      supabase.from("profiles").select("full_name").eq("id", uid).maybeSingle(),
+      supabase.from("profiles").select("full_name, is_active").eq("id", uid).maybeSingle(),
       (supabase as any).from("approver_settings").select("departments, teto_alcada").eq("user_id", uid).maybeSingle(),
     ]);
     setRoles((rolesData ?? []).map((r) => r.role as string));
     setFullName(profile?.full_name ?? "");
+    setIsActive((profile as any)?.is_active !== false);
     setApproverDepartments((approverCfg?.departments as string[] | undefined) ?? []);
     setApproverCeiling(Number(approverCfg?.teto_alcada ?? 0));
   };
@@ -97,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSolicitante,
     isApprover,
     isAuditor,
+    isActive: isOwner ? true : isActive,
     approverDepartments,
     approverCeiling,
     hasAnyRole,
