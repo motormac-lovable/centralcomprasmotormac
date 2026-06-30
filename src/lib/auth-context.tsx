@@ -30,6 +30,7 @@ const Ctx = createContext<AuthState>({
   isBuyer: false,
   isSolicitante: false,
   isApprover: false,
+  isAuditor: false,
   approverDepartments: [],
   approverCeiling: 0,
   hasAnyRole: false,
