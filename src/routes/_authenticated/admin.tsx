@@ -53,9 +53,21 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
     const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
     if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
+    // Se aprovador, materializa as alçadas solicitadas pelo candidato.
+    if (role === "aprovador") {
+      const reqDepts = ((app as any).requested_departments as string[] | null) ?? [];
+      const reqCeil = Number((app as any).requested_ceiling ?? 0);
+      const { error: cfgErr } = await (supabase as any)
+        .from("approver_settings")
+        .upsert(
+          { user_id: app.user_id, departments: reqDepts, teto_alcada: reqCeil || 2000 },
+          { onConflict: "user_id" },
+        );
+      if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
+    }
     toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
       description: `Simulação: notificação enviada para ${app.email}.`,
     });
@@ -68,7 +80,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante"]);
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
     }
     toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
