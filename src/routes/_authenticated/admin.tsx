@@ -245,6 +245,16 @@ function RegisteredUsers() {
     }
   };
 
+  const toggleActive = async (u: Row) => {
+    const newState = !(u.is_active ?? true);
+    const verb = newState ? "reativar" : "inativar";
+    if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?`)) return;
+    const { error } = await supabase.from("profiles").update({ is_active: newState } as any).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    toast.success(newState ? "Usuário reativado." : "Usuário inativado. Acesso bloqueado até reativação.");
+    reload();
+  };
+
   return (
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
