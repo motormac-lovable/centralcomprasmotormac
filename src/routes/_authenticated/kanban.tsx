@@ -1138,6 +1138,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
+              attachments={attachments}
               author={fullName || user?.email || "Comprador"}
               onMove={onMove}
               onClose={onClose}
