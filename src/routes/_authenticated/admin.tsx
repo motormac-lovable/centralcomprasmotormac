@@ -288,10 +288,17 @@ function RegisteredUsers() {
               const owner = isOwnerRow(u);
               const isSelf = u.id === user?.id;
               const canDelete = !owner && !isSelf;
+              const canToggle = !owner && !isSelf;
+              const active = u.is_active ?? true;
               return (
-                <tr key={u.id} className="border-t">
+                <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
                   <td className="p-4">
-                    <div className="font-medium">{u.full_name || "—"}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {u.full_name || "—"}
+                      {!active && (
+                        <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Inativo</span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">{u.cpf || ""}</div>
                   </td>
                   <td className="p-4">
@@ -322,6 +329,18 @@ function RegisteredUsers() {
                         title="Editar dados do usuário"
                       >
                         <Pencil className="h-3.5 w-3.5" /> Editar
+                      </button>
+                      <button
+                        onClick={() => canToggle && toggleActive(u)}
+                        disabled={!canToggle}
+                        className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                          active
+                            ? "bg-amber-500 text-white hover:bg-amber-600"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
+                        title={owner ? "Proprietários não podem ser inativados" : isSelf ? "Você não pode inativar o próprio usuário" : active ? "Inativar acesso" : "Reativar acesso"}
+                      >
+                        {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
                       </button>
                       <button
                         onClick={() => canDelete && setDeleting(u)}
