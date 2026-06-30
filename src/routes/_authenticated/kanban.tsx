@@ -246,6 +246,8 @@ function KanbanPage() {
                 approvers={approvers}
                 onOpen={setOpen}
                 globalQuery={globalQuery}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
               />
             </div>
           ))}
