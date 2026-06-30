@@ -231,7 +231,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
-  const [teto, setTeto] = useState<number>(TETO_OPCOES[0]);
+  const [deptFilter, setDeptFilter] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
   const [busy, setBusy] = useState(false);
 
