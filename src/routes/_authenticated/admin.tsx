@@ -124,6 +124,17 @@ function AdminPage() {
                       <span key={t} className="text-[11px] bg-accent text-accent-foreground px-2 py-0.5 rounded-full">{t}</span>
                     ))}
                   </div>
+                  {a.checklist_types.includes("aprovador") && (
+                    <div className="mt-1 text-[11px] text-cyan-800">
+                      <div>
+                        Alçada pretendida:{" "}
+                        <strong>
+                          {Number((a as any).requested_ceiling ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </strong>
+                      </div>
+                      <div>Depto(s): {((a as any).requested_departments ?? []).join(", ") || "—"}</div>
+                    </div>
+                  )}
                 </td>
                 <td className="p-4">
                   <StatusPill status={a.status} />
@@ -132,7 +143,7 @@ function AdminPage() {
                   {a.status === "pending" ? (
                     <div className="inline-flex items-center gap-2">
                       <select
-                        value={selectedRole[a.id] ?? "buyer"}
+                        value={selectedRole[a.id] ?? (a.checklist_types.includes("aprovador") ? "aprovador" : a.checklist_types.includes("solicitante") ? "solicitante" : "buyer")}
                         onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole }))}
                         className="rounded-md border bg-background px-2 py-1.5 text-xs"
                         title="Nível a ser atribuído na aprovação"
