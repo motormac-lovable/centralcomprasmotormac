@@ -110,12 +110,19 @@ function AprovacoesPage() {
     const chosen = updatedSuppliers.find((s) => s.id === selectedSupplierId);
     const cheapest = [...list].sort((a, b) => parseValor(a.valor) - parseValor(b.valor))[0];
     const isCheapest = cheapest?.id === selectedSupplierId;
+    const isSingleSupplier = list.length <= 1;
+    const now = new Date().toISOString();
 
     const obs = ((card.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    const logText = isCheapest
-      ? `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`
-      : `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
-    const log = [...obs, { at: new Date().toISOString(), author, text: logText }];
+    let logText: string;
+    if (isSingleSupplier) {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (cotação única): ${justificativa}`;
+    } else if (isCheapest) {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`;
+    } else {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
+    }
+    const log = [...obs, { at: now, author, text: logText }];
 
     const dataObj = ((card.data as Record<string, unknown>) ?? {});
     const nextData = {
@@ -124,10 +131,13 @@ function AprovacoesPage() {
         fornecedor_escolhido_id: selectedSupplierId,
         fornecedor_escolhido: chosen?.fornecedor ?? null,
         valor_escolhido: chosen?.valor ?? null,
-        is_menor_custo: isCheapest,
-        justificativa_custo_maior: isCheapest ? null : justificativa,
+        is_menor_custo: isSingleSupplier ? null : isCheapest,
+        justificativa_custo_maior: !isSingleSupplier && !isCheapest ? justificativa : null,
+        justificativa_custo_maior_em: !isSingleSupplier && !isCheapest ? now : null,
+        justificativa_fornecedor_unico: isSingleSupplier ? justificativa : null,
+        justificativa_fornecedor_unico_em: isSingleSupplier ? now : null,
         aprovador: author,
-        aprovado_em: new Date().toISOString(),
+        aprovado_em: now,
       },
     };
 
