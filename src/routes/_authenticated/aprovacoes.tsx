@@ -358,16 +358,23 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
               <label className="text-xs font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Justificativa para escolha de fornecedor com custo maior <span className="text-red-600">*</span>
+                {needsFornUnico
+                  ? "Justificativa para aprovação com fornecedor único"
+                  : "Justificativa para escolha de fornecedor com custo maior"}{" "}
+                <span className="text-red-600">*</span>
               </label>
               <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
-                Você escolheu {selectedSupplier?.fornecedor} ({selectedSupplier?.valor}) em vez do menor custo: {cheapest?.fornecedor} ({cheapest?.valor}).
+                {needsFornUnico
+                  ? `Há apenas 1 cotação no processo (${selectedSupplier?.fornecedor} — ${selectedSupplier?.valor}). Justifique a aprovação sem mapa comparativo.`
+                  : `Você escolheu ${selectedSupplier?.fornecedor} (${selectedSupplier?.valor}) em vez do menor custo: ${cheapest?.fornecedor} (${cheapest?.valor}).`}
               </p>
               <textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 rows={3}
-                placeholder="Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."
+                placeholder={needsFornUnico
+                  ? "Ex: fornecedor exclusivo / homologado / urgência operacional…"
+                  : "Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."}
                 className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
