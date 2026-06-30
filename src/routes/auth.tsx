@@ -51,7 +51,7 @@ function AuthPage() {
       </div>
       <div className={`w-full rounded-2xl border bg-card shadow-sm overflow-hidden ${mode === "signin" ? "max-w-md" : "max-w-5xl"}`}>
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
-        <div className="p-6 sm:p-8 border-b flex items-start gap-3">
+        <div className="p-6 sm:p-8 border-b flex flex-col items-center gap-3 text-center">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-accent text-primary">
             <ShieldCheck className="h-5 w-5" />
           </div>
