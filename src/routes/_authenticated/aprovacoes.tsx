@@ -110,12 +110,19 @@ function AprovacoesPage() {
     const chosen = updatedSuppliers.find((s) => s.id === selectedSupplierId);
     const cheapest = [...list].sort((a, b) => parseValor(a.valor) - parseValor(b.valor))[0];
     const isCheapest = cheapest?.id === selectedSupplierId;
+    const isSingleSupplier = list.length <= 1;
+    const now = new Date().toISOString();
 
     const obs = ((card.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    const logText = isCheapest
-      ? `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`
-      : `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
-    const log = [...obs, { at: new Date().toISOString(), author, text: logText }];
+    let logText: string;
+    if (isSingleSupplier) {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (cotação única): ${justificativa}`;
+    } else if (isCheapest) {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`;
+    } else {
+      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
+    }
+    const log = [...obs, { at: now, author, text: logText }];
 
     const dataObj = ((card.data as Record<string, unknown>) ?? {});
     const nextData = {
@@ -124,10 +131,13 @@ function AprovacoesPage() {
         fornecedor_escolhido_id: selectedSupplierId,
         fornecedor_escolhido: chosen?.fornecedor ?? null,
         valor_escolhido: chosen?.valor ?? null,
-        is_menor_custo: isCheapest,
-        justificativa_custo_maior: isCheapest ? null : justificativa,
+        is_menor_custo: isSingleSupplier ? null : isCheapest,
+        justificativa_custo_maior: !isSingleSupplier && !isCheapest ? justificativa : null,
+        justificativa_custo_maior_em: !isSingleSupplier && !isCheapest ? now : null,
+        justificativa_fornecedor_unico: isSingleSupplier ? justificativa : null,
+        justificativa_fornecedor_unico_em: isSingleSupplier ? now : null,
         aprovador: author,
-        aprovado_em: new Date().toISOString(),
+        aprovado_em: now,
       },
     };
 
@@ -252,7 +262,10 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
 
   const selectedSupplier = suppliers.find((s) => s.id === selectedId) ?? null;
   const isCheapest = selectedSupplier && cheapest && selectedSupplier.id === cheapest.id;
-  const needsJustificativa = !!selectedSupplier && !isCheapest;
+  const isSingleSupplier = suppliers.length <= 1;
+  const needsCustoMaior = !!selectedSupplier && !isSingleSupplier && !isCheapest;
+  const needsFornUnico = !!selectedSupplier && isSingleSupplier;
+  const needsJustificativa = needsCustoMaior || needsFornUnico;
   const canApprove = !!selectedSupplier && (!needsJustificativa || justificativa.trim().length >= 5);
 
   return (
@@ -345,16 +358,23 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
               <label className="text-xs font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Justificativa para escolha de fornecedor com custo maior <span className="text-red-600">*</span>
+                {needsFornUnico
+                  ? "Justificativa para aprovação com fornecedor único"
+                  : "Justificativa para escolha de fornecedor com custo maior"}{" "}
+                <span className="text-red-600">*</span>
               </label>
               <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
-                Você escolheu {selectedSupplier?.fornecedor} ({selectedSupplier?.valor}) em vez do menor custo: {cheapest?.fornecedor} ({cheapest?.valor}).
+                {needsFornUnico
+                  ? `Há apenas 1 cotação no processo (${selectedSupplier?.fornecedor} — ${selectedSupplier?.valor}). Justifique a aprovação sem mapa comparativo.`
+                  : `Você escolheu ${selectedSupplier?.fornecedor} (${selectedSupplier?.valor}) em vez do menor custo: ${cheapest?.fornecedor} (${cheapest?.valor}).`}
               </p>
               <textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 rows={3}
-                placeholder="Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."
+                placeholder={needsFornUnico
+                  ? "Ex: fornecedor exclusivo / homologado / urgência operacional…"
+                  : "Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."}
                 className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>

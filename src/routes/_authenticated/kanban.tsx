@@ -451,6 +451,9 @@ type AprovacaoMeta = {
   valor_escolhido?: string | null;
   is_menor_custo?: boolean | null;
   justificativa_custo_maior?: string | null;
+  justificativa_custo_maior_em?: string | null;
+  justificativa_fornecedor_unico?: string | null;
+  justificativa_fornecedor_unico_em?: string | null;
   aprovador?: string | null;
   aprovado_em?: string | null;
 };
@@ -487,10 +490,12 @@ function reached(card: Card, target: Status): boolean {
 }
 
 type HistValue = { text: string; estimated?: boolean };
+type ComplianceJust = { texto?: string; registrado_em?: string; autor?: string };
 function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   const obs = ((card.observations as unknown as Observation[]) ?? []);
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const aprov = (rawData.aprovacao as AprovacaoMeta | undefined) ?? undefined;
+  const compliance = (rawData.compliance as Record<string, ComplianceJust> | undefined) ?? undefined;
   const suppliers = ((card.suppliers as unknown as Supplier[]) ?? []);
   const chosen = suppliers.find((s) => s.chosen) ?? null;
   const isRejected = card.status === "cotacoes_rejeitadas";
@@ -617,6 +622,15 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
               </li>
             ))}
           </ol>
+
+          {/* ── Compliance Section ── */}
+          <ComplianceSection
+            card={card}
+            compliance={compliance}
+            aprov={aprov}
+            suppliers={suppliers}
+            isRejected={isRejected}
+          />
         </div>
         <div className="p-4 border-t flex justify-end">
           <button
@@ -631,7 +645,88 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   );
 }
 
-/* ───────────────────────── Modal ───────────────────────── */
+/* ─────────────── Compliance Section (Detalhes) ─────────────── */
+
+function ComplianceSection({
+  card, compliance, aprov, suppliers, isRejected,
+}: {
+  card: Card;
+  compliance: Record<string, ComplianceJust> | undefined;
+  aprov: AprovacaoMeta | undefined;
+  suppliers: Supplier[];
+  isRejected: boolean;
+}) {
+  void card;
+  const compradorUnico = compliance?.justificativa_fornecedor_unico_comprador;
+  const aprovCustoMaior = aprov?.justificativa_custo_maior?.trim()
+    ? { texto: aprov.justificativa_custo_maior, registrado_em: aprov.justificativa_custo_maior_em || aprov.aprovado_em || null, autor: aprov.aprovador || null }
+    : null;
+  const aprovFornUnico = aprov?.justificativa_fornecedor_unico?.trim()
+    ? { texto: aprov.justificativa_fornecedor_unico, registrado_em: aprov.justificativa_fornecedor_unico_em || aprov.aprovado_em || null, autor: aprov.aprovador || null }
+    : null;
+
+  const entries: Array<{ label: string; texto: string; em?: string | null; autor?: string | null; tone: string }> = [];
+  if (compradorUnico?.texto) {
+    entries.push({
+      label: "Justificativa do Comprador (Fornecedor Único)",
+      texto: compradorUnico.texto, em: compradorUnico.registrado_em, autor: compradorUnico.autor,
+      tone: "amber",
+    });
+  }
+  if (aprovCustoMaior) {
+    entries.push({
+      label: "Justificativa do Aprovador (Maior Custo)",
+      texto: aprovCustoMaior.texto!, em: aprovCustoMaior.registrado_em, autor: aprovCustoMaior.autor,
+      tone: "orange",
+    });
+  }
+  if (aprovFornUnico) {
+    entries.push({
+      label: "Justificativa do Aprovador (Cotação Única)",
+      texto: aprovFornUnico.texto!, em: aprovFornUnico.registrado_em, autor: aprovFornUnico.autor,
+      tone: "amber",
+    });
+  }
+
+  const isStandardFlow = !isRejected && aprov && suppliers.length > 1 && aprov.is_menor_custo === true && entries.length === 0;
+
+  return (
+    <section className="mt-6 pt-5 border-t">
+      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <span>🛡️</span> Justificativas de Compliance
+      </h4>
+      {entries.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic rounded-md border border-dashed bg-muted/30 px-3 py-2">
+          {isStandardFlow
+            ? "Nenhuma ressalva identificada no processo (Fluxo Padrão)."
+            : "Nenhuma justificativa de compliance registrada para este card."}
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {entries.map((e, i) => (
+            <li
+              key={i}
+              className={`rounded-lg border px-3 py-2.5 ${
+                e.tone === "orange"
+                  ? "border-orange-300 bg-orange-50 dark:bg-orange-950/20"
+                  : "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+              }`}
+            >
+              <div className="text-[11px] uppercase tracking-wider font-semibold text-foreground/80">
+                {e.label}
+              </div>
+              <div className="text-sm mt-1 text-foreground break-words">“{e.texto}”</div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                Registrado em {fmtDate(e.em)}{e.autor ? ` · por ${e.autor}` : ""}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 
 type ItemMaterial = {
   material: string;
@@ -1040,23 +1135,16 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
           {(card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
-            <section className="pt-4 border-t flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                {card.status === "solicitacoes_abertas"
-                  ? "Avançar moverá o card para Em cotação."
-                  : "Avançar moverá o card para Aguardando Aprovação."}
-              </p>
-              <button
-                onClick={async () => {
-                  const next: Status = card.status === "solicitacoes_abertas" ? "em_cotacao" : "aguardando_aprovacao";
-                  await onMove(card, next);
-                  onClose();
-                }}
-                className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm"
-              >
-                Avançar etapa →
-              </button>
-            </section>
+            <AdvanceStageSection
+              card={card}
+              suppliers={suppliers}
+              author={fullName || user?.email || "Comprador"}
+              onMove={onMove}
+              onClose={onClose}
+              patch={patch}
+              rawData={rawData}
+              observations={observations}
+            />
           )}
         </div>
       </div>
@@ -1413,3 +1501,126 @@ function EmailPreviewModal({
     </div>
   );
 }
+
+/* ─────────────── Advance Stage Section (Buyer) ─────────────── */
+
+function AdvanceStageSection({
+  card, suppliers, author, onMove, onClose, patch, rawData, observations,
+}: {
+  card: Card;
+  suppliers: Supplier[];
+  author: string;
+  onMove: (c: Card, s: Status) => Promise<void>;
+  onClose: () => void;
+  patch: (p: Partial<Card>) => Promise<void>;
+  rawData: Record<string, unknown>;
+  observations: Observation[];
+}) {
+  const [askingJust, setAskingJust] = useState(false);
+  const [justText, setJustText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const isToCotacao = card.status === "solicitacoes_abertas";
+  const isSingleSupplier = !isToCotacao && suppliers.length <= 1;
+
+  const doAdvance = async () => {
+    setBusy(true);
+    try {
+      const next: Status = isToCotacao ? "em_cotacao" : "aguardando_aprovacao";
+
+      if (isSingleSupplier) {
+        // Persist compliance justification + log BEFORE moving
+        const at = new Date().toISOString();
+        const compliance = (rawData.compliance as Record<string, unknown> | undefined) ?? {};
+        const nextData = {
+          ...rawData,
+          compliance: {
+            ...compliance,
+            justificativa_fornecedor_unico_comprador: {
+              texto: justText.trim(),
+              registrado_em: at,
+              autor: author,
+            },
+          },
+        };
+        const log: Observation = {
+          at,
+          author,
+          text: `⚠️ Justificativa do Comprador (Fornecedor Único): ${justText.trim()}`,
+        };
+        await patch({
+          data: nextData as never,
+          observations: [...observations, log] as never,
+        });
+      }
+
+      await onMove(card, next);
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (askingJust) {
+    return (
+      <section className="pt-4 border-t space-y-3">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
+          <label className="text-xs font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Justificativa do Comprador — Fornecedor Único <span className="text-red-600">*</span>
+          </label>
+          <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+            Há apenas {suppliers.length} fornecedor cotado. Justifique o avanço sem mapa comparativo (será registrado no histórico de compliance).
+          </p>
+          <textarea
+            value={justText}
+            onChange={(e) => setJustText(e.target.value)}
+            rows={3}
+            placeholder="Ex: fornecedor exclusivo / homologação técnica / urgência operacional…"
+            className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setAskingJust(false)} disabled={busy} className="rounded-md border px-3 py-2 text-sm hover:bg-muted">Cancelar</button>
+          <button
+            onClick={doAdvance}
+            disabled={busy || justText.trim().length < 5}
+            className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
+          >
+            Confirmar e Avançar →
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="pt-4 border-t flex items-center justify-between gap-3">
+      <p className="text-xs text-muted-foreground">
+        {isToCotacao
+          ? "Avançar moverá o card para Em cotação."
+          : isSingleSupplier
+          ? "Apenas 1 fornecedor cotado — será necessária justificativa para avançar."
+          : "Avançar moverá o card para Aguardando Aprovação."}
+      </p>
+      <button
+        onClick={async () => {
+          if (isSingleSupplier) { setAskingJust(true); return; }
+          setBusy(true);
+          try {
+            const next: Status = isToCotacao ? "em_cotacao" : "aguardando_aprovacao";
+            await onMove(card, next);
+            onClose();
+          } finally {
+            setBusy(false);
+          }
+        }}
+        disabled={busy}
+        className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
+      >
+        Avançar etapa →
+      </button>
+    </section>
+  );
+}
+
