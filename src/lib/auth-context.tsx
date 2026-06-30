@@ -32,6 +32,7 @@ const Ctx = createContext<AuthState>({
   isSolicitante: false,
   isApprover: false,
   isAuditor: false,
+  isActive: true,
   approverDepartments: [],
   approverCeiling: 0,
   hasAnyRole: false,
