@@ -7,7 +7,10 @@ import { isOwnerEmail } from "@/lib/owner-emails";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
+import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
+
+const TETO_OPCOES = [2000, 5000, 10000, 30000, 200000];
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
