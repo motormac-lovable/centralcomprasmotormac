@@ -60,8 +60,8 @@ function AuthPage() {
               {mode === "signin" ? "Entrar na plataforma" : "Cadastro de Usuário"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {mode === "signin"
-                ? "Acesso liberado após aprovação do proprietário."
+            {mode === "signin"
+                ? "Acesso liberado após aprovação do time de Compras."
                 : "Preencha seus dados - sua solicitação será avaliada pelo time de Compras."}
             </p>
           </div>
