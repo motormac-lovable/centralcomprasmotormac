@@ -30,7 +30,7 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover } = useAuth();
+  const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
@@ -38,9 +38,10 @@ function AuthPage() {
     if (isAdmin) navigate({ to: "/admin" });
     else if (isBuyer) navigate({ to: "/inicio" });
     else if (isApprover) navigate({ to: "/aprovacoes" });
+    else if (isAuditor) navigate({ to: "/dashboard" });
     else if (isSolicitante) navigate({ to: "/" });
     else navigate({ to: "/pending" });
-  }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, navigate]);
+  }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, navigate]);
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 sm:px-6 py-10 gap-6">
