@@ -372,7 +372,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const [deptFilter, setDeptFilter] = useState("");
   const updateRoleFn = useServerFn(updateUserRole);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
 
   // Carrega configuração existente do Aprovador
   useEffect(() => {
