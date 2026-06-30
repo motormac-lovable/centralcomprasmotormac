@@ -102,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSolicitante,
     isApprover,
     isAuditor,
+    isActive: isOwner ? true : isActive,
     approverDepartments,
     approverCeiling,
     hasAnyRole,
