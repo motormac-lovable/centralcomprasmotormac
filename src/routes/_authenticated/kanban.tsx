@@ -108,6 +108,23 @@ function KanbanPage() {
       card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
         ? "pedidos_gerados"
         : requestedStatus;
+
+    // Regra de compliance: para avançar a "Aguardando Aprovação" é obrigatório
+    // ter ≥1 fornecedor no mapa comparativo E ≥1 anexo de orçamento.
+    if (newStatus === "aguardando_aprovacao") {
+      const suppliers = ((card.suppliers as unknown as Supplier[]) ?? []);
+      const attachments = ((card.attachments as unknown as Attachment[]) ?? []);
+      if (suppliers.length < 1 || attachments.length < 1) {
+        toast.error(
+          suppliers.length < 1 && attachments.length < 1
+            ? "Cadastre ao menos 1 fornecedor no mapa comparativo e anexe ao menos 1 orçamento antes de avançar."
+            : suppliers.length < 1
+            ? "Cadastre ao menos 1 fornecedor no mapa comparativo antes de avançar."
+            : "Anexe ao menos 1 orçamento antes de avançar.",
+        );
+        return;
+      }
+    }
     const patch: Partial<Card> = { status: newStatus };
     // Frete: número do pedido = código único da solicitação (não precisa do ERP).
     if (card.kind === "frete" && newStatus === "pedidos_gerados" && !card.numero_pedido_linx) {
