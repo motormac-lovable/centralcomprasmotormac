@@ -328,7 +328,7 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
-          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador"] : ["admin", "buyer", "solicitante", "aprovador"]}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
