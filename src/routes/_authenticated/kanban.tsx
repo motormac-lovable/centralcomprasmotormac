@@ -451,6 +451,9 @@ type AprovacaoMeta = {
   valor_escolhido?: string | null;
   is_menor_custo?: boolean | null;
   justificativa_custo_maior?: string | null;
+  justificativa_custo_maior_em?: string | null;
+  justificativa_fornecedor_unico?: string | null;
+  justificativa_fornecedor_unico_em?: string | null;
   aprovador?: string | null;
   aprovado_em?: string | null;
 };
