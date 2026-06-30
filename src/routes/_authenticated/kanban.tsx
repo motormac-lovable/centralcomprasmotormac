@@ -487,10 +487,12 @@ function reached(card: Card, target: Status): boolean {
 }
 
 type HistValue = { text: string; estimated?: boolean };
+type ComplianceJust = { texto?: string; registrado_em?: string; autor?: string };
 function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   const obs = ((card.observations as unknown as Observation[]) ?? []);
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const aprov = (rawData.aprovacao as AprovacaoMeta | undefined) ?? undefined;
+  const compliance = (rawData.compliance as Record<string, ComplianceJust> | undefined) ?? undefined;
   const suppliers = ((card.suppliers as unknown as Supplier[]) ?? []);
   const chosen = suppliers.find((s) => s.chosen) ?? null;
   const isRejected = card.status === "cotacoes_rejeitadas";
