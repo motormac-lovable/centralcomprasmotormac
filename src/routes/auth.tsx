@@ -218,18 +218,31 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [perfil, setPerfil] = useState<"solicitante" | "comprador">("solicitante");
+  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador">("solicitante");
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [teto, setTeto] = useState<number>(TETO_OPCOES[0]);
+  const [deptFilter, setDeptFilter] = useState("");
   const [busy, setBusy] = useState(false);
 
   const toggle = (id: string) =>
     setTypes((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
 
+  const toggleDept = (d: string) =>
+    setDepartments((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]));
+
+  const filteredDepts = deptFilter
+    ? DEPARTAMENTOS_APOLLO.filter((d) => d.toLowerCase().includes(deptFilter.toLowerCase()))
+    : DEPARTAMENTOS_APOLLO;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (perfil === "comprador" && types.length === 0) {
       return toast.error("Selecione ao menos um tipo de checklist.");
+    }
+    if (perfil === "aprovador" && departments.length === 0) {
+      return toast.error("Selecione ao menos um departamento de alçada.");
     }
     if (f.password.length < 8) return toast.error("A senha deve ter ao menos 8 caracteres.");
     setBusy(true);
@@ -246,7 +259,8 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       return toast.error(error?.message ?? "Erro ao cadastrar.");
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
-    const checklistTypes = perfil === "solicitante" ? ["solicitante"] : types;
+    const checklistTypes =
+      perfil === "solicitante" ? ["solicitante"] : perfil === "aprovador" ? ["aprovador"] : types;
     const { error: appErr } = await supabase.from("buyer_applications").insert({
       user_id: data.user.id,
       full_name: f.full_name,
@@ -254,7 +268,9 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       phone: f.phone,
       email: f.email,
       checklist_types: checklistTypes,
-    });
+      requested_departments: perfil === "aprovador" ? departments : [],
+      requested_ceiling: perfil === "aprovador" ? teto : null,
+    } as any);
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
