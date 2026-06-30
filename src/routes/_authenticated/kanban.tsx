@@ -645,7 +645,88 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   );
 }
 
-/* ───────────────────────── Modal ───────────────────────── */
+/* ─────────────── Compliance Section (Detalhes) ─────────────── */
+
+function ComplianceSection({
+  card, compliance, aprov, suppliers, isRejected,
+}: {
+  card: Card;
+  compliance: Record<string, ComplianceJust> | undefined;
+  aprov: AprovacaoMeta | undefined;
+  suppliers: Supplier[];
+  isRejected: boolean;
+}) {
+  void card;
+  const compradorUnico = compliance?.justificativa_fornecedor_unico_comprador;
+  const aprovCustoMaior = aprov?.justificativa_custo_maior?.trim()
+    ? { texto: aprov.justificativa_custo_maior, registrado_em: aprov.justificativa_custo_maior_em || aprov.aprovado_em || null, autor: aprov.aprovador || null }
+    : null;
+  const aprovFornUnico = aprov?.justificativa_fornecedor_unico?.trim()
+    ? { texto: aprov.justificativa_fornecedor_unico, registrado_em: aprov.justificativa_fornecedor_unico_em || aprov.aprovado_em || null, autor: aprov.aprovador || null }
+    : null;
+
+  const entries: Array<{ label: string; texto: string; em?: string | null; autor?: string | null; tone: string }> = [];
+  if (compradorUnico?.texto) {
+    entries.push({
+      label: "Justificativa do Comprador (Fornecedor Único)",
+      texto: compradorUnico.texto, em: compradorUnico.registrado_em, autor: compradorUnico.autor,
+      tone: "amber",
+    });
+  }
+  if (aprovCustoMaior) {
+    entries.push({
+      label: "Justificativa do Aprovador (Maior Custo)",
+      texto: aprovCustoMaior.texto!, em: aprovCustoMaior.registrado_em, autor: aprovCustoMaior.autor,
+      tone: "orange",
+    });
+  }
+  if (aprovFornUnico) {
+    entries.push({
+      label: "Justificativa do Aprovador (Cotação Única)",
+      texto: aprovFornUnico.texto!, em: aprovFornUnico.registrado_em, autor: aprovFornUnico.autor,
+      tone: "amber",
+    });
+  }
+
+  const isStandardFlow = !isRejected && aprov && suppliers.length > 1 && aprov.is_menor_custo === true && entries.length === 0;
+
+  return (
+    <section className="mt-6 pt-5 border-t">
+      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <span>🛡️</span> Justificativas de Compliance
+      </h4>
+      {entries.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic rounded-md border border-dashed bg-muted/30 px-3 py-2">
+          {isStandardFlow
+            ? "Nenhuma ressalva identificada no processo (Fluxo Padrão)."
+            : "Nenhuma justificativa de compliance registrada para este card."}
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {entries.map((e, i) => (
+            <li
+              key={i}
+              className={`rounded-lg border px-3 py-2.5 ${
+                e.tone === "orange"
+                  ? "border-orange-300 bg-orange-50 dark:bg-orange-950/20"
+                  : "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+              }`}
+            >
+              <div className="text-[11px] uppercase tracking-wider font-semibold text-foreground/80">
+                {e.label}
+              </div>
+              <div className="text-sm mt-1 text-foreground break-words">“{e.texto}”</div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                Registrado em {fmtDate(e.em)}{e.autor ? ` · por ${e.autor}` : ""}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 
 type ItemMaterial = {
   material: string;
