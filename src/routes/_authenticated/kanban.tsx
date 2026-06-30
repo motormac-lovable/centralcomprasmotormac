@@ -182,7 +182,6 @@ function KanbanPage() {
             Arraste os cartões entre as colunas. Cada coluna possui filtros e regras de SLA próprias.
           </p>
         </div>
-        <div className="sm:w-80 shrink-0">
         <div className="sm:w-[28rem] shrink-0 space-y-2">
           <div className="relative">
             <Filter className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
