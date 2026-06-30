@@ -100,13 +100,15 @@ function SignInForm() {
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
     let owner = isOwnerEmail(emailLogged);
-    let admin = false, buyer = false, solicitante = false;
+    let admin = false, buyer = false, solicitante = false, approver = false, auditor = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       owner = owner || (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
       solicitante = (roles ?? []).some((r) => r.role === "solicitante");
+      approver = (roles ?? []).some((r) => r.role === "aprovador");
+      auditor = (roles ?? []).some((r) => r.role === "auditor");
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
@@ -117,6 +119,12 @@ function SignInForm() {
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
       navigate({ to: "/inicio" });
+    } else if (approver) {
+      toast.success("Bem-vindo, Aprovador!");
+      navigate({ to: "/aprovacoes" });
+    } else if (auditor) {
+      toast.success("Bem-vindo, Auditor — acesso somente leitura.");
+      navigate({ to: "/dashboard" });
     } else if (solicitante) {
       toast.success("Bem-vindo, Solicitante!");
       navigate({ to: "/" });
