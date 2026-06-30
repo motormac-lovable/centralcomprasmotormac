@@ -49,7 +49,7 @@ function AuthPage() {
         <img src={logoAsset.url} alt="Motormac" className="h-[5.2rem] w-auto object-contain" />
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Central de Compras Motormac</h1>
       </div>
-      <div className="w-full max-w-5xl rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className={`w-full rounded-2xl border bg-card shadow-sm overflow-hidden ${mode === "signin" ? "max-w-md" : "max-w-5xl"}`}>
         <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-glow)]" />
         <div className="p-6 sm:p-8 border-b flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-accent text-primary">
