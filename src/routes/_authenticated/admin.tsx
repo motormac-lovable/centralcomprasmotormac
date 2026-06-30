@@ -45,7 +45,8 @@ function AdminPage() {
 
 
   const approve = async (app: App) => {
-    const role = selectedRole[app.id] ?? "buyer";
+    const fallback: AppRole = app.checklist_types.includes("aprovador") ? "aprovador" : app.checklist_types.includes("solicitante") ? "solicitante" : "buyer";
+    const role = selectedRole[app.id] ?? fallback;
     if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
     if (!app.user_id) return toast.error("Solicitação sem usuário vinculado.");
     const { error } = await supabase.from("buyer_applications")
