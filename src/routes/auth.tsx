@@ -346,25 +346,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       {perfil === "aprovador" && (
         <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50/50 p-3 space-y-3">
           <div className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
-            Alçada de Aprovação pretendida
+            Departamentos de alçada pretendidos
           </div>
           <p className="text-[11px] text-muted-foreground">
-            A definição final fica a critério do Proprietário/Administrador, que poderá ajustar departamentos, alçada ou perfil ao aprovar seu cadastro.
+            Selecione os departamentos em que deseja aprovar cotações. O <strong>teto de alçada</strong> (valor máximo) será definido pelo Proprietário/Administrador no Painel Admin ao aprovar seu cadastro.
           </p>
-          <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Teto de alçada pretendido</span>
-            <select
-              value={teto}
-              onChange={(e) => setTeto(Number(e.target.value))}
-              className={inputCls + " mt-1"}
-            >
-              {TETO_OPCOES.map((v) => (
-                <option key={v} value={v}>
-                  até {v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </option>
-              ))}
-            </select>
-          </label>
           <div>
             <span className="text-xs font-medium text-muted-foreground">
               Departamentos vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
