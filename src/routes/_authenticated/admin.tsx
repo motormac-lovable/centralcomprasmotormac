@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, isOwner, user } = useAuth();
+  const { isAdmin, isOwner, isAuditor, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
@@ -28,12 +28,17 @@ function AdminPage() {
 
   useEffect(() => { reload(); }, []);
 
-  if (!isAdmin) {
+  // Auditores são estritamente bloqueados desta área de governança.
+  if (isAuditor || !isAdmin) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Administradores</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Apenas aprovadores Motormac têm acesso a esta área.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {isAuditor
+            ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
+            : "Apenas Proprietário e Administrador têm acesso a esta área."}
+        </p>
       </div>
     );
   }
