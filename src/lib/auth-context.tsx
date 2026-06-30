@@ -13,6 +13,7 @@ interface AuthState {
   isSolicitante: boolean;
   isApprover: boolean;
   isAuditor: boolean;
+  isActive: boolean;
   approverDepartments: string[];
   approverCeiling: number;
   hasAnyRole: boolean;
