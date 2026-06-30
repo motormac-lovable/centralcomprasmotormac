@@ -12,6 +12,7 @@ interface AuthState {
   isBuyer: boolean;
   isSolicitante: boolean;
   isApprover: boolean;
+  isAuditor: boolean;
   approverDepartments: string[];
   approverCeiling: number;
   hasAnyRole: boolean;
@@ -29,6 +30,7 @@ const Ctx = createContext<AuthState>({
   isBuyer: false,
   isSolicitante: false,
   isApprover: false,
+  isAuditor: false,
   approverDepartments: [],
   approverCeiling: 0,
   hasAnyRole: false,
@@ -83,7 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSolicitante = roles.includes("solicitante");
   const isApprover = roles.includes("aprovador");
   const isBuyer = isAdmin || roles.includes("buyer");
-  const hasAnyRole = isOwner || isAdmin || isBuyer || isSolicitante || isApprover;
+  const isAuditor = roles.includes("auditor");
+  const hasAnyRole = isOwner || isAdmin || isBuyer || isSolicitante || isApprover || isAuditor;
   const value: AuthState = {
     user: session?.user ?? null,
     session,
@@ -93,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isBuyer,
     isSolicitante,
     isApprover,
+    isAuditor,
     approverDepartments,
     approverCeiling,
     hasAnyRole,

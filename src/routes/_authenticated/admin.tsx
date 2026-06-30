@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, isOwner, user } = useAuth();
+  const { isAdmin, isOwner, isAuditor, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
@@ -28,19 +28,24 @@ function AdminPage() {
 
   useEffect(() => { reload(); }, []);
 
-  if (!isAdmin) {
+  // Auditores são estritamente bloqueados desta área de governança.
+  if (isAuditor || !isAdmin) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Administradores</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Apenas aprovadores Motormac têm acesso a esta área.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {isAuditor
+            ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
+            : "Apenas Proprietário e Administrador têm acesso a esta área."}
+        </p>
       </div>
     );
   }
 
   type AppRole = Database["public"]["Enums"]["app_role"];
-  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
-  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador"] : ["admin", "buyer", "solicitante", "aprovador"];
+  const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
+  const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"];
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
 
 
@@ -54,7 +59,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
+    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador", "auditor"]);
     const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
     if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
     // Se aprovador, materializa as alçadas solicitadas pelo candidato.
@@ -81,7 +86,7 @@ function AdminPage() {
       .eq("id", app.id);
     if (error) return toast.error(error.message);
     if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador"]);
+      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador", "auditor"]);
     }
     toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
     reload();
@@ -207,13 +212,14 @@ function RegisteredUsers() {
 
   useEffect(() => { reload(); }, []);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
   const roleStyle: Record<string, string> = {
     owner: "bg-amber-100 text-amber-800",
     admin: "bg-blue-100 text-blue-800",
     buyer: "bg-emerald-100 text-emerald-800",
     solicitante: "bg-violet-100 text-violet-800",
     aprovador: "bg-cyan-100 text-cyan-800",
+    auditor: "bg-slate-200 text-slate-800",
   };
 
   const filtered = rows.filter((r) => {
@@ -327,7 +333,7 @@ function RegisteredUsers() {
       {editing && (
         <EditUserModal
           row={editing}
-          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador"] : ["admin", "buyer", "solicitante", "aprovador"]}
+          allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"]}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); reload(); }}
         />
@@ -371,7 +377,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const [deptFilter, setDeptFilter] = useState("");
   const updateRoleFn = useServerFn(updateUserRole);
 
-  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador" };
+  const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
 
   // Carrega configuração existente do Aprovador
   useEffect(() => {

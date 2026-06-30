@@ -73,7 +73,7 @@ export const updateUserRole = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z.object({
       user_id: z.string().uuid(),
-      role: z.enum(["owner", "admin", "buyer", "solicitante", "aprovador"]),
+      role: z.enum(["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"]),
     }).parse(data),
   )
 
@@ -108,7 +108,7 @@ export const updateUserRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.user_id)
-      .in("role", ["owner", "admin", "buyer", "solicitante", "aprovador"]);
+      .in("role", ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"]);
 
 
     const { error } = await supabaseAdmin

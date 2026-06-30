@@ -30,7 +30,7 @@ const CHECKLISTS = [
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover } = useAuth();
+  const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
@@ -38,9 +38,10 @@ function AuthPage() {
     if (isAdmin) navigate({ to: "/admin" });
     else if (isBuyer) navigate({ to: "/inicio" });
     else if (isApprover) navigate({ to: "/aprovacoes" });
+    else if (isAuditor) navigate({ to: "/dashboard" });
     else if (isSolicitante) navigate({ to: "/" });
     else navigate({ to: "/pending" });
-  }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, navigate]);
+  }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, navigate]);
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 sm:px-6 py-10 gap-6">
@@ -99,13 +100,15 @@ function SignInForm() {
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
     let owner = isOwnerEmail(emailLogged);
-    let admin = false, buyer = false, solicitante = false;
+    let admin = false, buyer = false, solicitante = false, approver = false, auditor = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       owner = owner || (roles ?? []).some((r) => r.role === "owner");
       admin = (roles ?? []).some((r) => r.role === "admin");
       buyer = (roles ?? []).some((r) => r.role === "buyer");
       solicitante = (roles ?? []).some((r) => r.role === "solicitante");
+      approver = (roles ?? []).some((r) => r.role === "aprovador");
+      auditor = (roles ?? []).some((r) => r.role === "auditor");
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
@@ -116,6 +119,12 @@ function SignInForm() {
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
       navigate({ to: "/inicio" });
+    } else if (approver) {
+      toast.success("Bem-vindo, Aprovador!");
+      navigate({ to: "/aprovacoes" });
+    } else if (auditor) {
+      toast.success("Bem-vindo, Auditor — acesso somente leitura.");
+      navigate({ to: "/dashboard" });
     } else if (solicitante) {
       toast.success("Bem-vindo, Solicitante!");
       navigate({ to: "/" });
@@ -218,7 +227,7 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador">("solicitante");
+  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador" | "auditor">("solicitante");
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
@@ -260,7 +269,10 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
     const checklistTypes =
-      perfil === "solicitante" ? ["solicitante"] : perfil === "aprovador" ? ["aprovador"] : types;
+      perfil === "solicitante" ? ["solicitante"]
+        : perfil === "aprovador" ? ["aprovador"]
+        : perfil === "auditor" ? ["auditor"]
+        : types;
     const { error: appErr } = await supabase.from("buyer_applications").insert({
       user_id: data.user.id,
       full_name: f.full_name,
@@ -280,11 +292,12 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="grid gap-4">
       <Field label="Perfil pretendido" required>
-        <div className="grid sm:grid-cols-3 gap-2">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {([
             { id: "solicitante", label: "Solicitante", desc: "Abro pedidos de compra para a equipe de compras." },
             { id: "comprador", label: "Comprador", desc: "Atuo na operação de cotação e fechamento de compras." },
             { id: "aprovador", label: "Aprovador", desc: "Aprovo cotações dentro da minha alçada e departamentos." },
+            { id: "auditor", label: "Auditor", desc: "Apenas leitura. Não aprova nem altera cadastros e perfis." },
           ] as const).map((p) => (
             <label
               key={p.id}

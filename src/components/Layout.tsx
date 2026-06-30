@@ -12,7 +12,7 @@ const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, fullName } = useAuth();
+  const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
@@ -35,9 +35,10 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   // Aprovador também pode emitir solicitações (acessa formulários e seu histórico pessoal).
-  const showBuyerLinks = isBuyer;
-  const canRequest = isSolicitante || isApprover || isBuyer;
-  const showMinhasSolicitacoes = (isSolicitante || isApprover) && !isBuyer && !isAdmin;
+  // Auditor é estritamente somente leitura: NÃO pode emitir solicitações nem acessar gestão de usuários.
+  const showBuyerLinks = isBuyer || isAuditor;
+  const canRequest = !isAuditor && (isSolicitante || isApprover || isBuyer);
+  const showMinhasSolicitacoes = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -47,25 +48,30 @@ export function Layout({ children }: { children: ReactNode }) {
             <img src={logoAsset.url} alt="Motormac" className="h-12 w-auto object-contain" />
             <div className="hidden lg:flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">Central de Compras</span>
-              <span className="text-xs text-muted-foreground">Plataforma Interna Motormac</span>
+              <span className="text-xs text-muted-foreground">
+                {isAuditor ? "Modo Auditor — Somente leitura" : "Plataforma Interna Motormac"}
+              </span>
             </div>
           </Link>
           <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto">
-            {/* Nova Solicitação — Solicitante, Aprovador, Comprador e Admin */}
+            {/* Nova Solicitação — Solicitante, Aprovador, Comprador e Admin (Auditor é bloqueado) */}
             {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
             )}
 
-            {/* Visão completa do Comprador */}
+            {/* Visão completa do Comprador / Auditor (somente leitura) */}
             {showBuyerLinks && (
               <>
-                <NavLink to="/inicio" active={pathname.startsWith("/inicio")} icon={<LayoutGrid className="h-4 w-4" />}>Início</NavLink>
+                {!isAuditor && (
+                  <NavLink to="/inicio" active={pathname.startsWith("/inicio")} icon={<LayoutGrid className="h-4 w-4" />}>Início</NavLink>
+                )}
                 <NavLink to="/dashboard" active={pathname.startsWith("/dashboard")} icon={<BarChart3 className="h-4 w-4" />}>Dashboard</NavLink>
                 <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
                 <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
               </>
             )}
-            {isAdmin && (
+            {/* Admin: estritamente Proprietário/Administrador. Auditor NÃO acessa gestão de cadastros. */}
+            {isAdmin && !isAuditor && (
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
             )}
             {isOwner && (
@@ -83,8 +89,8 @@ export function Layout({ children }: { children: ReactNode }) {
               </NavLink>
             )}
 
-            {/* Painel exclusivo do Aprovador (e Proprietário para alçada >R$ 200k) */}
-            {(isApprover || isOwner) && (
+            {/* Painel de Aprovações — Aprovador, Proprietário e Auditor (este último em modo leitura) */}
+            {(isApprover || isOwner || isAuditor) && (
               <NavLink
                 to="/aprovacoes"
                 active={pathname.startsWith("/aprovacoes")}
