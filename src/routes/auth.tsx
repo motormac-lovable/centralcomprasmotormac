@@ -219,7 +219,7 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador">("solicitante");
+  const [perfil, setPerfil] = useState<"solicitante" | "comprador" | "aprovador" | "auditor">("solicitante");
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
