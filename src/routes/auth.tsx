@@ -10,7 +10,7 @@ import { maskPhone } from "@/lib/masks";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 
-const TETO_OPCOES = [2000, 5000, 10000, 30000, 200000];
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -231,7 +231,6 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   const [f, setF] = useState({ full_name: "", cpf: "", phone: "", email: "", password: "" });
   const [types, setTypes] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
-  const [teto, setTeto] = useState<number>(TETO_OPCOES[0]);
   const [deptFilter, setDeptFilter] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -281,7 +280,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       email: f.email,
       checklist_types: checklistTypes,
       requested_departments: perfil === "aprovador" ? departments : [],
-      requested_ceiling: perfil === "aprovador" ? teto : null,
+      requested_ceiling: null,
     } as any);
     setBusy(false);
     if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
@@ -347,25 +346,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       {perfil === "aprovador" && (
         <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50/50 p-3 space-y-3">
           <div className="text-xs font-semibold uppercase tracking-wider text-cyan-800">
-            Alçada de Aprovação pretendida
+            Departamentos de alçada pretendidos
           </div>
           <p className="text-[11px] text-muted-foreground">
-            A definição final fica a critério do Proprietário/Administrador, que poderá ajustar departamentos, alçada ou perfil ao aprovar seu cadastro.
+            Selecione os departamentos em que deseja aprovar cotações. O <strong>teto de alçada</strong> (valor máximo) será definido pelo Proprietário/Administrador no Painel Admin ao aprovar seu cadastro.
           </p>
-          <label className="block">
-            <span className="text-xs font-medium text-muted-foreground">Teto de alçada pretendido</span>
-            <select
-              value={teto}
-              onChange={(e) => setTeto(Number(e.target.value))}
-              className={inputCls + " mt-1"}
-            >
-              {TETO_OPCOES.map((v) => (
-                <option key={v} value={v}>
-                  até {v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </option>
-              ))}
-            </select>
-          </label>
           <div>
             <span className="text-xs font-medium text-muted-foreground">
               Departamentos vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
