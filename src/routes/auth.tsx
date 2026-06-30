@@ -284,11 +284,12 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="grid gap-4">
       <Field label="Perfil pretendido" required>
-        <div className="grid sm:grid-cols-3 gap-2">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {([
             { id: "solicitante", label: "Solicitante", desc: "Abro pedidos de compra para a equipe de compras." },
             { id: "comprador", label: "Comprador", desc: "Atuo na operação de cotação e fechamento de compras." },
             { id: "aprovador", label: "Aprovador", desc: "Aprovo cotações dentro da minha alçada e departamentos." },
+            { id: "auditor", label: "Auditor", desc: "Apenas leitura. Não aprova nem altera cadastros e perfis." },
           ] as const).map((p) => (
             <label
               key={p.id}
