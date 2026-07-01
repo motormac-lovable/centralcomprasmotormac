@@ -290,18 +290,24 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
         : perfil === "aprovador" ? ["aprovador"]
         : perfil === "auditor" ? ["auditor"]
         : types;
-    const { error: appErr } = await supabase.from("buyer_applications").insert({
-      user_id: data.user.id,
-      full_name: f.full_name,
-      cpf: f.cpf,
-      phone: f.phone,
-      email: f.email,
-      checklist_types: checklistTypes,
-      requested_departments: perfil === "aprovador" ? departments : [],
-      requested_ceiling: null,
-    } as any);
+    try {
+      await submitBuyerApplication({
+        data: {
+          user_id: data.user.id,
+          full_name: f.full_name,
+          cpf: f.cpf,
+          phone: f.phone,
+          email: f.email,
+          checklist_types: checklistTypes,
+          requested_departments: perfil === "aprovador" ? departments : [],
+          requested_ceiling: null,
+        },
+      });
+    } catch (err) {
+      setBusy(false);
+      return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + (err instanceof Error ? err.message : String(err)));
+    }
     setBusy(false);
-    if (appErr) return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + appErr.message);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
     onDone();
   };
