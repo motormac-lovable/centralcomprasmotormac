@@ -1,59 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const schema = z.object({
-  user_id: z.string().uuid(),
-  full_name: z.string().min(1).max(200),
-  cpf: z.string().min(1).max(32),
-  phone: z.string().min(1).max(32),
-  email: z.string().email().max(255),
-  checklist_types: z.array(z.string().max(64)).max(20),
-  requested_departments: z.array(z.string().max(120)).max(200).default([]),
-  requested_ceiling: z.number().nullable().optional(),
-});
-
-export const submitBuyerApplication = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => schema.parse(data))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // Verifica que o user_id realmente existe em auth.users e que o e-mail bate.
-    const { data: userRes, error: uErr } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
-    if (uErr || !userRes?.user) throw new Error("Usuário não encontrado.");
-    if ((userRes.user.email ?? "").toLowerCase() !== data.email.toLowerCase()) {
-      throw new Error("E-mail não corresponde ao usuário.");
-    }
-
-    // Evita duplicatas de solicitação pendente para o mesmo usuário.
-    const { data: existing } = await supabaseAdmin
-      .from("buyer_applications")
-      .select("id,status")
-      .eq("user_id", data.user_id)
-      .eq("status", "pending")
-      .maybeSingle();
-    if (existing) return { ok: true, id: existing.id, duplicated: true };
-
-    const { data: inserted, error } = await supabaseAdmin
-      .from("buyer_applications")
-      .insert({
-        user_id: data.user_id,
-        full_name: data.full_name,
-        cpf: data.cpf,
-        phone: data.phone,
-        email: data.email,
-        checklist_types: data.checklist_types,
-        requested_departments: data.requested_departments ?? [],
-        requested_ceiling: data.requested_ceiling ?? null,
-        status: "pending",
-      } as never)
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    return { ok: true, id: inserted.id, duplicated: false };
-  });
-
 // ---------------------------------------------------------------------------
-// Cadastro completo via admin API (sem rate limit público de signUp)
+// Cadastro público (SEM criar usuário no auth): grava a solicitação pendente.
+// O Administrador cria o usuário só ao aprovar a solicitação.
 // ---------------------------------------------------------------------------
 const registerSchema = z.object({
   full_name: z.string().min(1).max(200),
@@ -76,50 +27,30 @@ export const registerBuyerApplicant = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Cria o usuário via Admin API — bypassa o rate limit público de signup
-    // e já confirma o e-mail (a governança do acesso ocorre no Painel Admin).
-    let userId: string | null = null;
-    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: data.full_name,
-        cpf: data.cpf,
-        phone: data.phone,
-      },
-    });
-    if (createErr) {
-      const msg = createErr.message || "";
-      // Se já existe, recupera o id para permitir reenvio da solicitação.
-      if (/already been registered|already registered|exists/i.test(msg)) {
-        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const found = list?.users?.find(
-          (u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase(),
-        );
-        if (!found) throw new Error("E-mail já cadastrado. Tente entrar ou recuperar a senha.");
-        userId = found.id;
-      } else {
-        throw new Error(msg || "Falha ao criar usuário.");
-      }
-    } else {
-      userId = created?.user?.id ?? null;
+    // Bloqueia se já existir usuário aprovado com o mesmo e-mail no auth.
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const already = list?.users?.find(
+      (u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase(),
+    );
+    if (already) {
+      throw new Error("Este e-mail já possui cadastro aprovado. Entre normalmente ou use 'Esqueci minha senha'.");
     }
-    if (!userId) throw new Error("Não foi possível obter o ID do novo usuário.");
 
-    // Evita duplicatas de solicitação pendente.
+    // Bloqueia duplicidade de solicitações pendentes para o mesmo e-mail.
     const { data: existing } = await supabaseAdmin
       .from("buyer_applications")
       .select("id")
-      .eq("user_id", userId)
+      .eq("email", data.email)
       .eq("status", "pending")
       .maybeSingle();
-    if (existing) return { ok: true, user_id: userId, application_id: existing.id, duplicated: true };
+    if (existing) {
+      return { ok: true, application_id: existing.id, duplicated: true };
+    }
 
     const { data: inserted, error } = await supabaseAdmin
       .from("buyer_applications")
       .insert({
-        user_id: userId,
+        user_id: null,
         full_name: data.full_name,
         cpf: data.cpf,
         phone: data.phone,
@@ -128,9 +59,165 @@ export const registerBuyerApplicant = createServerFn({ method: "POST" })
         requested_departments: data.requested_departments ?? [],
         requested_ceiling: null,
         status: "pending",
+        pending_password: data.password,
       } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { ok: true, user_id: userId, application_id: inserted.id, duplicated: false };
+    return { ok: true, application_id: inserted.id, duplicated: false };
+  });
+
+// ---------------------------------------------------------------------------
+// Aprovação: cria o usuário no auth (se ainda não existir) e atribui o papel.
+// Apenas Owner/Admin autenticados podem aprovar.
+// ---------------------------------------------------------------------------
+const approveSchema = z.object({
+  application_id: z.string().uuid(),
+  role: z.enum(["admin", "buyer", "solicitante", "aprovador", "auditor"]),
+});
+
+export const approveBuyerApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => approveSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Autoriza somente Owner ou Admin.
+    const { data: isOwner } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isOwner && !isAdmin) throw new Error("Sem permissão para aprovar cadastros.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: app, error: aErr } = await supabaseAdmin
+      .from("buyer_applications")
+      .select("*")
+      .eq("id", data.application_id)
+      .maybeSingle();
+    if (aErr || !app) throw new Error("Solicitação não encontrada.");
+    if ((app as any).status === "approved") throw new Error("Solicitação já aprovada.");
+
+    // Cria o usuário se ainda não houver user_id vinculado.
+    let uid: string | null = (app as any).user_id ?? null;
+    if (!uid) {
+      const pwd = (app as any).pending_password as string | null;
+      if (!pwd) throw new Error("Solicitação sem senha registrada. Peça um novo cadastro.");
+      const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
+        email: (app as any).email,
+        password: pwd,
+        email_confirm: true,
+        user_metadata: {
+          full_name: (app as any).full_name,
+          cpf: (app as any).cpf,
+          phone: (app as any).phone,
+        },
+      });
+      if (cErr || !created?.user) {
+        // Se já existe (borda), recupera pelo email
+        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        const found = list?.users?.find(
+          (u) => (u.email ?? "").toLowerCase() === ((app as any).email as string).toLowerCase(),
+        );
+        if (!found) throw new Error(cErr?.message || "Falha ao criar usuário.");
+        uid = found.id;
+      } else {
+        uid = created.user.id;
+      }
+    }
+
+    // Zera papéis anteriores (exceto owner) e atribui o novo.
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", uid!)
+      .in("role", ["admin", "buyer", "solicitante", "aprovador", "auditor"]);
+    const { error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: uid!, role: data.role } as never);
+    if (rErr) throw new Error("Falha ao atribuir papel: " + rErr.message);
+
+    // Atualiza a solicitação, limpa a senha temporária.
+    const { error: uErr } = await supabaseAdmin
+      .from("buyer_applications")
+      .update({
+        status: "approved",
+        user_id: uid,
+        decided_by: userId,
+        decided_at: new Date().toISOString(),
+        pending_password: null,
+      } as never)
+      .eq("id", data.application_id);
+    if (uErr) throw new Error(uErr.message);
+
+    return { ok: true, user_id: uid, role: data.role };
+  });
+
+// ---------------------------------------------------------------------------
+// Reprovação: NÃO cria usuário. Apenas marca como rejected e limpa senha.
+// ---------------------------------------------------------------------------
+export const rejectBuyerApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ application_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isOwner } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isOwner && !isAdmin) throw new Error("Sem permissão.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("buyer_applications")
+      .update({
+        status: "rejected",
+        decided_by: userId,
+        decided_at: new Date().toISOString(),
+        pending_password: null,
+      } as never)
+      .eq("id", data.application_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------------------------------------------------------------------------
+// Compat: mantém a função antiga (usada por outros pontos, hoje sem chamadas).
+// ---------------------------------------------------------------------------
+const legacySchema = z.object({
+  user_id: z.string().uuid(),
+  full_name: z.string().min(1).max(200),
+  cpf: z.string().min(1).max(32),
+  phone: z.string().min(1).max(32),
+  email: z.string().email().max(255),
+  checklist_types: z.array(z.string().max(64)).max(20),
+  requested_departments: z.array(z.string().max(120)).max(200).default([]),
+  requested_ceiling: z.number().nullable().optional(),
+});
+
+export const submitBuyerApplication = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => legacySchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing } = await supabaseAdmin
+      .from("buyer_applications")
+      .select("id")
+      .eq("user_id", data.user_id)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (existing) return { ok: true, id: existing.id, duplicated: true };
+    const { data: inserted, error } = await supabaseAdmin
+      .from("buyer_applications")
+      .insert({
+        user_id: data.user_id,
+        full_name: data.full_name,
+        cpf: data.cpf,
+        phone: data.phone,
+        email: data.email,
+        checklist_types: data.checklist_types,
+        requested_departments: data.requested_departments ?? [],
+        requested_ceiling: data.requested_ceiling ?? null,
+        status: "pending",
+      } as never)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true, id: inserted.id, duplicated: false };
   });
