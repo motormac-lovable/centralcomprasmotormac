@@ -213,6 +213,7 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
   const [deleting, setDeleting] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
   const deleteFn = useServerFn(deleteUserCompletely);
+  const toggleActiveFn = useServerFn(setUserActiveState);
 
   const reload = async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
