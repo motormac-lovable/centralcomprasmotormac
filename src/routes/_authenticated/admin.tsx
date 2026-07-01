@@ -21,28 +21,47 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, isOwner, isAuditor, user } = useAuth();
+  const { isAdmin, isOwner, isAuditor, isBuyer, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
     .then(({ data }) => setApps(data ?? []));
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { if (isAdmin) reload(); }, [isAdmin]);
 
   // Auditores são estritamente bloqueados desta área de governança.
-  if (isAuditor || !isAdmin) {
+  // Comprador tem acesso parcial: apenas Gestão de Solicitantes.
+  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+
+  if (isAuditor || (!isAdmin && !buyerOnly)) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Administradores</h1>
+        <h1 className="mt-4 text-2xl font-semibold">Acesso restrito</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isAuditor
             ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
-            : "Apenas Proprietário e Administrador têm acesso a esta área."}
+            : "Você não tem permissão para acessar esta área."}
         </p>
       </div>
     );
   }
+
+  if (buyerOnly) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes.
+            Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
+          </p>
+        </div>
+        <RegisteredUsers buyerOnly />
+      </div>
+    );
+  }
+
 
   type AppRole = Database["public"]["Enums"]["app_role"];
   const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
@@ -185,9 +204,9 @@ function AdminPage() {
   );
 }
 
-function RegisteredUsers() {
+function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
-  const { isOwner, user } = useAuth();
+  const { isOwner, isAdmin, user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
@@ -222,6 +241,8 @@ function RegisteredUsers() {
   };
 
   const filtered = rows.filter((r) => {
+    // Comprador só enxerga Solicitantes na Gestão de Solicitantes.
+    if (buyerOnly && !r.roles.includes("solicitante")) return false;
     const s = q.trim().toLowerCase();
     if (!s) return true;
     return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
@@ -259,8 +280,12 @@ function RegisteredUsers() {
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Usuários registrados</h2>
-          <p className="text-xs text-muted-foreground">Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos.</p>
+          <h2 className="text-lg font-semibold tracking-tight">{buyerOnly ? "Solicitantes" : "Usuários registrados"}</h2>
+          <p className="text-xs text-muted-foreground">
+            {buyerOnly
+              ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
+              : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
+          </p>
         </div>
         <input
           value={q}
@@ -335,14 +360,16 @@ function RegisteredUsers() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
-                      <button
-                        onClick={() => canEdit && setEditing(u)}
-                        disabled={!canEdit}
-                        className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> Editar
-                      </button>
+                      {!buyerOnly && (
+                        <button
+                          onClick={() => canEdit && setEditing(u)}
+                          disabled={!canEdit}
+                          className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </button>
+                      )}
                       <button
                         onClick={() => canToggle && toggleActive(u)}
                         disabled={!canToggle}
@@ -355,15 +382,16 @@ function RegisteredUsers() {
                       >
                         {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
                       </button>
-                      <button
-                        onClick={() => canDelete && setDeleting(u)}
-                        disabled={!canDelete}
-                        className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Excluir
-                      </button>
-
+                      {!buyerOnly && (
+                        <button
+                          onClick={() => canDelete && setDeleting(u)}
+                          disabled={!canDelete}
+                          className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Excluir
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
