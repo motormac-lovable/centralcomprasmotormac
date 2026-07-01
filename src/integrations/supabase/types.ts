@@ -282,6 +282,7 @@ export type Database = {
           phone: string
         }[]
       }
+      has_approver_for_department: { Args: { _dept: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
