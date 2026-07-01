@@ -271,10 +271,13 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
     const newState = !(u.is_active ?? true);
     const verb = newState ? "reativar" : "inativar";
     if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?`)) return;
-    const { error } = await supabase.from("profiles").update({ is_active: newState } as any).eq("id", u.id);
-    if (error) return toast.error(error.message);
-    toast.success(newState ? "Usuário reativado." : "Usuário inativado. Acesso bloqueado até reativação.");
-    reload();
+    try {
+      await toggleActiveFn({ data: { user_id: u.id, active: newState } });
+      toast.success(newState ? "Usuário reativado." : "Usuário inativado. Acesso bloqueado até reativação.");
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao alterar status.");
+    }
   };
 
   return (
