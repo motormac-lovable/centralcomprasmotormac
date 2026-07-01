@@ -280,8 +280,12 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Usuários registrados</h2>
-          <p className="text-xs text-muted-foreground">Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos.</p>
+          <h2 className="text-lg font-semibold tracking-tight">{buyerOnly ? "Solicitantes" : "Usuários registrados"}</h2>
+          <p className="text-xs text-muted-foreground">
+            {buyerOnly
+              ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
+              : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
+          </p>
         </div>
         <input
           value={q}
