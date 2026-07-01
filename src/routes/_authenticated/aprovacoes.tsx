@@ -58,7 +58,7 @@ function attachmentsOf(card: Card): Attachment[] {
 }
 
 function AprovacoesPage() {
-  const { isApprover, isOwner, approverDepartments, approverCeiling, fullName, user } = useAuth();
+  const { isApprover, isOwner, isAdmin, approverDepartments, approverCeiling, fullName, user } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState<Card | null>(null);
