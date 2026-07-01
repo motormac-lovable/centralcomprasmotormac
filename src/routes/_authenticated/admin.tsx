@@ -291,9 +291,21 @@ function RegisteredUsers() {
             {filtered.map((u) => {
               const owner = isOwnerRow(u);
               const isSelf = u.id === user?.id;
-              const canDelete = !owner && !isSelf;
-              const canToggle = !owner && !isSelf;
+              const targetIsAdmin = u.roles.includes("admin");
+              // Apenas o Proprietário pode gerenciar (editar/inativar/excluir) outros Administradores.
+              const adminBlocked = targetIsAdmin && !isOwner;
+              const canManage = !owner && !isSelf && !adminBlocked;
+              const canDelete = canManage;
+              const canToggle = canManage;
+              const canEdit = canManage || isSelf === false && !owner && isOwner ? !owner : !adminBlocked && !owner;
               const active = u.is_active ?? true;
+              const blockedTitle = owner
+                ? "Proprietários são intocáveis"
+                : adminBlocked
+                  ? "Somente o Proprietário pode gerenciar Administradores"
+                  : isSelf
+                    ? "Você não pode alterar o próprio usuário"
+                    : "";
               return (
                 <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
                   <td className="p-4">
