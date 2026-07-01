@@ -217,7 +217,7 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
 
   const reload = async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, cpf, phone, is_active, created_at").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, full_name, email, cpf, phone, is_active, is_deleted, created_at").eq("is_deleted", false).order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const byUser = new Map<string, string[]>();
