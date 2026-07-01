@@ -97,32 +97,47 @@ export const approveBuyerApplication = createServerFn({ method: "POST" })
     if (aErr || !app) throw new Error("Solicitação não encontrada.");
     if ((app as any).status === "approved") throw new Error("Solicitação já aprovada.");
 
-    // Cria o usuário se ainda não houver user_id vinculado.
+    // Cria o usuário (ou reaproveita) e GARANTE que a senha cadastrada
+    // pelo solicitante seja a senha efetiva de acesso após a aprovação.
     let uid: string | null = (app as any).user_id ?? null;
+    const pwd = (app as any).pending_password as string | null;
+    const email = (app as any).email as string;
+    const meta = {
+      full_name: (app as any).full_name,
+      cpf: (app as any).cpf,
+      phone: (app as any).phone,
+    };
+
     if (!uid) {
-      const pwd = (app as any).pending_password as string | null;
       if (!pwd) throw new Error("Solicitação sem senha registrada. Peça um novo cadastro.");
       const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
-        email: (app as any).email,
+        email,
         password: pwd,
         email_confirm: true,
-        user_metadata: {
-          full_name: (app as any).full_name,
-          cpf: (app as any).cpf,
-          phone: (app as any).phone,
-        },
+        user_metadata: meta,
       });
       if (cErr || !created?.user) {
-        // Se já existe (borda), recupera pelo email
+        // E-mail já existe no auth: reaproveita e força a senha cadastrada.
         const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
         const found = list?.users?.find(
-          (u) => (u.email ?? "").toLowerCase() === ((app as any).email as string).toLowerCase(),
+          (u) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
         );
         if (!found) throw new Error(cErr?.message || "Falha ao criar usuário.");
         uid = found.id;
+        await supabaseAdmin.auth.admin.updateUserById(uid, {
+          password: pwd,
+          email_confirm: true,
+          user_metadata: meta,
+        });
       } else {
         uid = created.user.id;
       }
+    } else if (pwd) {
+      // Usuário já vinculado: sincroniza a senha para a cadastrada na solicitação.
+      await supabaseAdmin.auth.admin.updateUserById(uid, {
+        password: pwd,
+        email_confirm: true,
+      });
     }
 
     // Zera papéis anteriores (exceto owner) e atribui o novo.
