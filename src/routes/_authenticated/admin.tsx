@@ -360,14 +360,16 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
-                      <button
-                        onClick={() => canEdit && setEditing(u)}
-                        disabled={!canEdit}
-                        className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> Editar
-                      </button>
+                      {!buyerOnly && (
+                        <button
+                          onClick={() => canEdit && setEditing(u)}
+                          disabled={!canEdit}
+                          className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </button>
+                      )}
                       <button
                         onClick={() => canToggle && toggleActive(u)}
                         disabled={!canToggle}
@@ -380,15 +382,16 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
                       >
                         {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
                       </button>
-                      <button
-                        onClick={() => canDelete && setDeleting(u)}
-                        disabled={!canDelete}
-                        className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Excluir
-                      </button>
-
+                      {!buyerOnly && (
+                        <button
+                          onClick={() => canDelete && setDeleting(u)}
+                          disabled={!canDelete}
+                          className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Excluir
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
