@@ -48,6 +48,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          pending_password: string | null
           phone: string
           requested_ceiling: number | null
           requested_departments: string[]
@@ -63,6 +64,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          pending_password?: string | null
           phone: string
           requested_ceiling?: number | null
           requested_departments?: string[]
@@ -78,6 +80,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          pending_password?: string | null
           phone?: string
           requested_ceiling?: number | null
           requested_departments?: string[]
