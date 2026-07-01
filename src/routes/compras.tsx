@@ -56,6 +56,7 @@ function ComprasPage() {
     const blocoEr = validateBlocoInicial(bloco);
     const er: Record<string, string> = { ...blocoEr };
     if (form.cnpj.replace(/\D/g, "").length !== 14) er.cnpj = "CNPJ inválido";
+    if (!form.departamento) er.departamento = "Selecione o departamento";
     if (!form.peca.trim()) er.peca = "Obrigatório";
     if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
     if (files.length === 0) er.files = "Envie ao menos 1 arquivo";
