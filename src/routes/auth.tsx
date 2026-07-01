@@ -8,7 +8,7 @@ import { Field, inputCls } from "@/components/forms/FormShell";
 import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
-import { submitBuyerApplication } from "@/lib/buyer-applications.functions";
+import { submitBuyerApplication, registerBuyerApplicant } from "@/lib/buyer-applications.functions";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 
@@ -268,63 +268,39 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
     }
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: f.email,
-      password: f.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
-        data: { full_name: f.full_name, cpf: f.cpf, phone: f.phone },
-      },
-    });
-    if (error || !data.user) {
-      setBusy(false);
-      const msg = error?.message ?? "Erro ao cadastrar.";
-      if (/weak|pwned|leaked|known/i.test(msg)) {
-        return toast.error("Esta senha foi identificada em vazamentos públicos e não pode ser usada. Escolha uma senha diferente e exclusiva.");
-      }
-      // Rate limit do Supabase: "For security purposes, you can only request this after X seconds."
-      const rateMatch = msg.match(/after (\d+) seconds?/i);
-      if (rateMatch) {
-        return toast.error(
-          `Por segurança, aguarde ${rateMatch[1]} segundos antes de tentar novo cadastro. Isso ocorre quando várias tentativas são feitas em sequência a partir da mesma rede.`,
-          { duration: 8000 },
-        );
-      }
-      if (/rate limit|too many|email rate/i.test(msg)) {
-        return toast.error("Muitas tentativas em sequência. Aguarde cerca de 1 minuto e tente novamente.", { duration: 8000 });
-      }
-      if (/already registered|already exists|user already/i.test(msg)) {
-        return toast.error("Este e-mail já possui cadastro. Tente entrar ou use 'Esqueci minha senha'.");
-      }
-      return toast.error(msg);
-    }
-    // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
     const checklistTypes =
       perfil === "solicitante" ? ["solicitante"]
         : perfil === "aprovador" ? ["aprovador"]
         : perfil === "auditor" ? ["auditor"]
         : types;
     try {
-      await submitBuyerApplication({
+      await registerBuyerApplicant({
         data: {
-          user_id: data.user.id,
           full_name: f.full_name,
           cpf: f.cpf,
           phone: f.phone,
           email: f.email,
+          password: f.password,
           checklist_types: checklistTypes,
           requested_departments: perfil === "aprovador" ? departments : [],
-          requested_ceiling: null,
         },
       });
     } catch (err) {
       setBusy(false);
-      return toast.error("Cadastro criado, mas falhou ao enviar solicitação: " + (err instanceof Error ? err.message : String(err)));
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/already registered|already exists|exists|já cadastrado/i.test(msg)) {
+        return toast.error("Este e-mail já possui cadastro. Tente entrar ou use 'Esqueci minha senha'.");
+      }
+      if (/weak|senha fraca/i.test(msg)) {
+        return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
+      }
+      return toast.error("Falha ao enviar solicitação: " + msg);
     }
     setBusy(false);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
     onDone();
   };
+
 
   return (
     <form onSubmit={submit} className="grid gap-4">
