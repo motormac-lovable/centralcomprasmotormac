@@ -252,7 +252,9 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     if (perfil === "aprovador" && departments.length === 0) {
       return toast.error("Selecione ao menos um departamento de alçada.");
     }
-    if (f.password.length < 8) return toast.error("A senha deve ter ao menos 8 caracteres.");
+    if (!isStrongPassword(f.password)) {
+      return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
+    }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: f.email,
