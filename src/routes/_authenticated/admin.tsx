@@ -21,28 +21,47 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminPage() {
-  const { isAdmin, isOwner, isAuditor, user } = useAuth();
+  const { isAdmin, isOwner, isAuditor, isBuyer, user } = useAuth();
   const [apps, setApps] = useState<App[]>([]);
 
   const reload = () => supabase.from("buyer_applications").select("*").order("created_at", { ascending: false })
     .then(({ data }) => setApps(data ?? []));
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { if (isAdmin) reload(); }, [isAdmin]);
 
   // Auditores são estritamente bloqueados desta área de governança.
-  if (isAuditor || !isAdmin) {
+  // Comprador tem acesso parcial: apenas Gestão de Solicitantes.
+  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+
+  if (isAuditor || (!isAdmin && !buyerOnly)) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-semibold">Acesso restrito a Administradores</h1>
+        <h1 className="mt-4 text-2xl font-semibold">Acesso restrito</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isAuditor
             ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
-            : "Apenas Proprietário e Administrador têm acesso a esta área."}
+            : "Você não tem permissão para acessar esta área."}
         </p>
       </div>
     );
   }
+
+  if (buyerOnly) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes.
+            Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
+          </p>
+        </div>
+        <RegisteredUsers buyerOnly />
+      </div>
+    );
+  }
+
 
   type AppRole = Database["public"]["Enums"]["app_role"];
   const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
