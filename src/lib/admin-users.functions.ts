@@ -108,6 +108,24 @@ export const updateUserRole = createServerFn({ method: "POST" })
       throw new Response("Apenas Proprietários podem atribuir o papel de Proprietário.", { status: 403 });
     }
 
+    // Blindagem: somente Proprietário pode alterar papel de outro Proprietário ou de um Administrador.
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id);
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.user_id)
+      .maybeSingle();
+    const targetIsOwner =
+      (targetRoles ?? []).some((r: any) => r.role === "owner") ||
+      (!!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase()));
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
+    if (!callerIsOwner && (targetIsOwner || targetIsAdmin)) {
+      throw new Response("Somente o Proprietário pode alterar Proprietários ou Administradores.", { status: 403 });
+    }
+
 
     // Remove papéis anteriores para que o cadastro fique com exatamente o nível escolhido.
     await supabaseAdmin
