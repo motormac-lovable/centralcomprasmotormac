@@ -339,8 +339,27 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
           <input type="email" className={inputCls} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required />
         </Field>
       </div>
-      <Field label="Senha (mín. 8 caracteres)" required>
+      <Field label="Senha" required>
         <input type="password" className={inputCls} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required minLength={8} />
+        {(() => {
+          const c = passwordChecks(f.password);
+          const Item = ({ ok, text }: { ok: boolean; text: string }) => (
+            <li className={`flex items-center gap-1.5 ${ok ? "text-emerald-600" : "text-muted-foreground"}`}>
+              <span>{ok ? "✓" : "○"}</span>{text}
+            </li>
+          );
+          return (
+            <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+              <Item ok={c.length} text="Mínimo 8 caracteres" />
+              <Item ok={c.letter} text="Uma letra (a-z / A-Z)" />
+              <Item ok={c.number} text="Um número (0-9)" />
+              <Item ok={c.symbol} text="Um símbolo (@, #, $…)" />
+            </ul>
+          );
+        })()}
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.
+        </p>
       </Field>
 
       {perfil === "comprador" && (
