@@ -70,8 +70,8 @@ export function Layout({ children }: { children: ReactNode }) {
                 <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
               </>
             )}
-            {/* Admin: estritamente Proprietário/Administrador. Auditor NÃO acessa gestão de cadastros. */}
-            {isAdmin && !isAuditor && (
+            {/* Admin: Proprietário/Administrador com poder total; Comprador com acesso parcial (Gestão de Solicitantes). Auditor bloqueado. */}
+            {(isAdmin || isBuyer) && !isAuditor && (
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
             )}
             {isOwner && (
