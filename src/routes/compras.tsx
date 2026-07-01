@@ -13,6 +13,7 @@ import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { uploadRequesterFiles } from "../lib/requester-files";
 import { maskCNPJ } from "../lib/masks";
+import { DEPARTAMENTOS_APOLLO } from "../lib/apollo-data";
 
 export const Route = createFileRoute("/compras")({
   head: () => ({
@@ -37,6 +38,7 @@ function ComprasPage() {
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
     cnpj: "",
+    departamento: "",
     peca: "",
     operacao: "",
     especificacao: "",
@@ -54,6 +56,7 @@ function ComprasPage() {
     const blocoEr = validateBlocoInicial(bloco);
     const er: Record<string, string> = { ...blocoEr };
     if (form.cnpj.replace(/\D/g, "").length !== 14) er.cnpj = "CNPJ inválido";
+    if (!form.departamento) er.departamento = "Selecione o departamento";
     if (!form.peca.trim()) er.peca = "Obrigatório";
     if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
     if (files.length === 0) er.files = "Envie ao menos 1 arquivo";
@@ -103,6 +106,22 @@ function ComprasPage() {
         <Field label="CNPJ da unidade pagadora" required error={errors.cnpj}>
           <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
         </Field>
+
+        <Field label="Departamento" required error={errors.departamento} hint="Direciona a aprovação para o gestor responsável.">
+          <select
+            className={inputCls}
+            required
+            value={form.departamento}
+            onChange={(e) => set("departamento", e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {DEPARTAMENTOS_APOLLO.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </Field>
+
+
 
         <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
           <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
