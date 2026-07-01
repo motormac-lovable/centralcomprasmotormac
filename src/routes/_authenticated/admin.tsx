@@ -204,9 +204,9 @@ function AdminPage() {
   );
 }
 
-function RegisteredUsers() {
+function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
-  const { isOwner, user } = useAuth();
+  const { isOwner, isAdmin, user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
