@@ -168,29 +168,92 @@ export type Database = {
         Row: {
           cpf: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivated_by_name: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
           email: string | null
           full_name: string | null
           id: string
           is_active: boolean
+          is_deleted: boolean
+          original_email: string | null
+          original_full_name: string | null
           phone: string | null
         }
         Insert: {
           cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivated_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
           email?: string | null
           full_name?: string | null
           id: string
           is_active?: boolean
+          is_deleted?: boolean
+          original_email?: string | null
+          original_full_name?: string | null
           phone?: string | null
         }
         Update: {
           cpf?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivated_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean
+          is_deleted?: boolean
+          original_email?: string | null
+          original_full_name?: string | null
           phone?: string | null
+        }
+        Relationships: []
+      }
+      user_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          actor_user_name: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_user_email: string | null
+          target_user_id: string | null
+          target_user_name: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          actor_user_name?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_name?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          actor_user_name?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_name?: string | null
         }
         Relationships: []
       }
@@ -290,6 +353,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_profile_deleted: {
+        Args: { _actor: string; _actor_name: string; _target: string }
+        Returns: undefined
+      }
       reject_kanban_card: {
         Args: { _card_id: string; _motivo: string }
         Returns: {
@@ -322,6 +389,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_user_active: {
+        Args: {
+          _active: boolean
+          _actor: string
+          _actor_name: string
+          _target: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
