@@ -291,9 +291,21 @@ function RegisteredUsers() {
             {filtered.map((u) => {
               const owner = isOwnerRow(u);
               const isSelf = u.id === user?.id;
-              const canDelete = !owner && !isSelf;
-              const canToggle = !owner && !isSelf;
+              const targetIsAdmin = u.roles.includes("admin");
+              // Apenas o Proprietário pode gerenciar (editar/inativar/excluir) outros Administradores.
+              const adminBlocked = targetIsAdmin && !isOwner;
+              const canManage = !owner && !isSelf && !adminBlocked;
+              const canDelete = canManage;
+              const canToggle = canManage;
+              const canEdit = !owner && !adminBlocked;
               const active = u.is_active ?? true;
+              const blockedTitle = owner
+                ? "Proprietários são intocáveis"
+                : adminBlocked
+                  ? "Somente o Proprietário pode gerenciar Administradores"
+                  : isSelf
+                    ? "Você não pode alterar o próprio usuário"
+                    : "";
               return (
                 <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
                   <td className="p-4">
@@ -328,9 +340,10 @@ function RegisteredUsers() {
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button
-                        onClick={() => setEditing(u)}
-                        className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent"
-                        title="Editar dados do usuário"
+                        onClick={() => canEdit && setEditing(u)}
+                        disabled={!canEdit}
+                        className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
                       >
                         <Pencil className="h-3.5 w-3.5" /> Editar
                       </button>
@@ -342,7 +355,7 @@ function RegisteredUsers() {
                             ? "bg-amber-500 text-white hover:bg-amber-600"
                             : "bg-emerald-600 text-white hover:bg-emerald-700"
                         }`}
-                        title={owner ? "Proprietários não podem ser inativados" : isSelf ? "Você não pode inativar o próprio usuário" : active ? "Inativar acesso" : "Reativar acesso"}
+                        title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
                       >
                         {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
                       </button>
@@ -350,10 +363,11 @@ function RegisteredUsers() {
                         onClick={() => canDelete && setDeleting(u)}
                         disabled={!canDelete}
                         className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={owner ? "Proprietários não podem ser excluídos" : isSelf ? "Você não pode excluir o próprio usuário" : "Excluir usuário"}
+                        title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                       </button>
+
                     </div>
                   </td>
                 </tr>

@@ -55,6 +55,12 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
       throw new Response("Proprietários não podem ser excluídos.", { status: 400 });
     }
 
+    // Somente o Proprietário pode excluir outros Administradores.
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
+    if (targetIsAdmin && !isOwner) {
+      throw new Response("Somente o Proprietário pode excluir Administradores.", { status: 403 });
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
     if (error) throw new Response(error.message, { status: 500 });
@@ -100,6 +106,24 @@ export const updateUserRole = createServerFn({ method: "POST" })
 
     if (!callerIsOwner && data.role === "owner") {
       throw new Response("Apenas Proprietários podem atribuir o papel de Proprietário.", { status: 403 });
+    }
+
+    // Blindagem: somente Proprietário pode alterar papel de outro Proprietário ou de um Administrador.
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user_id);
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.user_id)
+      .maybeSingle();
+    const targetIsOwner =
+      (targetRoles ?? []).some((r: any) => r.role === "owner") ||
+      (!!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase()));
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
+    if (!callerIsOwner && (targetIsOwner || targetIsAdmin)) {
+      throw new Response("Somente o Proprietário pode alterar Proprietários ou Administradores.", { status: 403 });
     }
 
 
