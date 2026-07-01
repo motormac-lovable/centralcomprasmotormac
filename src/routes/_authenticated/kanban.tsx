@@ -150,6 +150,30 @@ function KanbanPage() {
       toast.info(`📧 Notificação simulada enviada para ${actorName}`);
     }
 
+    // Redundância: se não houver aprovador homologado para o departamento,
+    // direciona a alçada para Administrador / Proprietário (fallback global).
+    let fallbackLog: Observation | null = null;
+    if (newStatus === "aguardando_aprovacao") {
+      const cardData = ((card.data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+      const dept = typeof cardData.departamento === "string" ? cardData.departamento.trim() : "";
+      if (dept) {
+        const { data: hasApprover } = await (supabase as any).rpc("has_approver_for_department", { _dept: dept });
+        if (hasApprover === false) {
+          patch.data = {
+            ...cardData,
+            aprovacao_fallback_global: true,
+            aprovacao_fallback_global_em: new Date().toISOString(),
+            aprovacao_fallback_departamento: dept,
+          } as never;
+          fallbackLog = {
+            at: new Date().toISOString(),
+            author: "Sistema",
+            text: `⚠️ Alerta: Nenhum aprovador homologado para o departamento ${dept}. Aprovação direcionada para a alçada global (Administrador / Proprietário).`,
+          };
+        }
+      }
+    }
+
     // Append a transition log entry to observations (used by History panel)
     const targetLabel = STATUS_COLUMNS.find((s) => s.id === newStatus)?.label ?? newStatus;
     const prevObs = ((card.observations as unknown as Observation[]) ?? []);
@@ -158,7 +182,7 @@ function KanbanPage() {
       author: actorName,
       text: `➡️ Movido para "${targetLabel}" por ${actorName}.`,
     };
-    patch.observations = [...prevObs, transitionLog] as never;
+    patch.observations = [...prevObs, transitionLog, ...(fallbackLog ? [fallbackLog] : [])] as never;
 
     // Optimistic update
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
