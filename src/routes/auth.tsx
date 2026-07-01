@@ -35,13 +35,11 @@ function AuthPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    if (isAdmin) navigate({ to: "/admin" });
-    else if (isBuyer) navigate({ to: "/inicio" });
-    else if (isApprover) navigate({ to: "/aprovacoes" });
-    else if (isAuditor) navigate({ to: "/dashboard" });
-    else if (isSolicitante) navigate({ to: "/" });
+    const hasAnyRole = isAdmin || isBuyer || isApprover || isAuditor || isSolicitante;
+    if (hasAnyRole) navigate({ to: "/" });
     else navigate({ to: "/pending" });
   }, [user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, navigate]);
+
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 sm:px-6 py-10 gap-6">
@@ -112,19 +110,19 @@ function SignInForm() {
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
-      navigate({ to: "/admin" });
+      navigate({ to: "/" });
     } else if (admin) {
       toast.success("Bem-vindo, Administrador!");
-      navigate({ to: "/admin" });
+      navigate({ to: "/" });
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
-      navigate({ to: "/inicio" });
+      navigate({ to: "/" });
     } else if (approver) {
       toast.success("Bem-vindo, Aprovador!");
-      navigate({ to: "/aprovacoes" });
+      navigate({ to: "/" });
     } else if (auditor) {
       toast.success("Bem-vindo, Auditor — acesso somente leitura.");
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/" });
     } else if (solicitante) {
       toast.success("Bem-vindo, Solicitante!");
       navigate({ to: "/" });
@@ -132,6 +130,7 @@ function SignInForm() {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
       navigate({ to: "/pending" });
     }
+
   };
 
 
