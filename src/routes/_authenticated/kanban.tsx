@@ -803,7 +803,8 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
-  const { fullName, user } = useAuth();
+  const { fullName, user, isApprover, isOwner, isAdmin } = useAuth();
+  const canDecide = isApprover || isOwner || isAdmin;
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
