@@ -508,7 +508,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
       {card.approver_name ? (
         (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
           <div className="mt-2 text-[11px] font-semibold text-primary truncate">
-            👤 Compradora: {card.approver_name}
+            👤 Compradora: {approverLabel}
           </div>
         )
       ) : suggested && (
@@ -517,7 +517,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
         </div>
       )}
       {card.requester_name && (
-        <div className="text-[11px] text-muted-foreground truncate">Solicitante: {card.requester_name}</div>
+        <div className="text-[11px] text-muted-foreground truncate">Solicitante: {requesterLabel}</div>
       )}
       <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
         <span className="truncate">{card.unidade ?? "—"}</span>
