@@ -833,6 +833,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin } = useAuth();
   const canDecide = isApprover || isOwner || isAdmin;
+  const statuses = useUserStatuses();
+  const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
+  const approverLabel = decorateUserName(card.approver_name, null, statuses);
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
