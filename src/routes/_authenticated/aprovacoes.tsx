@@ -82,8 +82,11 @@ function AprovacoesPage() {
     return cards.filter((c) => {
       const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
+      const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
       if (valor > TETO_OWNER_EXCLUSIVO) return isOwner;
       if (isOwner) return true;
+      // Administradores só veem cards que caíram no fallback global.
+      if (isAdmin && isFallback) return true;
       if (isApprover) {
         if (!dept || !approverDepartments.includes(dept)) return false;
         if (valor === 0) return true;
@@ -91,9 +94,9 @@ function AprovacoesPage() {
       }
       return false;
     });
-  }, [cards, isApprover, isOwner, approverDepartments, approverCeiling]);
+  }, [cards, isApprover, isOwner, isAdmin, approverDepartments, approverCeiling]);
 
-  if (!isApprover && !isOwner) {
+  if (!isApprover && !isOwner && !isAdmin) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
