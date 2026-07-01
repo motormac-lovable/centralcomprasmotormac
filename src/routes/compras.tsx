@@ -107,6 +107,22 @@ function ComprasPage() {
           <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
         </Field>
 
+        <Field label="Departamento" required error={errors.departamento} hint="Direciona a aprovação para o gestor responsável.">
+          <select
+            className={inputCls}
+            required
+            value={form.departamento}
+            onChange={(e) => set("departamento", e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {DEPARTAMENTOS_APOLLO.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </Field>
+
+
+
         <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
           <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
         </Field>
