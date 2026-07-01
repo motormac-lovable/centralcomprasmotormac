@@ -803,7 +803,8 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
-  const { fullName, user } = useAuth();
+  const { fullName, user, isApprover, isOwner, isAdmin } = useAuth();
+  const canDecide = isApprover || isOwner || isAdmin;
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
@@ -951,34 +952,68 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
         <div className="p-6 overflow-y-auto space-y-6">
           {/* ── Decision module (Aguardando Aprovação) ── */}
           {card.status === "aguardando_aprovacao" && (
-            <section className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold mb-3">
-                <Mail className="h-4 w-4 text-primary" />
-                Módulo de Decisão
-              </div>
-              {card.approver_name && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+            canDecide ? (
+              <section className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold mb-3">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Módulo de Decisão
+                </div>
+                {card.approver_name && (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={approve}
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
+                  </button>
+                  <button
+                    onClick={reject}
+                    className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold"
+                  >
+                    <XCircle className="h-4 w-4" /> Reprovar
+                  </button>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Fluxo 100% nativo: o Aprovador decide pelo <strong>Painel de Cotações para Aprovação</strong>. Ao aprovar, o card vai para <strong>Cotações Aprovadas</strong>.
                 </p>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={approve}
-                  className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold"
-                >
-                  <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
-                </button>
-                <button
-                  onClick={reject}
-                  className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold"
-                >
-                  <XCircle className="h-4 w-4" /> Reprovar
-                </button>
-              </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                Fluxo 100% nativo: o Aprovador decide pelo <strong>Painel de Cotações para Aprovação</strong>. Ao aprovar, o card vai para <strong>Cotações Aprovadas</strong>.
-              </p>
-            </section>
+              </section>
+            ) : (
+              <section
+                aria-disabled="true"
+                className="rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/40 p-4 opacity-70 select-none"
+              >
+                <div className="flex items-center gap-2 text-sm font-semibold mb-3 text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  Módulo de Decisão
+                </div>
+                {card.approver_name && (
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pointer-events-none">
+                  <button
+                    disabled
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600/60 text-white px-4 py-2 text-sm font-semibold cursor-not-allowed"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
+                  </button>
+                  <button
+                    disabled
+                    className="inline-flex items-center gap-2 rounded-md bg-red-600/60 text-white px-4 py-2 text-sm font-semibold cursor-not-allowed"
+                  >
+                    <XCircle className="h-4 w-4" /> Reprovar
+                  </button>
+                </div>
+                <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">
+                  ⚠️ Módulo restrito para perfis com alçada de aprovação. Você pode visualizar o mapa comparativo, anexos e histórico, mas não decidir esta cotação.
+                </p>
+              </section>
+            )
           )}
 
 
