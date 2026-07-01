@@ -241,6 +241,8 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
   };
 
   const filtered = rows.filter((r) => {
+    // Comprador só enxerga Solicitantes na Gestão de Solicitantes.
+    if (buyerOnly && !r.roles.includes("solicitante")) return false;
     const s = q.trim().toLowerCase();
     if (!s) return true;
     return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
