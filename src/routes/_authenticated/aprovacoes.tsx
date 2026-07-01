@@ -104,55 +104,11 @@ function AprovacoesPage() {
 
   const approve = async (card: Card, selectedSupplierId: string, justificativa: string) => {
     setBusyId(card.id);
-    const author = fullName || user?.email || "Aprovador";
-    const list = suppliersOf(card);
-    const updatedSuppliers = list.map((s) => ({ ...s, chosen: s.id === selectedSupplierId }));
-    const chosen = updatedSuppliers.find((s) => s.id === selectedSupplierId);
-    const cheapest = [...list].sort((a, b) => parseValor(a.valor) - parseValor(b.valor))[0];
-    const isCheapest = cheapest?.id === selectedSupplierId;
-    const isSingleSupplier = list.length <= 1;
-    const now = new Date().toISOString();
-
-    const obs = ((card.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    let logText: string;
-    if (isSingleSupplier) {
-      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (cotação única): ${justificativa}`;
-    } else if (isCheapest) {
-      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}) — menor custo.`;
-    } else {
-      logText = `✅ Cotação APROVADA pelo aprovador ${author}. Fornecedor escolhido: ${chosen?.fornecedor} (${chosen?.valor}). Justificativa (custo maior): ${justificativa}`;
-    }
-    const log = [...obs, { at: now, author, text: logText }];
-
-    const dataObj = ((card.data as Record<string, unknown>) ?? {});
-    const nextData = {
-      ...dataObj,
-      aprovacao: {
-        fornecedor_escolhido_id: selectedSupplierId,
-        fornecedor_escolhido: chosen?.fornecedor ?? null,
-        valor_escolhido: chosen?.valor ?? null,
-        is_menor_custo: isSingleSupplier ? null : isCheapest,
-        justificativa_custo_maior: !isSingleSupplier && !isCheapest ? justificativa : null,
-        justificativa_custo_maior_em: !isSingleSupplier && !isCheapest ? now : null,
-        justificativa_fornecedor_unico: isSingleSupplier ? justificativa : null,
-        justificativa_fornecedor_unico_em: isSingleSupplier ? now : null,
-        aprovador: author,
-        aprovado_em: now,
-      },
-    };
-
-    const nextStatus = card.kind === "frete" ? "pedidos_gerados" : "cotacoes_aprovadas";
-    const { error } = await supabase
-      .from("kanban_cards")
-      .update({
-        status: nextStatus,
-        suppliers: updatedSuppliers as never,
-        data: nextData as never,
-        observations: log as never,
-        approver_id: user?.id ?? null,
-        approver_name: author,
-      })
-      .eq("id", card.id);
+    const { error } = await (supabase as any).rpc("approve_kanban_card", {
+      _card_id: card.id,
+      _selected_supplier_id: selectedSupplierId,
+      _justificativa: justificativa,
+    });
     setBusyId(null);
     if (error) return toast.error(error.message);
     toast.success(card.kind === "frete" ? "Frete aprovado — Pedido gerado." : "Cotação aprovada — segue para integração Linx.");
@@ -161,19 +117,11 @@ function AprovacoesPage() {
 
   const confirmReject = async (motivo: string) => {
     if (!rejecting) return;
-    const author = fullName || user?.email || "Aprovador";
-    const obs = ((rejecting.observations as unknown as Array<{ at: string; author: string; text: string }>) ?? []);
-    const log = [...obs, { at: new Date().toISOString(), author, text: `❌ Cotação REJEITADA por ${author}. Motivo: ${motivo}` }];
     setBusyId(rejecting.id);
-    const { error } = await supabase
-      .from("kanban_cards")
-      .update({
-        status: "cotacoes_rejeitadas",
-        observations: log as never,
-        approver_id: user?.id ?? null,
-        approver_name: author,
-      })
-      .eq("id", rejecting.id);
+    const { error } = await (supabase as any).rpc("reject_kanban_card", {
+      _card_id: rejecting.id,
+      _motivo: motivo,
+    });
     setBusyId(null);
     setRejecting(null);
     if (error) return toast.error(error.message);
