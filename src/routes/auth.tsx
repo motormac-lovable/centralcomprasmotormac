@@ -29,6 +29,17 @@ const CHECKLISTS = [
   { id: "frete", label: "Frete" },
 ];
 
+const passwordChecks = (p: string) => ({
+  length: p.length >= 8,
+  letter: /[A-Za-z]/.test(p),
+  number: /[0-9]/.test(p),
+  symbol: /[^A-Za-z0-9]/.test(p),
+});
+const isStrongPassword = (p: string) => {
+  const c = passwordChecks(p);
+  return c.length && c.letter && c.number && c.symbol;
+};
+
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor } = useAuth();
@@ -252,7 +263,9 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     if (perfil === "aprovador" && departments.length === 0) {
       return toast.error("Selecione ao menos um departamento de alçada.");
     }
-    if (f.password.length < 8) return toast.error("A senha deve ter ao menos 8 caracteres.");
+    if (!isStrongPassword(f.password)) {
+      return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
+    }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: f.email,
@@ -326,8 +339,27 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
           <input type="email" className={inputCls} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required />
         </Field>
       </div>
-      <Field label="Senha (mín. 8 caracteres)" required>
+      <Field label="Senha" required>
         <input type="password" className={inputCls} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required minLength={8} />
+        {(() => {
+          const c = passwordChecks(f.password);
+          const Item = ({ ok, text }: { ok: boolean; text: string }) => (
+            <li className={`flex items-center gap-1.5 ${ok ? "text-emerald-600" : "text-muted-foreground"}`}>
+              <span>{ok ? "✓" : "○"}</span>{text}
+            </li>
+          );
+          return (
+            <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+              <Item ok={c.length} text="Mínimo 8 caracteres" />
+              <Item ok={c.letter} text="Uma letra (a-z / A-Z)" />
+              <Item ok={c.number} text="Um número (0-9)" />
+              <Item ok={c.symbol} text="Um símbolo (@, #, $…)" />
+            </ul>
+          );
+        })()}
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.
+        </p>
       </Field>
 
       {perfil === "comprador" && (
@@ -384,7 +416,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
 
       <button
         type="submit"
-        disabled={busy}
+        disabled={busy || !isStrongPassword(f.password)}
         className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
       >
         {busy ? "Enviando..." : "Enviar solicitação de cadastro"}
