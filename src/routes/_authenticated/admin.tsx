@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
 import { deleteUserCompletely, updateUserRole } from "@/lib/admin-users.functions";
+import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
 
