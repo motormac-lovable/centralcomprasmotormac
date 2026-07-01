@@ -2,8 +2,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Field, inputCls } from "@/components/forms/FormShell";
+import { isStrongPassword, passwordChecks, PASSWORD_RULE_MESSAGE } from "@/lib/password";
+import { updateOwnPassword } from "@/lib/password.functions";
+import { PasswordChecklist } from "@/components/ProfileMenu";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -19,30 +23,37 @@ function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const updatePwd = useServerFn(updateOwnPassword);
 
   useEffect(() => {
-    // O link de recuperação do Supabase coloca os tokens no hash da URL
-    // e dispara um evento PASSWORD_RECOVERY assim que o cliente os processa.
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    // fallback: se não houver hash, deixamos o usuário tentar mesmo assim
     if (!window.location.hash.includes("type=recovery")) {
       supabase.auth.getSession().then(({ data }) => setReady(!!data.session));
     }
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const checks = passwordChecks(password);
+  const strong = isStrongPassword(password);
+  const matches = password.length > 0 && password === confirm;
+  const canSubmit = ready && strong && matches && !busy;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) return toast.error("Mínimo de 6 caracteres.");
+    if (!strong) return toast.error(PASSWORD_RULE_MESSAGE);
     if (password !== confirm) return toast.error("As senhas não coincidem.");
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Senha redefinida com sucesso!");
-    navigate({ to: "/auth" });
+    try {
+      await updatePwd({ data: { password } });
+      toast.success("Senha redefinida com sucesso!");
+      navigate({ to: "/auth" });
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível redefinir a senha.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -59,7 +70,7 @@ function ResetPasswordPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Redefinir senha</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Defina uma nova senha de acesso (mínimo de 6 caracteres).
+              {PASSWORD_RULE_MESSAGE}
             </p>
           </div>
         </div>
@@ -77,7 +88,7 @@ function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
               <button
                 type="button"
@@ -88,6 +99,10 @@ function ResetPasswordPage() {
                 {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            <PasswordChecklist checks={checks} />
+            {password.length > 0 && !strong && (
+              <p className="text-xs text-destructive mt-1">{PASSWORD_RULE_MESSAGE}</p>
+            )}
           </Field>
           <Field label="Confirmar nova senha" required>
             <input
@@ -96,12 +111,17 @@ function ResetPasswordPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
             />
+            {confirm.length > 0 && (
+              <p className={`text-xs mt-1 ${matches ? "text-emerald-600" : "text-destructive"}`}>
+                {matches ? "As senhas coincidem." : "As senhas não coincidem."}
+              </p>
+            )}
           </Field>
           <button
             type="submit"
-            disabled={busy}
+            disabled={!canSubmit}
             className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
             {busy ? "Salvando..." : "Salvar nova senha"}

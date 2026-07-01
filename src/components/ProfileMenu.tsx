@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Settings, Eye, EyeOff, Loader2, Check, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-
-const MIN_LEN = 6;
+import { isStrongPassword, passwordChecks, PASSWORD_RULE_MESSAGE } from "@/lib/password";
+import { updateOwnPassword } from "@/lib/password.functions";
 
 export function ProfileMenu() {
   const { user, fullName } = useAuth();
@@ -20,12 +21,14 @@ export function ProfileMenu() {
   const [showNext, setShowNext] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const updatePwd = useServerFn(updateOwnPassword);
 
   if (!user) return null;
 
+  const checks = passwordChecks(next);
+  const strong = isStrongPassword(next);
   const matches = next.length > 0 && next === confirm;
-  const longEnough = next.length >= MIN_LEN;
-  const canSubmit = current.length > 0 && longEnough && matches && !saving;
+  const canSubmit = current.length > 0 && strong && matches && !saving;
 
   const reset = () => {
     setCurrent(""); setNext(""); setConfirm("");
@@ -35,6 +38,7 @@ export function ProfileMenu() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
+    if (!strong) { toast.error(PASSWORD_RULE_MESSAGE); return; }
     setSaving(true);
     try {
       const { error: signInErr } = await supabase.auth.signInWithPassword({
@@ -46,9 +50,10 @@ export function ProfileMenu() {
         setSaving(false);
         return;
       }
-      const { error } = await supabase.auth.updateUser({ password: next });
-      if (error) {
-        toast.error(error.message || "Não foi possível alterar a senha");
+      try {
+        await updatePwd({ data: { password: next } });
+      } catch (err: any) {
+        toast.error(err?.message || "Não foi possível alterar a senha");
         setSaving(false);
         return;
       }
@@ -95,8 +100,9 @@ export function ProfileMenu() {
                 show={showNext}
                 onToggle={() => setShowNext((v) => !v)}
               />
-              {next.length > 0 && !longEnough && (
-                <p className="text-xs text-destructive">Mínimo de {MIN_LEN} caracteres.</p>
+              <PasswordChecklist checks={checks} />
+              {next.length > 0 && !strong && (
+                <p className="text-xs text-destructive">{PASSWORD_RULE_MESSAGE}</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -126,6 +132,25 @@ export function ProfileMenu() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export function PasswordChecklist({ checks }: { checks: ReturnType<typeof passwordChecks> }) {
+  const items = [
+    { ok: checks.length, label: "Mínimo de 8 caracteres" },
+    { ok: checks.letter, label: "Pelo menos uma letra" },
+    { ok: checks.number, label: "Pelo menos um número" },
+    { ok: checks.symbol, label: "Pelo menos um símbolo (ex: @, #, $, %)" },
+  ];
+  return (
+    <ul className="text-xs space-y-1 mt-1">
+      {items.map((it) => (
+        <li key={it.label} className={`flex items-center gap-1.5 ${it.ok ? "text-emerald-600" : "text-muted-foreground"}`}>
+          {it.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+          {it.label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
