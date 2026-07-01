@@ -332,7 +332,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
 
       {perfil === "comprador" && (
         <Field label="Tipos de checklist que vai atender" required>
-          <div className="grid sm:grid-cols-3 gap-2">
+          <div className="grid sm:grid-cols-2 gap-2 max-w-xl mx-auto">
             {CHECKLISTS.map((c) => (
               <label key={c.id} className={`flex items-center gap-2 rounded-md border p-3 cursor-pointer transition ${types.includes(c.id) ? "border-primary bg-accent" : "hover:bg-muted/40"}`}>
                 <input type="checkbox" checked={types.includes(c.id)} onChange={() => toggle(c.id)} className="accent-primary" />
