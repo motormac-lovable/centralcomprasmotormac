@@ -1074,7 +1074,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               Respostas do solicitante
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <Detail label="Solicitante" value={card.requester_name} />
+              <Detail label="Solicitante" value={requesterLabel} />
               <Detail label="E-mail" value={card.requester_email} />
               <Detail label="Unidade" value={card.unidade} />
               <Detail label="Empresa" value={card.empresa} />
