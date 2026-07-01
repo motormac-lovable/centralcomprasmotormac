@@ -29,6 +29,17 @@ const CHECKLISTS = [
   { id: "frete", label: "Frete" },
 ];
 
+const passwordChecks = (p: string) => ({
+  length: p.length >= 8,
+  letter: /[A-Za-z]/.test(p),
+  number: /[0-9]/.test(p),
+  symbol: /[^A-Za-z0-9]/.test(p),
+});
+const isStrongPassword = (p: string) => {
+  const c = passwordChecks(p);
+  return c.length && c.letter && c.number && c.symbol;
+};
+
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor } = useAuth();
