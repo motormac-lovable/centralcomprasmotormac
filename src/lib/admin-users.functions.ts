@@ -55,6 +55,12 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
       throw new Response("Proprietários não podem ser excluídos.", { status: 400 });
     }
 
+    // Somente o Proprietário pode excluir outros Administradores.
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
+    if (targetIsAdmin && !isOwner) {
+      throw new Response("Somente o Proprietário pode excluir Administradores.", { status: 403 });
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
     if (error) throw new Response(error.message, { status: 500 });
