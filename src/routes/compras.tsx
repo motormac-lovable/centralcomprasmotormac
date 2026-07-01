@@ -13,6 +13,7 @@ import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { uploadRequesterFiles } from "../lib/requester-files";
 import { maskCNPJ } from "../lib/masks";
+import { DEPARTAMENTOS_APOLLO } from "../lib/apollo-data";
 
 export const Route = createFileRoute("/compras")({
   head: () => ({
