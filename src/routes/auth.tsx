@@ -282,6 +282,20 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       if (/weak|pwned|leaked|known/i.test(msg)) {
         return toast.error("Esta senha foi identificada em vazamentos públicos e não pode ser usada. Escolha uma senha diferente e exclusiva.");
       }
+      // Rate limit do Supabase: "For security purposes, you can only request this after X seconds."
+      const rateMatch = msg.match(/after (\d+) seconds?/i);
+      if (rateMatch) {
+        return toast.error(
+          `Por segurança, aguarde ${rateMatch[1]} segundos antes de tentar novo cadastro. Isso ocorre quando várias tentativas são feitas em sequência a partir da mesma rede.`,
+          { duration: 8000 },
+        );
+      }
+      if (/rate limit|too many|email rate/i.test(msg)) {
+        return toast.error("Muitas tentativas em sequência. Aguarde cerca de 1 minuto e tente novamente.", { duration: 8000 });
+      }
+      if (/already registered|already exists|user already/i.test(msg)) {
+        return toast.error("Este e-mail já possui cadastro. Tente entrar ou use 'Esqueci minha senha'.");
+      }
       return toast.error(msg);
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
