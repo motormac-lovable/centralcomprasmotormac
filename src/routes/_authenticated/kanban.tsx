@@ -17,6 +17,7 @@ import {
   type Status, type Observation, type Supplier, type Attachment,
 } from "@/lib/cards";
 import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
+import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
