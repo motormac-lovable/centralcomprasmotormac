@@ -38,6 +38,7 @@ function ComprasPage() {
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
     cnpj: "",
+    departamento: "",
     peca: "",
     operacao: "",
     especificacao: "",
