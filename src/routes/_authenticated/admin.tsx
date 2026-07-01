@@ -222,15 +222,12 @@ function RegisteredUsers() {
     auditor: "bg-slate-200 text-slate-800",
   };
 
-  // Só exibe usuários efetivamente aprovados — quem tem ao menos um papel atribuído
-  // (ou é Proprietário pelo e-mail). Pendentes ficam apenas na tabela de Governança.
-  const approvedOnly = rows.filter((r) => r.roles.length > 0 || isOwnerEmail(r.email));
-
-  const filtered = approvedOnly.filter((r) => {
+  const filtered = rows.filter((r) => {
     const s = q.trim().toLowerCase();
     if (!s) return true;
     return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
   });
+
 
   const isOwnerRow = (u: Row) => u.roles.includes("owner") || isOwnerEmail(u.email);
 
