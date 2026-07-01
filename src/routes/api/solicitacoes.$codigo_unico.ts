@@ -1,6 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 import { buildLinxPayload } from "@/services/api";
 
 const CORS = {
@@ -23,13 +21,9 @@ export const Route = createFileRoute("/api/solicitacoes/$codigo_unico")({
           );
         }
 
-        const supabase = createClient<Database>(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_PUBLISHABLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from("kanban_cards")
           .select("*")
           .eq("codigo_unico", codigo)
