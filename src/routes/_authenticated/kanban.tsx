@@ -1023,7 +1023,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                 </div>
                 {card.approver_name && (
                   <p className="text-xs text-muted-foreground mb-3">
-                    Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+                    Aprovador vinculado: <strong className="text-foreground">{approverLabel}</strong>
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2 pointer-events-none">
