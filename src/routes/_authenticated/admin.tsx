@@ -499,12 +499,31 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
     }
   };
 
-  const toggleDept = (d: string) =>
+  const allSelected = departments.length >= DEPARTAMENTOS_APOLLO.length;
+
+  const toggleDept = (d: string) => {
+    if (allSelected) return; // desabilitado quando "Todos" está marcado
     setDepartments((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+
+  const toggleAllDepartments = () => {
+    if (allSelected) setDepartments([]);
+    else setDepartments([...DEPARTAMENTOS_APOLLO]);
+  };
 
   const filteredDepts = deptFilter
     ? DEPARTAMENTOS_APOLLO.filter((d) => d.toLowerCase().includes(deptFilter.toLowerCase()))
     : DEPARTAMENTOS_APOLLO;
+
+  const selectAllFiltered = () => {
+    if (allSelected) return;
+    setDepartments((prev) => Array.from(new Set([...prev, ...filteredDepts])));
+  };
+  const clearAllFiltered = () => {
+    if (allSelected) return;
+    const set = new Set(filteredDepts);
+    setDepartments((prev) => prev.filter((d) => !set.has(d)));
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
