@@ -23,6 +23,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 const CHECKLISTS = [
+  { id: "materiais", label: "Solicitação de Compras" },
   { id: "compras", label: "Compra de Peças" },
   { id: "contratos", label: "Contratos" },
   { id: "frete", label: "Frete" },
