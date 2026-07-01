@@ -17,6 +17,7 @@ import {
   type Status, type Observation, type Supplier, type Attachment,
 } from "@/lib/cards";
 import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
+import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import type { Database } from "@/integrations/supabase/types";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
@@ -482,6 +483,9 @@ function cardMatchesQuery(card: Card, q: string): boolean {
 function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging?: boolean; footerSlot?: React.ReactNode }) {
   const Icon = iconFor[card.kind];
   const suggested = suggestedBuyer(card);
+  const statuses = useUserStatuses();
+  const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
+  const approverLabel = decorateUserName(card.approver_name, null, statuses);
   return (
     <div className={`rounded-lg border bg-card p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition ${dragging ? "rotate-2 shadow-xl" : ""}`}>
       <div className="flex items-center justify-between mb-2 gap-2">
@@ -504,7 +508,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
       {card.approver_name ? (
         (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
           <div className="mt-2 text-[11px] font-semibold text-primary truncate">
-            👤 Compradora: {card.approver_name}
+            👤 Compradora: {approverLabel}
           </div>
         )
       ) : suggested && (
@@ -513,7 +517,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
         </div>
       )}
       {card.requester_name && (
-        <div className="text-[11px] text-muted-foreground truncate">Solicitante: {card.requester_name}</div>
+        <div className="text-[11px] text-muted-foreground truncate">Solicitante: {requesterLabel}</div>
       )}
       <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
         <span className="truncate">{card.unidade ?? "—"}</span>
@@ -829,6 +833,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin } = useAuth();
   const canDecide = isApprover || isOwner || isAdmin;
+  const statuses = useUserStatuses();
+  const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
+  const approverLabel = decorateUserName(card.approver_name, null, statuses);
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
@@ -984,7 +991,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                 </div>
                 {card.approver_name && (
                   <p className="text-xs text-muted-foreground mb-3">
-                    Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+                   Aprovador vinculado: <strong className="text-foreground">{approverLabel}</strong>
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
@@ -1016,7 +1023,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                 </div>
                 {card.approver_name && (
                   <p className="text-xs text-muted-foreground mb-3">
-                    Aprovador vinculado: <strong className="text-foreground">{card.approver_name}</strong>
+                    Aprovador vinculado: <strong className="text-foreground">{approverLabel}</strong>
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2 pointer-events-none">
@@ -1067,7 +1074,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               Respostas do solicitante
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <Detail label="Solicitante" value={card.requester_name} />
+              <Detail label="Solicitante" value={requesterLabel} />
               <Detail label="E-mail" value={card.requester_email} />
               <Detail label="Unidade" value={card.unidade} />
               <Detail label="Empresa" value={card.empresa} />
