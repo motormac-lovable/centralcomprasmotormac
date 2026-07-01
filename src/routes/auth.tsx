@@ -110,19 +110,19 @@ function SignInForm() {
     }
     if (owner) {
       toast.success("Bem-vindo, Proprietário!");
-      navigate({ to: "/admin" });
+      navigate({ to: "/" });
     } else if (admin) {
       toast.success("Bem-vindo, Administrador!");
-      navigate({ to: "/admin" });
+      navigate({ to: "/" });
     } else if (buyer) {
       toast.success("Bem-vindo de volta!");
-      navigate({ to: "/inicio" });
+      navigate({ to: "/" });
     } else if (approver) {
       toast.success("Bem-vindo, Aprovador!");
-      navigate({ to: "/aprovacoes" });
+      navigate({ to: "/" });
     } else if (auditor) {
       toast.success("Bem-vindo, Auditor — acesso somente leitura.");
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/" });
     } else if (solicitante) {
       toast.success("Bem-vindo, Solicitante!");
       navigate({ to: "/" });
@@ -130,6 +130,7 @@ function SignInForm() {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
       navigate({ to: "/pending" });
     }
+
   };
 
 
