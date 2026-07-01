@@ -483,6 +483,9 @@ function cardMatchesQuery(card: Card, q: string): boolean {
 function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging?: boolean; footerSlot?: React.ReactNode }) {
   const Icon = iconFor[card.kind];
   const suggested = suggestedBuyer(card);
+  const statuses = useUserStatuses();
+  const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
+  const approverLabel = decorateUserName(card.approver_name, null, statuses);
   return (
     <div className={`rounded-lg border bg-card p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition ${dragging ? "rotate-2 shadow-xl" : ""}`}>
       <div className="flex items-center justify-between mb-2 gap-2">
