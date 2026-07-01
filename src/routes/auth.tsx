@@ -277,7 +277,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     });
     if (error || !data.user) {
       setBusy(false);
-      return toast.error(error?.message ?? "Erro ao cadastrar.");
+      const msg = error?.message ?? "Erro ao cadastrar.";
+      if (/weak|pwned|leaked|known/i.test(msg)) {
+        return toast.error("Esta senha foi identificada em vazamentos públicos e não pode ser usada. Escolha uma senha diferente e exclusiva.");
+      }
+      return toast.error(msg);
     }
     // Marca o perfil pretendido nos checklist_types para orientar o aprovador.
     const checklistTypes =
