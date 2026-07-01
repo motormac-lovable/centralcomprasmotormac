@@ -50,47 +50,45 @@ function AdminPage() {
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
 
 
+  const approveFn = useServerFn(approveBuyerApplication);
+  const rejectFn = useServerFn(rejectBuyerApplication);
+
   const approve = async (app: App) => {
     const fallback: AppRole = app.checklist_types.includes("aprovador") ? "aprovador" : app.checklist_types.includes("solicitante") ? "solicitante" : "buyer";
     const role = selectedRole[app.id] ?? fallback;
+    if (role === "owner") return toast.error("Papel Proprietário não pode ser atribuído via aprovação.");
     if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
-    if (!app.user_id) return toast.error("Solicitação sem usuário vinculado.");
-    const { error } = await supabase.from("buyer_applications")
-      .update({ status: "approved", decided_by: user?.id, decided_at: new Date().toISOString() })
-      .eq("id", app.id);
-    if (error) return toast.error(error.message);
-    // Limpa papéis anteriores (não-owner) para evitar duplicidade e atribui o novo.
-    await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador", "auditor"]);
-    const { error: rErr } = await supabase.from("user_roles").insert({ user_id: app.user_id, role });
-    if (rErr) return toast.error("Falha ao atribuir papel: " + rErr.message);
-    // Se aprovador, materializa as alçadas solicitadas pelo candidato.
-    if (role === "aprovador") {
-      const reqDepts = ((app as any).requested_departments as string[] | null) ?? [];
-      const reqCeil = Number((app as any).requested_ceiling ?? 0);
-      const { error: cfgErr } = await (supabase as any)
-        .from("approver_settings")
-        .upsert(
-          { user_id: app.user_id, departments: reqDepts, teto_alcada: reqCeil || 2000 },
-          { onConflict: "user_id" },
-        );
-      if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
+    try {
+      const res = await approveFn({ data: { application_id: app.id, role: role as Exclude<AppRole, "owner"> } });
+      // Se aprovador, materializa alçadas solicitadas.
+      if (role === "aprovador" && (res as any)?.user_id) {
+        const reqDepts = ((app as any).requested_departments as string[] | null) ?? [];
+        const reqCeil = Number((app as any).requested_ceiling ?? 0);
+        const { error: cfgErr } = await (supabase as any)
+          .from("approver_settings")
+          .upsert(
+            { user_id: (res as any).user_id, departments: reqDepts, teto_alcada: reqCeil || 2000 },
+            { onConflict: "user_id" },
+          );
+        if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
+      }
+      toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
+        description: `Usuário criado e notificação simulada enviada para ${app.email}.`,
+      });
+      reload();
+    } catch (err) {
+      toast.error("Falha ao aprovar: " + (err instanceof Error ? err.message : String(err)));
     }
-    toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
-      description: `Simulação: notificação enviada para ${app.email}.`,
-    });
-    reload();
   };
 
   const reject = async (app: App) => {
-    const { error } = await supabase.from("buyer_applications")
-      .update({ status: "rejected", decided_by: user?.id, decided_at: new Date().toISOString() })
-      .eq("id", app.id);
-    if (error) return toast.error(error.message);
-    if (app.user_id) {
-      await supabase.from("user_roles").delete().eq("user_id", app.user_id).in("role", ["admin", "buyer", "solicitante", "aprovador", "auditor"]);
+    try {
+      await rejectFn({ data: { application_id: app.id } });
+      toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
+      reload();
+    } catch (err) {
+      toast.error("Falha ao reprovar: " + (err instanceof Error ? err.message : String(err)));
     }
-    toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
-    reload();
   };
 
   return (
