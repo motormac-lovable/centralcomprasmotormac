@@ -8,7 +8,7 @@ import { Field, inputCls } from "@/components/forms/FormShell";
 import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
-import { submitBuyerApplication } from "@/lib/buyer-applications.functions";
+import { submitBuyerApplication, registerBuyerApplicant } from "@/lib/buyer-applications.functions";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 
