@@ -297,7 +297,7 @@ function RegisteredUsers() {
               const canManage = !owner && !isSelf && !adminBlocked;
               const canDelete = canManage;
               const canToggle = canManage;
-              const canEdit = canManage || isSelf === false && !owner && isOwner ? !owner : !adminBlocked && !owner;
+              const canEdit = !owner && !adminBlocked;
               const active = u.is_active ?? true;
               const blockedTitle = owner
                 ? "Proprietários são intocáveis"
