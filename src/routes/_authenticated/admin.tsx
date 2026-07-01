@@ -499,12 +499,31 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
     }
   };
 
-  const toggleDept = (d: string) =>
+  const allSelected = departments.length >= DEPARTAMENTOS_APOLLO.length;
+
+  const toggleDept = (d: string) => {
+    if (allSelected) return; // desabilitado quando "Todos" está marcado
     setDepartments((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+
+  const toggleAllDepartments = () => {
+    if (allSelected) setDepartments([]);
+    else setDepartments([...DEPARTAMENTOS_APOLLO]);
+  };
 
   const filteredDepts = deptFilter
     ? DEPARTAMENTOS_APOLLO.filter((d) => d.toLowerCase().includes(deptFilter.toLowerCase()))
     : DEPARTAMENTOS_APOLLO;
+
+  const selectAllFiltered = () => {
+    if (allSelected) return;
+    setDepartments((prev) => Array.from(new Set([...prev, ...filteredDepts])));
+  };
+  const clearAllFiltered = () => {
+    if (allSelected) return;
+    const set = new Set(filteredDepts);
+    setDepartments((prev) => prev.filter((d) => !set.has(d)));
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
@@ -551,31 +570,63 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
               </label>
 
               <div>
-                <span className="text-xs font-medium text-muted-foreground">
-                  Departamentos Vinculados ({departments.length} selecionado{departments.length === 1 ? "" : "s"})
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Departamentos Vinculados ({allSelected ? "Todos" : `${departments.length} selecionado${departments.length === 1 ? "" : "s"}`})
+                  </span>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-cyan-800 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAllDepartments}
+                    />
+                    Todos os Departamentos
+                  </label>
+                </div>
                 <input
                   type="text"
                   value={deptFilter}
                   onChange={(e) => setDeptFilter(e.target.value)}
-                  placeholder="Filtrar departamentos…"
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  placeholder="Buscar departamento…"
+                  disabled={allSelected}
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border bg-background p-2 space-y-1">
-                  {filteredDepts.slice(0, 200).map((d) => (
-                    <label key={d} className="flex items-center gap-2 text-xs hover:bg-muted/60 rounded px-1 py-0.5 cursor-pointer">
+                {!allSelected && deptFilter && filteredDepts.length > 0 && (
+                  <div className="mt-1 flex items-center gap-2 text-[11px]">
+                    <button type="button" onClick={selectAllFiltered}
+                      className="rounded border border-cyan-300 bg-white px-2 py-0.5 text-cyan-800 hover:bg-cyan-100">
+                      + Selecionar todos encontrados ({filteredDepts.length})
+                    </button>
+                    <button type="button" onClick={clearAllFiltered}
+                      className="rounded border px-2 py-0.5 text-muted-foreground hover:bg-muted">
+                      Limpar encontrados
+                    </button>
+                  </div>
+                )}
+                <div className={`mt-2 max-h-48 overflow-y-auto rounded-md border bg-background p-2 space-y-1 ${allSelected ? "opacity-60" : ""}`}>
+                  {(allSelected ? DEPARTAMENTOS_APOLLO : filteredDepts).slice(0, 200).map((d) => (
+                    <label key={d} className={`flex items-center gap-2 text-xs rounded px-1 py-0.5 ${allSelected ? "cursor-not-allowed" : "hover:bg-muted/60 cursor-pointer"}`}>
                       <input
                         type="checkbox"
-                        checked={departments.includes(d)}
+                        checked={allSelected || departments.includes(d)}
+                        disabled={allSelected}
                         onChange={() => toggleDept(d)}
                       />
                       <span className="truncate">{d}</span>
                     </label>
                   ))}
-                  {filteredDepts.length > 200 && (
+                  {!allSelected && filteredDepts.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground p-1">Nenhum departamento encontrado para "{deptFilter}".</p>
+                  )}
+                  {!allSelected && filteredDepts.length > 200 && (
                     <p className="text-[10px] text-muted-foreground p-1">Refine a busca para ver mais resultados.</p>
                   )}
                 </div>
+                {allSelected && (
+                  <p className="mt-1 text-[11px] text-cyan-800">
+                    Este aprovador atenderá <strong>qualquer departamento</strong>. Desmarque "Todos os Departamentos" para escolher individualmente.
+                  </p>
+                )}
               </div>
             </div>
           )}
