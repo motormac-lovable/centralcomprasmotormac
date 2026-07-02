@@ -1236,9 +1236,11 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   <button onClick={() => downloadAttachment(a)} className="text-primary hover:underline" aria-label="Baixar" title="Baixar no computador">
                     <Download className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover" title="Remover">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {!readOnly && (
+                    <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover" title="Remover">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
