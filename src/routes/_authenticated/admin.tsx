@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
-import { deleteUserCompletely, updateUserRole, setUserActiveState } from "@/lib/admin-users.functions";
+import { deleteUserCompletely, updateUserRole, setUserActiveState, updateUserEmail } from "@/lib/admin-users.functions";
 import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
@@ -468,6 +468,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const [teto, setTeto] = useState<number>(2000);
   const [deptFilter, setDeptFilter] = useState("");
   const updateRoleFn = useServerFn(updateUserRole);
+  const updateEmailFn = useServerFn(updateUserEmail);
 
   const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
 
@@ -488,17 +489,30 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
 
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");
+    const newEmail = email.trim().toLowerCase();
+    const oldEmail = (row.email ?? "").trim().toLowerCase();
+    const emailChanged = newEmail !== oldEmail;
+    if (emailChanged && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return toast.error("Informe um e-mail válido.");
+    }
     if (role === "aprovador") {
       if (departments.length === 0) return toast.error("Selecione ao menos um departamento vinculado.");
       if (!TETO_OPCOES.includes(teto)) return toast.error("Selecione um teto de alçada válido.");
     }
     setSaving(true);
     try {
+      // 1) Atualiza dados de perfil (exceto e-mail — o e-mail é sincronizado
+      //    de forma atômica com auth.users pelo server function abaixo).
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: full_name.trim(), email: email.trim(), cpf: cpf.trim(), phone: phone.trim() })
+        .update({ full_name: full_name.trim(), cpf: cpf.trim(), phone: phone.trim() })
         .eq("id", row.id);
       if (error) throw error;
+
+      // 2) Sincroniza o e-mail (auth.users + profiles) apenas se mudou.
+      if (emailChanged) {
+        await updateEmailFn({ data: { user_id: row.id, email: newEmail } });
+      }
 
       if (role !== currentRole && allowedRoles.includes(role)) {
         await updateRoleFn({ data: { user_id: row.id, role: role as any } });
@@ -511,10 +525,14 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
         if (cfgErr) throw cfgErr;
       }
 
-      toast.success("Usuário atualizado.");
+      if (emailChanged) {
+        toast.success("E-mail de cadastro e login atualizado com sucesso! A senha de acesso permanece a mesma.", { duration: 6000 });
+      } else {
+        toast.success("Usuário atualizado.");
+      }
       onSaved();
     } catch (e: any) {
-      toast.error(e?.message || "Falha ao atualizar usuário.");
+      toast.error(translateError(e, "Falha ao atualizar usuário."));
     } finally {
       setSaving(false);
     }

@@ -175,6 +175,7 @@ export type Database = {
           deleted_by: string | null
           deleted_by_name: string | null
           email: string | null
+          force_logout_at: string | null
           full_name: string | null
           id: string
           is_active: boolean
@@ -193,6 +194,7 @@ export type Database = {
           deleted_by?: string | null
           deleted_by_name?: string | null
           email?: string | null
+          force_logout_at?: string | null
           full_name?: string | null
           id: string
           is_active?: boolean
@@ -211,6 +213,7 @@ export type Database = {
           deleted_by?: string | null
           deleted_by_name?: string | null
           email?: string | null
+          force_logout_at?: string | null
           full_name?: string | null
           id?: string
           is_active?: boolean

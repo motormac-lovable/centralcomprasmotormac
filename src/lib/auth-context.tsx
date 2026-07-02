@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 import { isOwnerEmail } from "./owner-emails";
 
 interface AuthState {
@@ -50,7 +51,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [approverCeiling, setApproverCeiling] = useState<number>(0);
   const [isActive, setIsActive] = useState<boolean>(true);
 
-  const loadRoles = async (uid: string | undefined) => {
+  const forcedLogoutRef = useRef(false);
+
+  const enforceForceLogout = async (forceAt: string | null | undefined, sess: Session | null) => {
+    if (forcedLogoutRef.current) return false;
+    const iso = forceAt ? String(forceAt) : null;
+    if (!iso) return false;
+    const forceTs = new Date(iso).getTime();
+    if (!Number.isFinite(forceTs)) return false;
+    const lastSignIn = sess?.user?.last_sign_in_at ? new Date(sess.user.last_sign_in_at).getTime() : 0;
+    if (forceTs <= lastSignIn) return false;
+    forcedLogoutRef.current = true;
+    try { await supabase.auth.signOut(); } catch { /* noop */ }
+    toast.info(
+      "Suas credenciais de acesso foram atualizadas por um administrador. Faça login novamente com o novo e-mail.",
+      { duration: 8000 },
+    );
+    return true;
+  };
+
+  const loadRoles = async (uid: string | undefined, sess?: Session | null) => {
     if (!uid) {
       setRoles([]);
       setFullName("");
@@ -61,9 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", uid),
-      supabase.from("profiles").select("full_name, is_active").eq("id", uid).maybeSingle(),
+      supabase.from("profiles").select("full_name, is_active, force_logout_at").eq("id", uid).maybeSingle(),
       (supabase as any).from("approver_settings").select("departments, teto_alcada").eq("user_id", uid).maybeSingle(),
     ]);
+    const forced = await enforceForceLogout((profile as any)?.force_logout_at, sess ?? session);
+    if (forced) return;
     setRoles((rolesData ?? []).map((r) => r.role as string));
     setFullName(profile?.full_name ?? "");
     setIsActive((profile as any)?.is_active !== false);
@@ -72,15 +94,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        forcedLogoutRef.current = false;
+      }
       setSession(s);
-      setTimeout(() => loadRoles(s?.user.id), 0);
+      setTimeout(() => loadRoles(s?.user.id, s), 0);
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      loadRoles(data.session?.user.id).finally(() => setLoading(false));
+      loadRoles(data.session?.user.id, data.session).finally(() => setLoading(false));
     });
-    return () => sub.subscription.unsubscribe();
+    // Recheca ao voltar o foco da aba — "no próximo clique" após alteração.
+    const onFocus = () => {
+      supabase.auth.getSession().then(({ data }) => loadRoles(data.session?.user.id, data.session));
+    };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
 
   const sessionUser = session?.user ?? null;
@@ -107,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     approverCeiling,
     hasAnyRole,
     fullName,
-    refresh: () => loadRoles(session?.user.id),
+    refresh: () => loadRoles(session?.user.id, session),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
