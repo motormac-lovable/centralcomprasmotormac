@@ -108,7 +108,7 @@ function SignInForm() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setBusy(false);
-      return toast.error(error.message);
+      return toast.error(translateError(error, "E-mail ou senha incorretos. Por favor, tente novamente."));
     }
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
