@@ -741,7 +741,7 @@ function OwnerAdminManager() {
 
   const demote = async (uid: string) => {
     const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", "admin");
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível remover o papel de administrador."));
     toast.success("Papel de Administrador removido.");
     reload();
   };
