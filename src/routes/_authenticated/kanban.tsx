@@ -1575,7 +1575,7 @@ function NewSupplierModal({
     const e: Record<string, string> = {};
     if (!fornecedor.trim()) e.fornecedor = "Informe o nome do fornecedor.";
     if (!valorDigits || Number(valorDigits) === 0) e.valor = "Informe o valor da cotação.";
-    if (cnpj && cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "CNPJ inválido.";
+    if (!cnpj.trim() || cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "Informe o CNPJ do fornecedor.";
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "E-mail inválido.";
     if (telefone && telefone.replace(/\D/g, "").length < 10) e.telefone = "Telefone inválido.";
     setErrors(e);
@@ -1652,6 +1652,10 @@ function NewSupplierModal({
             </datalist>
           </SupplierField>
 
+          <SupplierField label="CNPJ *" error={errors.cnpj}>
+            <input value={cnpj} onChange={(e) => setCnpj(maskCnpjLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="00.000.000/0000-00" inputMode="numeric" />
+          </SupplierField>
+
           <SupplierField label="Observações">
             <textarea
               value={observacao}
@@ -1668,21 +1672,16 @@ function NewSupplierModal({
               onClick={() => setShowContato((v) => !v)}
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              {showContato ? "− Ocultar" : "+ Adicionar"} dados de contato (opcional)
+              {showContato ? "− Ocultar" : "+ Adicionar"} e-mail e telefone (opcional)
             </button>
             {showContato && (
-              <div className="mt-3 space-y-3">
-                <SupplierField label="CNPJ" error={errors.cnpj}>
-                  <input value={cnpj} onChange={(e) => setCnpj(maskCnpjLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="00.000.000/0000-00" inputMode="numeric" />
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <SupplierField label="E-mail" error={errors.email}>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="contato@fornecedor.com" />
                 </SupplierField>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <SupplierField label="E-mail" error={errors.email}>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="contato@fornecedor.com" />
-                  </SupplierField>
-                  <SupplierField label="Telefone" error={errors.telefone}>
-                    <input value={telefone} onChange={(e) => setTelefone(maskPhoneLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="(00) 00000-0000" inputMode="tel" />
-                  </SupplierField>
-                </div>
+                <SupplierField label="Telefone" error={errors.telefone}>
+                  <input value={telefone} onChange={(e) => setTelefone(maskPhoneLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="(00) 00000-0000" inputMode="tel" />
+                </SupplierField>
               </div>
             )}
           </div>
