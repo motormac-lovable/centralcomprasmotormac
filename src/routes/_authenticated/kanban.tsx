@@ -542,7 +542,11 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
           Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
         </div>
       )}
-      {card.approver_name ? (
+      {card.buyer_name ? (
+        <div className="mt-2 text-[11px] font-semibold text-primary truncate">
+          👤 Compradora: {decorateUserName(card.buyer_name, null, statuses)}
+        </div>
+      ) : card.approver_name ? (
         (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
           <div className="mt-2 text-[11px] font-semibold text-primary truncate">
             👤 Compradora: {approverLabel}
@@ -553,6 +557,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
           👤 Compradora sugerida: {suggested}
         </div>
       )}
+
       {card.requester_name && (
         <div className="text-[11px] text-muted-foreground truncate">Solicitante: {requesterLabel}</div>
       )}
