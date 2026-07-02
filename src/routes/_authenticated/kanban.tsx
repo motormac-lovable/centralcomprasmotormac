@@ -959,6 +959,35 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
     await onMove(card, "cotacoes_rejeitadas");
     onClose();
   };
+  const confirmQuickReject = async () => {
+    const motivo = quickRejectMotivo.trim();
+    if (!motivo) {
+      toast.error("Informe a justificativa para rejeitar a solicitação.");
+      return;
+    }
+    setQuickRejecting(true);
+    const author = fullName || user?.email || "Comprador";
+    const log: Observation = {
+      at: new Date().toISOString(),
+      author,
+      text: `❌ Solicitação rejeitada na etapa inicial por ${author}. Motivo: ${motivo}`,
+    };
+    const { error } = await supabase
+      .from("kanban_cards")
+      .update({ observations: [...observations, log] as never })
+      .eq("id", card.id);
+    if (error) {
+      setQuickRejecting(false);
+      toast.error(translateError(error, "Não foi possível registrar a rejeição."));
+      return;
+    }
+    await onMove(card, "cotacoes_rejeitadas");
+    setQuickRejecting(false);
+    setShowQuickReject(false);
+    setQuickRejectMotivo("");
+    toast.success("Solicitação rejeitada e movida para Cotações Rejeitadas.");
+    onClose();
+  };
   const [simulandoErp, setSimulandoErp] = useState(false);
   const simulateErp = async () => {
     if (!card.codigo_unico) { toast.error("Card sem código único."); return; }
