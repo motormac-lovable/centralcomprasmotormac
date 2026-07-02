@@ -490,9 +490,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const save = async () => {
     if (!full_name.trim()) return toast.error("Informe o nome.");
     const newEmail = email.trim().toLowerCase();
-    const oldEmail = (row.email ?? "").trim().toLowerCase();
-    const emailChanged = newEmail !== oldEmail;
-    if (emailChanged && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       return toast.error("Informe um e-mail válido.");
     }
     if (role === "aprovador") {
@@ -509,10 +507,13 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
         .eq("id", row.id);
       if (error) throw error;
 
-      // 2) Sincroniza o e-mail (auth.users + profiles) apenas se mudou.
-      if (emailChanged) {
-        await updateEmailFn({ data: { user_id: row.id, email: newEmail } });
-      }
+      // 2) Sincroniza SEMPRE o e-mail com auth.users (fonte da verdade para
+      //    login). O server é idempotente: se auth.users já casa com o
+      //    e-mail informado, apenas reconcilia o profile sem tocar na senha
+      //    nem forçar logout. Se houve mudança real, retorna changed=true.
+      const emailResult = (await updateEmailFn({
+        data: { user_id: row.id, email: newEmail },
+      })) as { ok: boolean; changed?: boolean; auth_updated?: boolean };
 
       if (role !== currentRole && allowedRoles.includes(role)) {
         await updateRoleFn({ data: { user_id: row.id, role: role as any } });
@@ -525,8 +526,11 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
         if (cfgErr) throw cfgErr;
       }
 
-      if (emailChanged) {
-        toast.success("E-mail de cadastro e login atualizado com sucesso! A senha de acesso permanece a mesma.", { duration: 6000 });
+      if (emailResult?.changed) {
+        toast.success(
+          "E-mail de cadastro e login atualizado com sucesso! A senha de acesso permanece a mesma.",
+          { duration: 6000 },
+        );
       } else {
         toast.success("Usuário atualizado.");
       }
@@ -537,6 +541,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
       setSaving(false);
     }
   };
+
 
   const allSelected = departments.length >= DEPARTAMENTOS_APOLLO.length;
 
