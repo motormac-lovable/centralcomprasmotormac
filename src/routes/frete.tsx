@@ -11,6 +11,7 @@ import {
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { maskCEP, maskCNPJ, maskMoney } from "../lib/masks";
+import { DEPARTAMENTOS_APOLLO } from "../lib/apollo-data";
 
 export const Route = createFileRoute("/frete")({
   head: () => ({
