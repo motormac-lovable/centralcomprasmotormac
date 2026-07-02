@@ -125,6 +125,7 @@ export type Database = {
           numero_pedido_linx: string | null
           observations: Json
           order_number: string | null
+          ready_for_apollo_integration: boolean
           requester_email: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
@@ -149,6 +150,7 @@ export type Database = {
           numero_pedido_linx?: string | null
           observations?: Json
           order_number?: string | null
+          ready_for_apollo_integration?: boolean
           requester_email?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
@@ -173,6 +175,7 @@ export type Database = {
           numero_pedido_linx?: string | null
           observations?: Json
           order_number?: string | null
+          ready_for_apollo_integration?: boolean
           requester_email?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
@@ -365,6 +368,7 @@ export type Database = {
           numero_pedido_linx: string | null
           observations: Json
           order_number: string | null
+          ready_for_apollo_integration: boolean
           requester_email: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
@@ -418,6 +422,7 @@ export type Database = {
           numero_pedido_linx: string | null
           observations: Json
           order_number: string | null
+          ready_for_apollo_integration: boolean
           requester_email: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]

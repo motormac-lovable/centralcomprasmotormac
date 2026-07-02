@@ -143,6 +143,10 @@ function KanbanPage() {
       patch.numero_pedido_linx = card.codigo_unico;
       patch.order_number = card.codigo_unico;
     }
+    // Contratos aprovados ficam prontos para o Apollo consumir via API/View.
+    if (card.kind === "contratos" && newStatus === "cotacoes_aprovadas") {
+      (patch as Partial<Card> & { ready_for_apollo_integration?: boolean }).ready_for_apollo_integration = true;
+    }
 
     // Resolve current actor for the transition log
     const { data: u } = await supabase.auth.getUser();
@@ -190,7 +194,10 @@ function KanbanPage() {
     const transitionLog: Observation = {
       at: new Date().toISOString(),
       author: actorName,
-      text: `➡️ Movido para "${targetLabel}" por ${actorName}.`,
+      text:
+        card.kind === "contratos"
+          ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
+          : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
     };
     patch.observations = [...prevObs, transitionLog, ...(fallbackLog ? [fallbackLog] : [])] as never;
 
@@ -1315,7 +1322,10 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           )}
 
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
-          {!readOnly && (card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
+          {!readOnly &&
+            (card.status === "solicitacoes_abertas" ||
+              card.status === "em_cotacao" ||
+              (card.kind === "contratos" && card.status !== "cotacoes_aprovadas" && card.status !== "cotacoes_rejeitadas" && card.status !== "pedidos_gerados")) && (
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
@@ -1776,11 +1786,12 @@ function AdvanceStageSection({
   const [justText, setJustText] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const isContrato = card.kind === "contratos";
   const isToCotacao = card.status === "solicitacoes_abertas";
   const hasSupplier = suppliers.length >= 1;
   const hasAttachment = attachments.length >= 1;
-  const blocked = !isToCotacao && (!hasSupplier || !hasAttachment);
-  const isSingleSupplier = !isToCotacao && hasSupplier && hasAttachment && suppliers.length <= 1;
+  const blocked = !isContrato && !isToCotacao && (!hasSupplier || !hasAttachment);
+  const isSingleSupplier = !isContrato && !isToCotacao && hasSupplier && hasAttachment && suppliers.length <= 1;
 
   const blockReason = !hasSupplier && !hasAttachment
     ? "É necessário cadastrar pelo menos 1 fornecedor no mapa comparativo e anexar pelo menos 1 orçamento."
@@ -1824,6 +1835,36 @@ function AdvanceStageSection({
       setBusy(false);
     }
   };
+
+  if (isContrato) {
+    return (
+      <section className="pt-4 border-t space-y-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Após revisar as informações e baixar os documentos, aprove o contrato para liberá-lo à integração com o Apollo.
+            <br />
+            O card irá diretamente para <strong>Cotações Aprovadas</strong>, pulando as etapas intermediárias.
+          </p>
+          <button
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onMove(card, "cotacoes_aprovadas");
+                onClose();
+              } finally {
+                setBusy(false);
+              }
+            }}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {busy ? "Aprovando..." : "Aprovar Contrato"}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (askingJust) {
     return (
