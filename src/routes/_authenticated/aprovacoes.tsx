@@ -335,10 +335,11 @@ function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { c
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 rows={3}
+                disabled={readOnly}
                 placeholder={needsFornUnico
                   ? "Ex: fornecedor exclusivo / homologado / urgência operacional…"
                   : "Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."}
-                className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-60"
               />
             </div>
           )}
