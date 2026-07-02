@@ -232,33 +232,55 @@ export const updateUserEmail = createServerFn({ method: "POST" })
       throw new Response("O e-mail de Proprietários não pode ser alterado por esta tela.", { status: 400 });
     }
 
-    // 1) Atualiza o e-mail em auth.users. `email_confirm: true` faz o novo
-    //    e-mail valer imediatamente como credencial oficial de login, sem
-    //    exigir confirmação por e-mail. NENHUMA senha é enviada — o
-    //    Supabase preserva a senha existente.
-    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
-      data.user_id,
-      { email: data.email, email_confirm: true },
-    );
-    if (authErr) throw new Response(authErr.message, { status: 500 });
+    // Lê o e-mail atual em auth.users (fonte da verdade para login).
+    const { data: currentAuth } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+    const currentAuthEmail = (currentAuth?.user?.email ?? "").toLowerCase();
+    const targetEmail = data.email; // já normalizado (trim + lowercase) pelo zod
+    const authNeedsUpdate = currentAuthEmail !== targetEmail;
 
-    // 2) Atualiza a tabela pública `profiles` + agenda logout forçado.
+    // 1) Atualiza o e-mail em auth.users quando divergente. `email_confirm: true`
+    //    faz o novo e-mail valer imediatamente como credencial oficial de login,
+    //    sem exigir confirmação por e-mail. NENHUMA senha é enviada — o Supabase
+    //    preserva a senha existente.
+    if (authNeedsUpdate) {
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
+        data.user_id,
+        { email: targetEmail, email_confirm: true },
+      );
+      if (authErr) throw new Response(authErr.message, { status: 500 });
+    }
+
+    // 2) Sempre reconcilia a tabela pública `profiles` para casar com auth.users.
+    //    Se o e-mail mudou (em auth ou já divergia do profile), agenda logout
+    //    forçado para o usuário-alvo relogar com a credencial nova.
+    const profileEmailMatched = (targetProfile?.email ?? "").toLowerCase() === targetEmail;
+    const anyChange = authNeedsUpdate || !profileEmailMatched;
+    const profileUpdate = anyChange
+      ? { email: targetEmail, force_logout_at: new Date().toISOString() }
+      : { email: targetEmail };
     const { error: profErr } = await supabaseAdmin
       .from("profiles")
-      .update({ email: data.email, force_logout_at: new Date().toISOString() })
+      .update(profileUpdate)
       .eq("id", data.user_id);
     if (profErr) throw new Response(profErr.message, { status: 500 });
 
-    // 3) Auditoria
-    await supabaseAdmin.from("user_audit_log").insert({
-      target_user_id: data.user_id,
-      target_user_name: targetProfile?.email ?? null,
-      target_user_email: data.email,
-      actor_user_id: userId,
-      actor_user_name: actor.name,
-      action: "email_alterado",
-      details: { de: targetProfile?.email ?? null, para: data.email },
-    });
+    // 3) Auditoria — apenas quando algo mudou.
+    if (anyChange) {
+      await supabaseAdmin.from("user_audit_log").insert({
+        target_user_id: data.user_id,
+        target_user_name: targetProfile?.email ?? null,
+        target_user_email: targetEmail,
+        actor_user_id: userId,
+        actor_user_name: actor.name,
+        action: "email_alterado",
+        details: {
+          de_auth: currentAuthEmail || null,
+          de_profile: targetProfile?.email ?? null,
+          para: targetEmail,
+          reconciliado: !authNeedsUpdate && !profileEmailMatched,
+        },
+      });
+    }
 
-    return { ok: true };
+    return { ok: true, changed: anyChange, auth_updated: authNeedsUpdate };
   });
