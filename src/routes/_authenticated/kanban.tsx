@@ -544,17 +544,17 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
       )}
       {card.buyer_name ? (
         <div className="mt-2 text-[11px] font-semibold text-primary truncate">
-          👤 Compradora: {decorateUserName(card.buyer_name, null, statuses)}
+          👤 Comprador(a): {decorateUserName(card.buyer_name, null, statuses)}
         </div>
       ) : card.approver_name ? (
         (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
           <div className="mt-2 text-[11px] font-semibold text-primary truncate">
-            👤 Compradora: {approverLabel}
+            👤 Comprador(a): {approverLabel}
           </div>
         )
       ) : suggested && (
         <div className="mt-2 text-[11px] font-semibold text-primary/80 truncate" title="Sugestão baseada no material">
-          👤 Compradora: {suggested}
+          👤 Comprador(a): {suggested}
         </div>
       )}
 
