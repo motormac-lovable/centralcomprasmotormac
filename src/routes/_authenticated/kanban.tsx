@@ -143,6 +143,10 @@ function KanbanPage() {
       patch.numero_pedido_linx = card.codigo_unico;
       patch.order_number = card.codigo_unico;
     }
+    // Contratos aprovados ficam prontos para o Apollo consumir via API/View.
+    if (card.kind === "contratos" && newStatus === "cotacoes_aprovadas") {
+      (patch as Partial<Card> & { ready_for_apollo_integration?: boolean }).ready_for_apollo_integration = true;
+    }
 
     // Resolve current actor for the transition log
     const { data: u } = await supabase.auth.getUser();
