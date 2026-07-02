@@ -1,6 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/")({
