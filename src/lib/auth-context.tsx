@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     approverCeiling,
     hasAnyRole,
     fullName,
-    refresh: () => loadRoles(session?.user.id),
+    refresh: () => loadRoles(session?.user.id, session),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
