@@ -194,7 +194,10 @@ function KanbanPage() {
     const transitionLog: Observation = {
       at: new Date().toISOString(),
       author: actorName,
-      text: `➡️ Movido para "${targetLabel}" por ${actorName}.`,
+      text:
+        card.kind === "contratos"
+          ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
+          : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
     };
     patch.observations = [...prevObs, transitionLog, ...(fallbackLog ? [fallbackLog] : [])] as never;
 
