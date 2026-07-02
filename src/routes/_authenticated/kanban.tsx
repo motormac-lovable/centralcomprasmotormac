@@ -199,7 +199,26 @@ function KanbanPage() {
           ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
           : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
     };
-    patch.observations = [...prevObs, transitionLog, ...(fallbackLog ? [fallbackLog] : [])] as never;
+
+    // Regra dinâmica: usuário Comprador que movimenta o card assume o campo "Comprador".
+    let buyerLog: Observation | null = null;
+    if (isBuyer && u.user && actorName && card.buyer_name !== actorName) {
+      (patch as Partial<Card> & { buyer_name?: string | null; buyer_assigned_at?: string | null }).buyer_name = actorName;
+      (patch as Partial<Card> & { buyer_name?: string | null; buyer_assigned_at?: string | null }).buyer_assigned_at = new Date().toISOString();
+      buyerLog = {
+        at: new Date().toISOString(),
+        author: "Sistema",
+        text: `👤 Campo Comprador atualizado para ${actorName} após movimentação na plataforma.`,
+      };
+    }
+
+    patch.observations = [
+      ...prevObs,
+      transitionLog,
+      ...(fallbackLog ? [fallbackLog] : []),
+      ...(buyerLog ? [buyerLog] : []),
+    ] as never;
+
 
     // Optimistic update
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
