@@ -1165,6 +1165,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               <Detail label="E-mail" value={card.requester_email} />
               <Detail label="Unidade" value={card.unidade} />
               <Detail label="Empresa" value={card.empresa} />
+              <Detail label="Comprador(a)" value={buyerLabel || "—"} />
               <Detail label="Criado em" value={new Date(card.created_at).toLocaleString("pt-BR")} />
               <Detail label="Nesta coluna desde" value={new Date(card.status_changed_at).toLocaleString("pt-BR")} />
             </div>
