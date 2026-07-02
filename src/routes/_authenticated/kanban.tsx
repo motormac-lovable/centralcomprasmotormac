@@ -1836,6 +1836,36 @@ function AdvanceStageSection({
     }
   };
 
+  if (isContrato) {
+    return (
+      <section className="pt-4 border-t space-y-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Após revisar as informações e baixar os documentos, aprove o contrato para liberá-lo à integração com o Apollo.
+            <br />
+            O card irá diretamente para <strong>Cotações Aprovadas</strong>, pulando as etapas intermediárias.
+          </p>
+          <button
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onMove(card, "cotacoes_aprovadas");
+                onClose();
+              } finally {
+                setBusy(false);
+              }
+            }}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-60"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {busy ? "Aprovando..." : "Aprovar Contrato"}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   if (askingJust) {
     return (
       <section className="pt-4 border-t space-y-3">
