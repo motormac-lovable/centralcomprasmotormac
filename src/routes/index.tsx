@@ -1,6 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -49,13 +47,10 @@ const cards = [
 ] as const;
 
 function Hub() {
-  useEffect(() => {
-    const profile = sessionStorage.getItem("welcomeProfile");
-    if (profile) {
-      toast.success(`Bem Vindo, ${profile}!`);
-      sessionStorage.removeItem("welcomeProfile");
-    }
-  }, []);
+  // A notificação "Bem Vindo, [Perfil]!" é disparada uma única vez no
+  // evento SIGNED_IN pelo AuthProvider — nunca em trocas de tela.
+
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16">
