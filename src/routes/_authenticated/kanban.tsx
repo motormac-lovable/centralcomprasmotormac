@@ -1044,7 +1044,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-card rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-card rounded-2xl shadow-2xl max-w-[1075px] w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b flex items-start gap-3">
