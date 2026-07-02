@@ -1199,21 +1199,23 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <textarea
-                  value={obsText}
-                  onChange={(e) => setObsText(e.target.value)}
-                  placeholder="Adicionar observação…"
-                  rows={2}
-                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={addObservation}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Registrar
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <textarea
+                    value={obsText}
+                    onChange={(e) => setObsText(e.target.value)}
+                    placeholder="Adicionar observação…"
+                    rows={2}
+                    className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={addObservation}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Registrar
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
