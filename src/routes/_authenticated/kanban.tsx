@@ -1322,7 +1322,10 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           )}
 
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
-          {!readOnly && (card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
+          {!readOnly &&
+            (card.status === "solicitacoes_abertas" ||
+              card.status === "em_cotacao" ||
+              (card.kind === "contratos" && card.status !== "cotacoes_aprovadas" && card.status !== "cotacoes_rejeitadas" && card.status !== "pedidos_gerados")) && (
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
