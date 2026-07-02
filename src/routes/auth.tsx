@@ -318,7 +318,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       if (/weak|senha fraca/i.test(msg)) {
         return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
       }
-      return toast.error("Falha ao enviar solicitação: " + msg);
+      return toast.error(translateError(err, "Falha ao enviar solicitação. Tente novamente em instantes."));
     }
     setBusy(false);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });
