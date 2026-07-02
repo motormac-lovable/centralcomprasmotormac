@@ -206,9 +206,14 @@ function AdminPage() {
   );
 }
 
-function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
+function RegisteredUsers({
+  restrictedTo,
+  mode = "admin",
+}: { restrictedTo?: "solicitante"; mode?: "admin" | "buyer" | "auditor" } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
+  const buyerOnly = mode === "buyer";
+  const auditorOnly = mode === "auditor";
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
