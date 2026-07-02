@@ -68,9 +68,53 @@ export async function createCard(input: {
   status?: Status;
   data: Record<string, unknown>;
 }) {
+  // Regra de atribuição inicial do Comprador conforme a origem do formulário.
+  let buyer_name: string | null = null;
+  let buyer_source: "materiais_apollo" | "rodizio_contratos" | null = null;
+
+  if (input.kind === "materiais") {
+    const itens = Array.isArray((input.data as { itens?: unknown }).itens)
+      ? ((input.data as { itens: Array<{ codigo?: string }> }).itens)
+      : [];
+    for (const it of itens) {
+      const b = getCompradoraByCodigo(it?.codigo);
+      if (b) { buyer_name = b; buyer_source = "materiais_apollo"; break; }
+    }
+  } else if (input.kind === "contratos") {
+    try {
+      const { data: assigned } = await supabase.rpc("assign_contract_buyer", { _buyers: MATERIAL_BUYERS });
+      if (assigned && typeof assigned === "string") {
+        buyer_name = assigned;
+        buyer_source = "rodizio_contratos";
+      }
+    } catch { /* fallback silencioso: card sem comprador */ }
+  }
+  // "compras" (peças) e "frete" iniciam sem comprador.
+
+  const initialObs: Array<{ at: string; author: string; text: string }> = [];
+  if (buyer_name) {
+    const at = new Date().toISOString();
+    initialObs.push({
+      at,
+      author: "Sistema",
+      text: buyer_source === "rodizio_contratos"
+        ? `👤 Campo Comprador atribuído automaticamente a ${buyer_name} pelo revezamento cíclico de contratos.`
+        : `👤 Campo Comprador atribuído automaticamente a ${buyer_name} conforme mapeamento da base "Listas Materiais Apollo".`,
+    });
+  }
+
+  const insertPayload: Record<string, unknown> = {
+    ...input,
+    data: input.data as never,
+    buyer_name,
+    buyer_assigned_at: buyer_name ? new Date().toISOString() : null,
+  };
+  if (initialObs.length) insertPayload.observations = initialObs as never;
+
   const { error } = await supabase
     .from("kanban_cards")
-    .insert({ ...input, data: input.data as never });
+    .insert(insertPayload as never);
   if (error) throw error;
-  return { ok: true as const };
+  return { ok: true as const, buyer_name };
 }
+
