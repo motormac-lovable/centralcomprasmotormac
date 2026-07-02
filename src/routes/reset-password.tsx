@@ -51,7 +51,7 @@ function ResetPasswordPage() {
       toast.success("Senha redefinida com sucesso!");
       navigate({ to: "/auth" });
     } catch (err: any) {
-      toast.error(err?.message || "Não foi possível redefinir a senha.");
+      toast.error(translateError(err, "Não foi possível redefinir a senha."));
     } finally {
       setBusy(false);
     }
