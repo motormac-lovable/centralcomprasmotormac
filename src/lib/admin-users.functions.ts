@@ -32,7 +32,8 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
     const actor = await getActorInfo(supabaseAdmin, userId);
     const isOwner = actor.emailIsOwner || (callerRoles ?? []).some((r: any) => r.role === "owner");
     const isAdmin = isOwner || (callerRoles ?? []).some((r: any) => r.role === "admin");
-    if (!isAdmin) throw new Response("Forbidden", { status: 403 });
+    const isAuditor = (callerRoles ?? []).some((r: any) => r.role === "auditor");
+    if (!isAdmin && !isAuditor) throw new Response("Forbidden", { status: 403 });
 
     if (data.user_id === userId) {
       throw new Response("Você não pode excluir o próprio usuário.", { status: 400 });
@@ -51,6 +52,16 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
     const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
     if (targetIsAdmin && !isOwner) {
       throw new Response("Somente o Proprietário pode excluir Administradores.", { status: 403 });
+    }
+    // Auditor: exclusão restrita ao perfil Solicitante.
+    if (!isAdmin && isAuditor) {
+      const targetIsSolicitante = (targetRoles ?? []).some((r: any) => r.role === "solicitante");
+      const onlySolicitante = targetIsSolicitante && !(targetRoles ?? []).some(
+        (r: any) => r.role !== "solicitante",
+      );
+      if (!onlySolicitante) {
+        throw new Response("Auditor só pode excluir usuários com o perfil Solicitante.", { status: 403 });
+      }
     }
 
     // 1) Anonimiza perfil + grava auditoria (mantém histórico e cards antigos).
