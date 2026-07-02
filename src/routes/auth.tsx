@@ -145,23 +145,22 @@ function SignInForm() {
       approver = (roles ?? []).some((r) => r.role === "aprovador");
       auditor = (roles ?? []).some((r) => r.role === "auditor");
     }
+    let profileLabel = "";
     if (owner) {
-      toast.success("Bem-vindo, Proprietário!");
-      navigate({ to: "/" });
+      profileLabel = "Proprietário";
     } else if (admin) {
-      toast.success("Bem-vindo, Administrador!");
-      navigate({ to: "/" });
+      profileLabel = "Administrador";
     } else if (buyer) {
-      toast.success("Bem-vindo de volta!");
-      navigate({ to: "/" });
+      profileLabel = "Comprador";
     } else if (approver) {
-      toast.success("Bem-vindo, Aprovador!");
-      navigate({ to: "/" });
+      profileLabel = "Aprovador";
     } else if (auditor) {
-      toast.success("Bem-vindo, Auditor — acesso somente leitura.");
-      navigate({ to: "/" });
+      profileLabel = "Auditor";
     } else if (solicitante) {
-      toast.success("Bem-vindo, Solicitante!");
+      profileLabel = "Solicitante";
+    }
+    if (profileLabel) {
+      sessionStorage.setItem("welcomeProfile", profileLabel);
       navigate({ to: "/" });
     } else {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
