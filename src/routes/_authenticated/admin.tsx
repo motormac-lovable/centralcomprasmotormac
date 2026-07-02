@@ -295,11 +295,13 @@ function RegisteredUsers({
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">{buyerOnly ? "Solicitantes" : "Usuários registrados"}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{restrictedTo === "solicitante" ? "Solicitantes" : "Usuários registrados"}</h2>
           <p className="text-xs text-muted-foreground">
-            {buyerOnly
-              ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
-              : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
+            {auditorOnly
+              ? "Auditor: exclusão restrita aos usuários com o perfil Solicitante. Demais ações são bloqueadas."
+              : buyerOnly
+                ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
+                : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
           </p>
         </div>
         <input
