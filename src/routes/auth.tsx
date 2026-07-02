@@ -217,7 +217,7 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível enviar o e-mail de recuperação. Tente novamente."));
     toast.success("Um link de redefinição de senha foi enviado para o seu e-mail!");
     onClose();
   };
