@@ -255,8 +255,9 @@ export const updateUserEmail = createServerFn({ method: "POST" })
     //    forçado para o usuário-alvo relogar com a credencial nova.
     const profileEmailMatched = (targetProfile?.email ?? "").toLowerCase() === targetEmail;
     const anyChange = authNeedsUpdate || !profileEmailMatched;
-    const profileUpdate: Record<string, unknown> = { email: targetEmail };
-    if (anyChange) profileUpdate.force_logout_at = new Date().toISOString();
+    const profileUpdate = anyChange
+      ? { email: targetEmail, force_logout_at: new Date().toISOString() }
+      : { email: targetEmail };
     const { error: profErr } = await supabaseAdmin
       .from("profiles")
       .update(profileUpdate)
