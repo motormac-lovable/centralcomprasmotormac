@@ -109,7 +109,7 @@ function AdminPage() {
       toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
       reload();
     } catch (err) {
-      toast.error("Falha ao reprovar: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(translateError(err, "Não foi possível reprovar o cadastro."));
     }
   };
 
