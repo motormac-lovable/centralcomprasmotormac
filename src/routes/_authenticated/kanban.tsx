@@ -885,6 +885,12 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
   const approverLabel = decorateUserName(card.approver_name, null, statuses);
+  const suggested = suggestedBuyer(card);
+  const buyerLabel = card.buyer_name
+    ? decorateUserName(card.buyer_name, null, statuses)
+    : card.approver_name && (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao")
+      ? approverLabel
+      : suggested || null;
 
   const observations = (card.observations as unknown as Observation[]) ?? [];
   const suppliers = (card.suppliers as unknown as Supplier[]) ?? [];
