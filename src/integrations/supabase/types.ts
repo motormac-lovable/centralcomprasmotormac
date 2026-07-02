@@ -89,6 +89,27 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          code: number
+          created_at: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: number
+          created_at?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: number
+          created_at?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kanban_cards: {
         Row: {
           approver_id: string | null
