@@ -29,38 +29,40 @@ function AdminPage() {
 
   useEffect(() => { if (isAdmin) reload(); }, [isAdmin]);
 
-  // Auditores são estritamente bloqueados desta área de governança.
-  // Comprador tem acesso parcial: apenas Gestão de Solicitantes.
+  // Comprador (sem Admin): acesso parcial — Gestão de Solicitantes com Inativar/Reativar.
+  // Auditor (sem Admin): acesso parcial — Gestão de Solicitantes com EXCLUSÃO apenas.
   const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+  const auditorOnly = !isAdmin && isAuditor;
 
-  if (isAuditor || (!isAdmin && !buyerOnly)) {
+  if (!isAdmin && !buyerOnly && !auditorOnly) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-semibold">Acesso restrito</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {isAuditor
-            ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
-            : "Você não tem permissão para acessar esta área."}
+          Você não tem permissão para acessar esta área.
         </p>
       </div>
     );
   }
 
-  if (buyerOnly) {
+  if (buyerOnly || auditorOnly) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes.
-            Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
+            {auditorOnly
+              ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
+              : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
           </p>
         </div>
-        <RegisteredUsers buyerOnly />
+        <RegisteredUsers restrictedTo="solicitante" mode={auditorOnly ? "auditor" : "buyer"} />
       </div>
     );
   }
+
+
 
 
   type AppRole = Database["public"]["Enums"]["app_role"];
