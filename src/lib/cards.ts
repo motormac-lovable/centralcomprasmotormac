@@ -33,6 +33,7 @@ export type Supplier = {
   cnpj?: string;
   email?: string;
   telefone?: string;
+  observacao?: string;
 };
 
 export type Attachment = { name: string; path: string; size: number; uploaded_at: string };
