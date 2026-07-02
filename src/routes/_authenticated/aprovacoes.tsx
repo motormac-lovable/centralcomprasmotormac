@@ -409,23 +409,29 @@ function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { c
       })()}
 
 
-      <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
-        <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
-          <XCircle className="h-4 w-4" /> Rejeitar cotação
-        </button>
-        <button
-          onClick={() => canApprove && onApprove(selectedId, justificativa.trim())}
-          disabled={busy || !canApprove}
-          title={
-            !selectedSupplier ? "Selecione um fornecedor vencedor."
-            : needsJustificativa && justificativa.trim().length < 5 ? "Informe a justificativa (mín. 5 caracteres)."
-            : ""
-          }
-          className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
-        </button>
-      </div>
+      {readOnly ? (
+        <div className="px-5 py-4 border-t bg-muted/30 text-xs text-muted-foreground text-right italic">
+          Auditor · modo leitura — aprovação e rejeição indisponíveis.
+        </div>
+      ) : (
+        <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
+          <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
+            <XCircle className="h-4 w-4" /> Rejeitar cotação
+          </button>
+          <button
+            onClick={() => canApprove && onApprove(selectedId, justificativa.trim())}
+            disabled={busy || !canApprove}
+            title={
+              !selectedSupplier ? "Selecione um fornecedor vencedor."
+              : needsJustificativa && justificativa.trim().length < 5 ? "Informe a justificativa (mín. 5 caracteres)."
+              : ""
+            }
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
+          </button>
+        </div>
+      )}
     </div>
   );
 }
