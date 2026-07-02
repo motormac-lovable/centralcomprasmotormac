@@ -19,6 +19,7 @@ import {
 import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
 import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import type { Database } from "@/integrations/supabase/types";
+import { translateError } from "@/lib/error-messages";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
