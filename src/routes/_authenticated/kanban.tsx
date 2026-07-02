@@ -1445,16 +1445,20 @@ function SuppliersTable({
 }) {
   const [showModal, setShowModal] = useState(false);
 
-  const handleConfirm = (data: { fornecedor: string; cnpj: string; email: string; telefone: string }) => {
+  const handleConfirm = (data: {
+    fornecedor: string; valor: string; prazo: string; condicao: string; observacao: string;
+    cnpj: string; email: string; telefone: string;
+  }) => {
     onChange({
       id: crypto.randomUUID(),
       fornecedor: data.fornecedor,
       cnpj: data.cnpj,
       email: data.email,
       telefone: data.telefone,
-      valor: "",
-      prazo: "",
-      condicao: "",
+      valor: data.valor,
+      prazo: data.prazo,
+      condicao: data.condicao,
+      observacao: data.observacao,
       chosen: false,
     });
     setShowModal(false);
