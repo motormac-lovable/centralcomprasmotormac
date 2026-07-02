@@ -151,12 +151,12 @@ function SignInForm() {
       profileLabel = "Proprietário";
     } else if (admin) {
       profileLabel = "Administrador";
+    } else if (auditor) {
+      profileLabel = "Auditor";
     } else if (buyer) {
       profileLabel = "Comprador";
     } else if (approver) {
       profileLabel = "Aprovador";
-    } else if (auditor) {
-      profileLabel = "Auditor";
     } else if (solicitante) {
       profileLabel = "Solicitante";
     }
