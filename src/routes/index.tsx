@@ -49,6 +49,14 @@ const cards = [
 ] as const;
 
 function Hub() {
+  useEffect(() => {
+    const profile = sessionStorage.getItem("welcomeProfile");
+    if (profile) {
+      toast.success(`Bem Vindo, ${profile}!`);
+      sessionStorage.removeItem("welcomeProfile");
+    }
+  }, []);
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16">
       <div className="text-center max-w-2xl mx-auto mb-12">
