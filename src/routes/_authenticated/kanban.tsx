@@ -93,7 +93,7 @@ function KanbanPage() {
       </div>
     );
   }
-  void isBuyer;
+  
 
   const onStart = (e: DragStartEvent) => {
     if (isAuditor) return;
