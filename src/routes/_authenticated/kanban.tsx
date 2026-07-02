@@ -1786,11 +1786,12 @@ function AdvanceStageSection({
   const [justText, setJustText] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const isContrato = card.kind === "contratos";
   const isToCotacao = card.status === "solicitacoes_abertas";
   const hasSupplier = suppliers.length >= 1;
   const hasAttachment = attachments.length >= 1;
-  const blocked = !isToCotacao && (!hasSupplier || !hasAttachment);
-  const isSingleSupplier = !isToCotacao && hasSupplier && hasAttachment && suppliers.length <= 1;
+  const blocked = !isContrato && !isToCotacao && (!hasSupplier || !hasAttachment);
+  const isSingleSupplier = !isContrato && !isToCotacao && hasSupplier && hasAttachment && suppliers.length <= 1;
 
   const blockReason = !hasSupplier && !hasAttachment
     ? "É necessário cadastrar pelo menos 1 fornecedor no mapa comparativo e anexar pelo menos 1 orçamento."
