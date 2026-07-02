@@ -205,7 +205,7 @@ function AprovacoesPage() {
   );
 }
 
-function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
+function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
   const Icon = KIND_ICON[card.kind];
   const dept = departamentoOf(card);
   const suppliers = suppliersOf(card);
