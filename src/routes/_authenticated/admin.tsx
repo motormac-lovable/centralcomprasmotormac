@@ -734,7 +734,7 @@ function OwnerAdminManager() {
 
   const promote = async (uid: string) => {
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: "admin" });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível promover o usuário."));
     toast.success("Comprador promovido a Administrador.");
     reload();
   };
