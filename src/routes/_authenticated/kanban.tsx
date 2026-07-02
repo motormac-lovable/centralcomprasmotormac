@@ -554,7 +554,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
         )
       ) : suggested && (
         <div className="mt-2 text-[11px] font-semibold text-primary/80 truncate" title="Sugestão baseada no material">
-          👤 Compradora sugerida: {suggested}
+          👤 Compradora: {suggested}
         </div>
       )}
 
