@@ -1270,6 +1270,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           {card.status !== "solicitacoes_abertas" && (
             <SuppliersTable
               suppliers={suppliers}
+              readOnly={readOnly}
               onChange={upsertSupplier}
               onDelete={deleteSupplier}
               onChoose={chooseSupplier}
@@ -1277,7 +1278,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           )}
 
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
-          {(card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
+          {!readOnly && (card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
