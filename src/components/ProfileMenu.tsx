@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { isStrongPassword, passwordChecks, PASSWORD_RULE_MESSAGE } from "@/lib/password";
 import { updateOwnPassword } from "@/lib/password.functions";
+import { translateError } from "@/lib/error-messages";
 
 export function ProfileMenu() {
   const { user, fullName } = useAuth();
