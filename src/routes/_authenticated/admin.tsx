@@ -99,7 +99,7 @@ function AdminPage() {
       });
       reload();
     } catch (err) {
-      toast.error("Falha ao aprovar: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(translateError(err, "Não foi possível aprovar o cadastro."));
     }
   };
 
