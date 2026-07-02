@@ -131,7 +131,7 @@ function AprovacoesPage() {
     });
     setBusyId(null);
     setRejecting(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível rejeitar a cotação."));
     toast.success("Cotação rejeitada — registrada com justificativa.");
     reload();
   };
