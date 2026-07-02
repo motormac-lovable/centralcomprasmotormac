@@ -189,3 +189,76 @@ export const updateUserRole = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * Atualiza atomicamente o e-mail em auth.users (via Admin API) e na tabela
+ * pública `profiles`. Preserva a senha existente (o Admin API mantém a
+ * senha quando apenas o campo `email` é enviado). Marca `force_logout_at`
+ * para forçar o usuário-alvo a refazer o login com o novo e-mail no
+ * próximo clique.
+ */
+export const updateUserEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({
+      user_id: z.string().uuid(),
+      email: z.string().trim().toLowerCase().email("E-mail inválido"),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: callerRoles } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", userId);
+    const actor = await getActorInfo(supabaseAdmin, userId);
+    const callerIsOwner = actor.emailIsOwner || (callerRoles ?? []).some((r: any) => r.role === "owner");
+    const callerIsAdmin = callerIsOwner || (callerRoles ?? []).some((r: any) => r.role === "admin");
+    if (!callerIsAdmin) throw new Response("Forbidden", { status: 403 });
+
+    // Alvo
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", data.user_id);
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles").select("email").eq("id", data.user_id).maybeSingle();
+    const targetIsOwner =
+      (targetRoles ?? []).some((r: any) => r.role === "owner") ||
+      (!!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase()));
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
+    if (!callerIsOwner && (targetIsOwner || targetIsAdmin)) {
+      throw new Response("Somente o Proprietário pode alterar o e-mail de Administradores.", { status: 403 });
+    }
+    if (targetIsOwner) {
+      throw new Response("O e-mail de Proprietários não pode ser alterado por esta tela.", { status: 400 });
+    }
+
+    // 1) Atualiza o e-mail em auth.users. `email_confirm: true` faz o novo
+    //    e-mail valer imediatamente como credencial oficial de login, sem
+    //    exigir confirmação por e-mail. NENHUMA senha é enviada — o
+    //    Supabase preserva a senha existente.
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(
+      data.user_id,
+      { email: data.email, email_confirm: true },
+    );
+    if (authErr) throw new Response(authErr.message, { status: 500 });
+
+    // 2) Atualiza a tabela pública `profiles` + agenda logout forçado.
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ email: data.email, force_logout_at: new Date().toISOString() })
+      .eq("id", data.user_id);
+    if (profErr) throw new Response(profErr.message, { status: 500 });
+
+    // 3) Auditoria
+    await supabaseAdmin.from("user_audit_log").insert({
+      target_user_id: data.user_id,
+      target_user_name: targetProfile?.email ?? null,
+      target_user_email: data.email,
+      actor_user_id: userId,
+      actor_user_name: actor.name,
+      action: "email_alterado",
+      details: { de: targetProfile?.email ?? null, para: data.email },
+    });
+
+    return { ok: true };
+  });
