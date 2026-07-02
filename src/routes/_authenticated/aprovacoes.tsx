@@ -58,7 +58,7 @@ function attachmentsOf(card: Card): Attachment[] {
 }
 
 function AprovacoesPage() {
-  const { isApprover, isOwner, isAdmin, approverDepartments, approverCeiling, fullName, user } = useAuth();
+  const { isApprover, isOwner, isAdmin, isAuditor, approverDepartments, approverCeiling, fullName, user } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState<Card | null>(null);
@@ -80,6 +80,8 @@ function AprovacoesPage() {
 
   const visibleCards = useMemo(() => {
     return cards.filter((c) => {
+      // Auditor: transparência total — vê todos os cards em aguardando aprovação.
+      if (isAuditor) return true;
       const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
       const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
@@ -94,9 +96,9 @@ function AprovacoesPage() {
       }
       return false;
     });
-  }, [cards, isApprover, isOwner, isAdmin, approverDepartments, approverCeiling]);
+  }, [cards, isApprover, isOwner, isAdmin, isAuditor, approverDepartments, approverCeiling]);
 
-  if (!isApprover && !isOwner && !isAdmin) {
+  if (!isApprover && !isOwner && !isAdmin && !isAuditor) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -104,6 +106,7 @@ function AprovacoesPage() {
       </div>
     );
   }
+
 
   const approve = async (card: Card, selectedSupplierId: string, justificativa: string) => {
     setBusyId(card.id);
@@ -167,6 +170,13 @@ function AprovacoesPage() {
         </div>
       )}
 
+      {isAuditor && (
+        <div className="mb-6 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 text-slate-700" />
+          <span>Modo Auditor — leitura completa das cotações. Aprovação e rejeição estão desabilitadas.</span>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando cotações…</p>
       ) : visibleCards.length === 0 ? (
@@ -180,6 +190,7 @@ function AprovacoesPage() {
               key={card.id}
               card={card}
               busy={busyId === card.id}
+              readOnly={isAuditor}
               onApprove={(sid, just) => approve(card, sid, just)}
               onReject={() => setRejecting(card)}
             />
@@ -194,7 +205,7 @@ function AprovacoesPage() {
   );
 }
 
-function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
+function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
   const Icon = KIND_ICON[card.kind];
   const dept = departamentoOf(card);
   const suppliers = suppliersOf(card);
@@ -280,15 +291,16 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
                   const isMin = cheapest?.id === s.id;
                   const checked = selectedId === s.id;
                   return (
-                    <tr key={s.id} className={`border-t cursor-pointer hover:bg-muted/30 ${checked ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}
-                        onClick={() => setSelectedId(s.id)}>
+                    <tr key={s.id} className={`border-t ${readOnly ? "" : "cursor-pointer hover:bg-muted/30"} ${checked ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}
+                        onClick={() => { if (!readOnly) setSelectedId(s.id); }}>
                       <td className="p-2">
                         <input
                           type="radio"
                           name={`winner-${card.id}`}
                           checked={checked}
-                          onChange={() => setSelectedId(s.id)}
-                          className="h-4 w-4 accent-emerald-600"
+                          disabled={readOnly}
+                          onChange={() => { if (!readOnly) setSelectedId(s.id); }}
+                          className="h-4 w-4 accent-emerald-600 disabled:opacity-40"
                         />
                       </td>
                       <td className="p-2">
@@ -323,10 +335,11 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 rows={3}
+                disabled={readOnly}
                 placeholder={needsFornUnico
                   ? "Ex: fornecedor exclusivo / homologado / urgência operacional…"
                   : "Ex: prazo de entrega mais curto, qualidade homologada, condições de pagamento, etc."}
-                className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-60"
               />
             </div>
           )}
@@ -396,23 +409,29 @@ function ApprovalCard({ card, busy, onApprove, onReject }: { card: Card; busy: b
       })()}
 
 
-      <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
-        <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
-          <XCircle className="h-4 w-4" /> Rejeitar cotação
-        </button>
-        <button
-          onClick={() => canApprove && onApprove(selectedId, justificativa.trim())}
-          disabled={busy || !canApprove}
-          title={
-            !selectedSupplier ? "Selecione um fornecedor vencedor."
-            : needsJustificativa && justificativa.trim().length < 5 ? "Informe a justificativa (mín. 5 caracteres)."
-            : ""
-          }
-          className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
-        </button>
-      </div>
+      {readOnly ? (
+        <div className="px-5 py-4 border-t bg-muted/30 text-xs text-muted-foreground text-right italic">
+          Auditor · modo leitura — aprovação e rejeição indisponíveis.
+        </div>
+      ) : (
+        <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
+          <button onClick={onReject} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">
+            <XCircle className="h-4 w-4" /> Rejeitar cotação
+          </button>
+          <button
+            onClick={() => canApprove && onApprove(selectedId, justificativa.trim())}
+            disabled={busy || !canApprove}
+            title={
+              !selectedSupplier ? "Selecione um fornecedor vencedor."
+              : needsJustificativa && justificativa.trim().length < 5 ? "Informe a justificativa (mín. 5 caracteres)."
+              : ""
+            }
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 className="h-4 w-4" /> Aprovar cotação
+          </button>
+        </div>
+      )}
     </div>
   );
 }

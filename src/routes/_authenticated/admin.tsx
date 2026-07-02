@@ -29,38 +29,40 @@ function AdminPage() {
 
   useEffect(() => { if (isAdmin) reload(); }, [isAdmin]);
 
-  // Auditores são estritamente bloqueados desta área de governança.
-  // Comprador tem acesso parcial: apenas Gestão de Solicitantes.
+  // Comprador (sem Admin): acesso parcial — Gestão de Solicitantes com Inativar/Reativar.
+  // Auditor (sem Admin): acesso parcial — Gestão de Solicitantes com EXCLUSÃO apenas.
   const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+  const auditorOnly = !isAdmin && isAuditor;
 
-  if (isAuditor || (!isAdmin && !buyerOnly)) {
+  if (!isAdmin && !buyerOnly && !auditorOnly) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
         <h1 className="mt-4 text-2xl font-semibold">Acesso restrito</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {isAuditor
-            ? "O perfil Auditor é somente leitura e não pode aprovar, suspender, excluir ou alterar perfis de usuários."
-            : "Você não tem permissão para acessar esta área."}
+          Você não tem permissão para acessar esta área.
         </p>
       </div>
     );
   }
 
-  if (buyerOnly) {
+  if (buyerOnly || auditorOnly) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes.
-            Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
+            {auditorOnly
+              ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
+              : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
           </p>
         </div>
-        <RegisteredUsers buyerOnly />
+        <RegisteredUsers restrictedTo="solicitante" mode={auditorOnly ? "auditor" : "buyer"} />
       </div>
     );
   }
+
+
 
 
   type AppRole = Database["public"]["Enums"]["app_role"];
@@ -204,9 +206,14 @@ function AdminPage() {
   );
 }
 
-function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
+function RegisteredUsers({
+  restrictedTo,
+  mode = "admin",
+}: { restrictedTo?: "solicitante"; mode?: "admin" | "buyer" | "auditor" } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
+  const buyerOnly = mode === "buyer";
+  const auditorOnly = mode === "auditor";
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
@@ -242,8 +249,12 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
   };
 
   const filtered = rows.filter((r) => {
-    // Comprador só enxerga Solicitantes na Gestão de Solicitantes.
-    if (buyerOnly && !r.roles.includes("solicitante")) return false;
+    // Comprador/Auditor: Gestão de Solicitantes filtra usuários que TÊM (apenas) o perfil solicitante.
+    if (restrictedTo === "solicitante") {
+      if (!r.roles.includes("solicitante")) return false;
+      // Auditor só pode agir em usuários exclusivamente Solicitantes.
+      if (auditorOnly && r.roles.some((role) => role !== "solicitante")) return false;
+    }
     const s = q.trim().toLowerCase();
     if (!s) return true;
     return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
@@ -284,11 +295,13 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">{buyerOnly ? "Solicitantes" : "Usuários registrados"}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{restrictedTo === "solicitante" ? "Solicitantes" : "Usuários registrados"}</h2>
           <p className="text-xs text-muted-foreground">
-            {buyerOnly
-              ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
-              : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
+            {auditorOnly
+              ? "Auditor: exclusão restrita aos usuários com o perfil Solicitante. Demais ações são bloqueadas."
+              : buyerOnly
+                ? "Ative ou inative o acesso dos Solicitantes. Demais gestões são exclusivas do Administrador."
+                : "Edite os dados cadastrais ou exclua usuários. Proprietários não podem ser excluídos."}
           </p>
         </div>
         <input
@@ -320,9 +333,10 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
               // Apenas o Proprietário pode gerenciar (editar/inativar/excluir) outros Administradores.
               const adminBlocked = targetIsAdmin && !isOwner;
               const canManage = !owner && !isSelf && !adminBlocked;
-              const canDelete = canManage;
-              const canToggle = canManage;
-              const canEdit = !owner && !adminBlocked;
+              // Auditor: apenas exclusão de Solicitantes; sem editar; sem inativar.
+              const canDelete = canManage && (auditorOnly ? u.roles.includes("solicitante") && !u.roles.some((r) => r !== "solicitante") : !buyerOnly);
+              const canToggle = canManage && !auditorOnly;
+              const canEdit = !auditorOnly && !buyerOnly && !owner && !adminBlocked;
               const active = u.is_active ?? true;
               const blockedTitle = owner
                 ? "Proprietários são intocáveis"
@@ -364,7 +378,7 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
-                      {!buyerOnly && (
+                      {!buyerOnly && !auditorOnly && (
                         <button
                           onClick={() => canEdit && setEditing(u)}
                           disabled={!canEdit}
@@ -374,19 +388,21 @@ function RegisteredUsers({ buyerOnly = false }: { buyerOnly?: boolean } = {}) {
                           <Pencil className="h-3.5 w-3.5" /> Editar
                         </button>
                       )}
-                      <button
-                        onClick={() => canToggle && toggleActive(u)}
-                        disabled={!canToggle}
-                        className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
-                          active
-                            ? "bg-amber-500 text-white hover:bg-amber-600"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700"
-                        }`}
-                        title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
-                      >
-                        {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
-                      </button>
-                      {!buyerOnly && (
+                      {!auditorOnly && (
+                        <button
+                          onClick={() => canToggle && toggleActive(u)}
+                          disabled={!canToggle}
+                          className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                            active
+                              ? "bg-amber-500 text-white hover:bg-amber-600"
+                              : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          }`}
+                          title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
+                        >
+                          {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
+                        </button>
+                      )}
+                      {(!buyerOnly || auditorOnly) && (
                         <button
                           onClick={() => canDelete && setDeleting(u)}
                           disabled={!canDelete}

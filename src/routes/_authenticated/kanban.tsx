@@ -32,7 +32,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, mate
 type ColumnFilter = { kind: string; approver: string };
 
 function KanbanPage() {
-  const { isBuyer, loading } = useAuth();
+  const { isBuyer, isAuditor, loading } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -94,9 +94,13 @@ function KanbanPage() {
   }
   void isBuyer;
 
-  const onStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+  const onStart = (e: DragStartEvent) => {
+    if (isAuditor) return;
+    setActiveId(String(e.active.id));
+  };
   const onEnd = async (e: DragEndEvent) => {
     setActiveId(null);
+    if (isAuditor) return;
     if (!e.over) return;
     const cardId = String(e.active.id);
     const newStatus = String(e.over.id) as Status;
@@ -106,6 +110,10 @@ function KanbanPage() {
   };
 
   const moveCard = async (card: Card, requestedStatus: Status) => {
+    if (isAuditor) {
+      toast.error("Auditor: leitura apenas — movimentação de cards está bloqueada.");
+      return;
+    }
     // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
     const newStatus: Status =
       card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
@@ -380,15 +388,17 @@ function Column({
 }
 
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id });
+  const { isAuditor } = useAuth();
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: isAuditor });
   const [historyOpen, setHistoryOpen] = useState(false);
   const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
+  const dragProps = isAuditor ? {} : { ...attributes, ...listeners };
   return (
     <>
       <div
-        ref={setNodeRef} {...attributes} {...listeners}
+        ref={setNodeRef} {...dragProps}
         onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
-        className={`${isDragging ? "opacity-30" : ""}`}
+        className={`${isDragging ? "opacity-30" : ""} ${isAuditor ? "cursor-pointer" : ""}`}
       >
         <CardView
           card={card}
@@ -831,8 +841,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
-  const { fullName, user, isApprover, isOwner, isAdmin } = useAuth();
-  const canDecide = isApprover || isOwner || isAdmin;
+  const { fullName, user, isApprover, isOwner, isAdmin, isAuditor } = useAuth();
+  const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
+  const readOnly = isAuditor;
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
   const approverLabel = decorateUserName(card.approver_name, null, statuses);
@@ -1145,14 +1156,16 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                           <td className="px-3 py-2 text-right tabular-nums">{it.quantidade || "—"}</td>
                           <td className="px-3 py-2">{it.unidadeMedida || "—"}</td>
                           <td className="px-3 py-2 text-center">
-                            <button
-                              onClick={() => removeItemMaterial(i)}
-                              className="text-destructive hover:opacity-80"
-                              aria-label={`Remover item ${i + 1}`}
-                              title="Remover item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {!readOnly && (
+                              <button
+                                onClick={() => removeItemMaterial(i)}
+                                className="text-destructive hover:opacity-80"
+                                aria-label={`Remover item ${i + 1}`}
+                                title="Remover item"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1186,21 +1199,23 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <textarea
-                  value={obsText}
-                  onChange={(e) => setObsText(e.target.value)}
-                  placeholder="Adicionar observação…"
-                  rows={2}
-                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={addObservation}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Registrar
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <textarea
+                    value={obsText}
+                    onChange={(e) => setObsText(e.target.value)}
+                    placeholder="Adicionar observação…"
+                    rows={2}
+                    className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={addObservation}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Registrar
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
@@ -1221,14 +1236,16 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                   <button onClick={() => downloadAttachment(a)} className="text-primary hover:underline" aria-label="Baixar" title="Baixar no computador">
                     <Download className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover" title="Remover">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {!readOnly && (
+                    <button onClick={() => deleteAttachment(a)} className="text-destructive hover:opacity-80" aria-label="Remover" title="Remover">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
             </div>
-            {attachments.length < 4 && (
+            {!readOnly && attachments.length < 4 && (
               <>
                 <input
                   ref={fileInput}
@@ -1253,6 +1270,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           {card.status !== "solicitacoes_abertas" && (
             <SuppliersTable
               suppliers={suppliers}
+              readOnly={readOnly}
               onChange={upsertSupplier}
               onDelete={deleteSupplier}
               onChoose={chooseSupplier}
@@ -1260,7 +1278,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
           )}
 
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
-          {(card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
+          {!readOnly && (card.status === "solicitacoes_abertas" || card.status === "em_cotacao") && (
             <AdvanceStageSection
               card={card}
               suppliers={suppliers}
@@ -1280,9 +1298,10 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 }
 
 function SuppliersTable({
-  suppliers, onChange, onDelete, onChoose,
+  suppliers, readOnly = false, onChange, onDelete, onChoose,
 }: {
   suppliers: Supplier[];
+  readOnly?: boolean;
   onChange: (s: Supplier) => void;
   onDelete: (id: string) => void;
   onChoose: (id: string) => void;
@@ -1310,9 +1329,11 @@ function SuppliersTable({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Mapa Comparativo de Fornecedores
         </h3>
-        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1 text-xs rounded-md border px-2 py-1 hover:bg-muted">
-          <Plus className="h-3 w-3" /> Fornecedor
-        </button>
+        {!readOnly && (
+          <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1 text-xs rounded-md border px-2 py-1 hover:bg-muted">
+            <Plus className="h-3 w-3" /> Fornecedor
+          </button>
+        )}
       </div>
       {suppliers.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nenhum fornecedor adicionado.</p>
@@ -1326,7 +1347,7 @@ function SuppliersTable({
                 <th className="p-2 text-left">Valor Total</th>
                 <th className="p-2 text-left">Prazo</th>
                 <th className="p-2 text-left">Condição</th>
-                <th className="p-2 w-10"></th>
+                {!readOnly && <th className="p-2 w-10"></th>}
               </tr>
             </thead>
             <tbody>
@@ -1337,8 +1358,9 @@ function SuppliersTable({
                       type="radio"
                       name="chosen-supplier"
                       checked={s.chosen}
+                      disabled={readOnly}
                       onChange={() => onChoose(s.id)}
-                      className="accent-emerald-600"
+                      className="accent-emerald-600 disabled:opacity-50"
                     />
                   </td>
                   <td className="p-1">
@@ -1351,14 +1373,26 @@ function SuppliersTable({
                       )}
                     </div>
                   </td>
-                  <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
-                  <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
-                  <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
-                  <td className="p-1 text-center">
-                    <button onClick={() => onDelete(s.id)} className="text-destructive hover:opacity-80">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </td>
+                  {readOnly ? (
+                    <>
+                      <td className="p-2 text-sm">{s.valor || "—"}</td>
+                      <td className="p-2 text-sm">{s.prazo || "—"}</td>
+                      <td className="p-2 text-sm">{s.condicao || "—"}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
+                      <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
+                      <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
+                    </>
+                  )}
+                  {!readOnly && (
+                    <td className="p-1 text-center">
+                      <button onClick={() => onDelete(s.id)} className="text-destructive hover:opacity-80">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

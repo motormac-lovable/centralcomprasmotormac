@@ -35,9 +35,10 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   // Aprovador também pode emitir solicitações (acessa formulários e seu histórico pessoal).
-  // Auditor é estritamente somente leitura: NÃO pode emitir solicitações nem acessar gestão de usuários.
+  // Auditor: PODE emitir solicitações e acessar Admin (parcial — Gestão de Solicitantes com exclusão),
+  // mas é somente leitura no Kanban e no Painel de Aprovações.
   const showBuyerLinks = isBuyer || isAuditor;
-  const canRequest = !isAuditor && (isSolicitante || isApprover || isBuyer);
+  const canRequest = isSolicitante || isApprover || isBuyer || isAuditor;
   const showMinhasSolicitacoes = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
 
   return (
@@ -54,12 +55,12 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto">
-            {/* Nova Solicitação — Solicitante, Aprovador, Comprador e Admin (Auditor é bloqueado) */}
+            {/* Nova Solicitação — Solicitante, Aprovador, Comprador, Auditor e Admin */}
             {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
             )}
 
-            {/* Visão completa do Comprador / Auditor (somente leitura) */}
+            {/* Visão completa do Comprador / Auditor (Auditor em somente leitura) */}
             {showBuyerLinks && (
               <>
                 {!isAuditor && (
@@ -70,8 +71,9 @@ export function Layout({ children }: { children: ReactNode }) {
                 <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
               </>
             )}
-            {/* Admin: Proprietário/Administrador com poder total; Comprador com acesso parcial (Gestão de Solicitantes). Auditor bloqueado. */}
-            {(isAdmin || isBuyer) && !isAuditor && (
+            {/* Admin: Proprietário/Administrador com poder total; Comprador com Gestão de Solicitantes;
+                Auditor com Gestão de Solicitantes (apenas exclusão). */}
+            {(isAdmin || isBuyer || isAuditor) && (
               <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
             )}
             {isOwner && (
