@@ -842,9 +842,13 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
-  const { fullName, user, isApprover, isOwner, isAdmin, isAuditor } = useAuth();
+  const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
   const readOnly = isAuditor;
+  const canQuickReject =
+    !isAuditor &&
+    (isBuyer || isAdmin || isOwner) &&
+    (card.status === "solicitacoes_abertas" || card.status === "em_cotacao");
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
   const approverLabel = decorateUserName(card.approver_name, null, statuses);
@@ -855,6 +859,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
 
   const [obsText, setObsText] = useState("");
+  const [showQuickReject, setShowQuickReject] = useState(false);
+  const [quickRejectMotivo, setQuickRejectMotivo] = useState("");
+  const [quickRejecting, setQuickRejecting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
