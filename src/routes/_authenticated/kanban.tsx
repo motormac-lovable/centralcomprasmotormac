@@ -1298,9 +1298,10 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 }
 
 function SuppliersTable({
-  suppliers, onChange, onDelete, onChoose,
+  suppliers, readOnly = false, onChange, onDelete, onChoose,
 }: {
   suppliers: Supplier[];
+  readOnly?: boolean;
   onChange: (s: Supplier) => void;
   onDelete: (id: string) => void;
   onChoose: (id: string) => void;
@@ -1328,9 +1329,11 @@ function SuppliersTable({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Mapa Comparativo de Fornecedores
         </h3>
-        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1 text-xs rounded-md border px-2 py-1 hover:bg-muted">
-          <Plus className="h-3 w-3" /> Fornecedor
-        </button>
+        {!readOnly && (
+          <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1 text-xs rounded-md border px-2 py-1 hover:bg-muted">
+            <Plus className="h-3 w-3" /> Fornecedor
+          </button>
+        )}
       </div>
       {suppliers.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nenhum fornecedor adicionado.</p>
@@ -1344,7 +1347,7 @@ function SuppliersTable({
                 <th className="p-2 text-left">Valor Total</th>
                 <th className="p-2 text-left">Prazo</th>
                 <th className="p-2 text-left">Condição</th>
-                <th className="p-2 w-10"></th>
+                {!readOnly && <th className="p-2 w-10"></th>}
               </tr>
             </thead>
             <tbody>
@@ -1355,8 +1358,9 @@ function SuppliersTable({
                       type="radio"
                       name="chosen-supplier"
                       checked={s.chosen}
+                      disabled={readOnly}
                       onChange={() => onChoose(s.id)}
-                      className="accent-emerald-600"
+                      className="accent-emerald-600 disabled:opacity-50"
                     />
                   </td>
                   <td className="p-1">
@@ -1369,14 +1373,26 @@ function SuppliersTable({
                       )}
                     </div>
                   </td>
-                  <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
-                  <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
-                  <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
-                  <td className="p-1 text-center">
-                    <button onClick={() => onDelete(s.id)} className="text-destructive hover:opacity-80">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </td>
+                  {readOnly ? (
+                    <>
+                      <td className="p-2 text-sm">{s.valor || "—"}</td>
+                      <td className="p-2 text-sm">{s.prazo || "—"}</td>
+                      <td className="p-2 text-sm">{s.condicao || "—"}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
+                      <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
+                      <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
+                    </>
+                  )}
+                  {!readOnly && (
+                    <td className="p-1 text-center">
+                      <button onClick={() => onDelete(s.id)} className="text-destructive hover:opacity-80">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
