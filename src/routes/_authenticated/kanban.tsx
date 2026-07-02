@@ -1245,7 +1245,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
             </div>
-            {attachments.length < 4 && (
+            {!readOnly && attachments.length < 4 && (
               <>
                 <input
                   ref={fileInput}
