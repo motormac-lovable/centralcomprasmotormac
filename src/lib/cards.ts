@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getCompradoraByCodigo, MATERIAL_BUYERS } from "@/lib/apollo-buyers";
+
 
 type Kind = Database["public"]["Enums"]["card_kind"];
 export type Status = Database["public"]["Enums"]["card_status"];
