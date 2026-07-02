@@ -38,6 +38,7 @@ function FretePage() {
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const REQUIRED_FREIGHT_LABELS: Record<string, string> = {
+    departamento: "Departamento",
     cnpjPagador: "CNPJ do pagador do frete",
     cnpjRemetente: "CNPJ do remetente",
     cnpjDestinatario: "CNPJ do destinatário",
