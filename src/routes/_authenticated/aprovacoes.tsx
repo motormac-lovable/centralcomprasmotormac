@@ -170,6 +170,13 @@ function AprovacoesPage() {
         </div>
       )}
 
+      {isAuditor && (
+        <div className="mb-6 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 text-slate-700" />
+          <span>Modo Auditor — leitura completa das cotações. Aprovação e rejeição estão desabilitadas.</span>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando cotações…</p>
       ) : visibleCards.length === 0 ? (
@@ -183,6 +190,7 @@ function AprovacoesPage() {
               key={card.id}
               card={card}
               busy={busyId === card.id}
+              readOnly={isAuditor}
               onApprove={(sid, just) => approve(card, sid, just)}
               onReject={() => setRejecting(card)}
             />
