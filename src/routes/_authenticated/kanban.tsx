@@ -388,15 +388,17 @@ function Column({
 }
 
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id });
+  const { isAuditor } = useAuth();
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: isAuditor });
   const [historyOpen, setHistoryOpen] = useState(false);
   const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
+  const dragProps = isAuditor ? {} : { ...attributes, ...listeners };
   return (
     <>
       <div
-        ref={setNodeRef} {...attributes} {...listeners}
+        ref={setNodeRef} {...dragProps}
         onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
-        className={`${isDragging ? "opacity-30" : ""}`}
+        className={`${isDragging ? "opacity-30" : ""} ${isAuditor ? "cursor-pointer" : ""}`}
       >
         <CardView
           card={card}
