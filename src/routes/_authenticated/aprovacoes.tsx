@@ -291,15 +291,16 @@ function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { c
                   const isMin = cheapest?.id === s.id;
                   const checked = selectedId === s.id;
                   return (
-                    <tr key={s.id} className={`border-t cursor-pointer hover:bg-muted/30 ${checked ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}
-                        onClick={() => setSelectedId(s.id)}>
+                    <tr key={s.id} className={`border-t ${readOnly ? "" : "cursor-pointer hover:bg-muted/30"} ${checked ? "bg-emerald-50 dark:bg-emerald-950/30 font-semibold" : ""}`}
+                        onClick={() => { if (!readOnly) setSelectedId(s.id); }}>
                       <td className="p-2">
                         <input
                           type="radio"
                           name={`winner-${card.id}`}
                           checked={checked}
-                          onChange={() => setSelectedId(s.id)}
-                          className="h-4 w-4 accent-emerald-600"
+                          disabled={readOnly}
+                          onChange={() => { if (!readOnly) setSelectedId(s.id); }}
+                          className="h-4 w-4 accent-emerald-600 disabled:opacity-40"
                         />
                       </td>
                       <td className="p-2">
