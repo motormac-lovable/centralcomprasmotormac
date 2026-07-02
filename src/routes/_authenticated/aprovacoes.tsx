@@ -72,7 +72,7 @@ function AprovacoesPage() {
       .select("*")
       .eq("status", "aguardando_aprovacao")
       .order("status_changed_at", { ascending: true });
-    if (error) toast.error(error.message);
+    if (error) toast.error(translateError(error, "Não foi possível carregar as aprovações."));
     setCards((data ?? []) as Card[]);
     setLoading(false);
   };
