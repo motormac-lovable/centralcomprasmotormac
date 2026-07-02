@@ -106,11 +106,35 @@ function SignInForm() {
     e.preventDefault();
     setBusy(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setBusy(false);
+      return toast.error(error.message);
+    }
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
     let owner = isOwnerEmail(emailLogged);
+
+    // BLOQUEIO IMEDIATO: usuários inativos ou excluídos não podem logar.
+    // Proprietários (por e-mail) nunca podem ser bloqueados.
+    if (uid && !owner) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_active, is_deleted")
+        .eq("id", uid)
+        .maybeSingle();
+      if (profile && ((profile as any).is_deleted === true || (profile as any).is_active === false)) {
+        await supabase.auth.signOut();
+        setBusy(false);
+        return toast.error(
+          (profile as any).is_deleted
+            ? "Este acesso foi excluído. Contate o time de Compras."
+            : "Seu acesso está inativado. Contate o time de Compras para reativar.",
+          { duration: 6000 },
+        );
+      }
+    }
+
+    setBusy(false);
     let admin = false, buyer = false, solicitante = false, approver = false, auditor = false;
     if (uid) {
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
