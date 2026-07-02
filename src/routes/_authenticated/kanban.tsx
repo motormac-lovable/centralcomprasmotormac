@@ -94,9 +94,13 @@ function KanbanPage() {
   }
   void isBuyer;
 
-  const onStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+  const onStart = (e: DragStartEvent) => {
+    if (isAuditor) return;
+    setActiveId(String(e.active.id));
+  };
   const onEnd = async (e: DragEndEvent) => {
     setActiveId(null);
+    if (isAuditor) return;
     if (!e.over) return;
     const cardId = String(e.active.id);
     const newStatus = String(e.over.id) as Status;
@@ -106,6 +110,10 @@ function KanbanPage() {
   };
 
   const moveCard = async (card: Card, requestedStatus: Status) => {
+    if (isAuditor) {
+      toast.error("Auditor: leitura apenas — movimentação de cards está bloqueada.");
+      return;
+    }
     // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
     const newStatus: Status =
       card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
