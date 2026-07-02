@@ -842,9 +842,13 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
-  const { fullName, user, isApprover, isOwner, isAdmin, isAuditor } = useAuth();
+  const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
   const readOnly = isAuditor;
+  const canQuickReject =
+    !isAuditor &&
+    (isBuyer || isAdmin || isOwner) &&
+    (card.status === "solicitacoes_abertas" || card.status === "em_cotacao");
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
   const approverLabel = decorateUserName(card.approver_name, null, statuses);
@@ -855,6 +859,9 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
 
   const [obsText, setObsText] = useState("");
+  const [showQuickReject, setShowQuickReject] = useState(false);
+  const [quickRejectMotivo, setQuickRejectMotivo] = useState("");
+  const [quickRejecting, setQuickRejecting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
@@ -950,6 +957,35 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
   };
   const reject = async () => {
     await onMove(card, "cotacoes_rejeitadas");
+    onClose();
+  };
+  const confirmQuickReject = async () => {
+    const motivo = quickRejectMotivo.trim();
+    if (!motivo) {
+      toast.error("Informe a justificativa para rejeitar a solicitação.");
+      return;
+    }
+    setQuickRejecting(true);
+    const author = fullName || user?.email || "Comprador";
+    const log: Observation = {
+      at: new Date().toISOString(),
+      author,
+      text: `❌ Solicitação rejeitada na etapa inicial por ${author}. Motivo: ${motivo}`,
+    };
+    const { error } = await supabase
+      .from("kanban_cards")
+      .update({ observations: [...observations, log] as never })
+      .eq("id", card.id);
+    if (error) {
+      setQuickRejecting(false);
+      toast.error(translateError(error, "Não foi possível registrar a rejeição."));
+      return;
+    }
+    await onMove(card, "cotacoes_rejeitadas");
+    setQuickRejecting(false);
+    setShowQuickReject(false);
+    setQuickRejectMotivo("");
+    toast.success("Solicitação rejeitada e movida para Cotações Rejeitadas.");
     onClose();
   };
   const [simulandoErp, setSimulandoErp] = useState(false);
@@ -1291,6 +1327,63 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
               rawData={rawData}
               observations={observations}
             />
+          )}
+
+          {/* ── Rejeição rápida (Solicitação Aberta / Em Cotação) ── */}
+          {canQuickReject && (
+            <section className="rounded-xl border-2 border-red-300/70 bg-red-50/60 dark:bg-red-950/20 p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+                  <XCircle className="h-4 w-4" />
+                  Rejeitar solicitação nesta etapa
+                </div>
+                {!showQuickReject && (
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickReject(true)}
+                    className="inline-flex items-center gap-2 rounded-md border border-red-600 text-red-700 hover:bg-red-600 hover:text-white px-3 py-1.5 text-xs font-semibold transition"
+                  >
+                    <XCircle className="h-4 w-4" /> Rejeitar Cotação
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 text-[11px] text-red-700/80 dark:text-red-300/80">
+                Use quando a solicitação for inviável ou inconsistente. O card será movido para <strong>Cotações Rejeitadas</strong> e a justificativa ficará registrada no histórico.
+              </p>
+              {showQuickReject && (
+                <div className="mt-3 space-y-2">
+                  <label className="text-xs font-medium text-red-800 dark:text-red-200">
+                    Justificativa (obrigatória)
+                  </label>
+                  <textarea
+                    value={quickRejectMotivo}
+                    onChange={(e) => setQuickRejectMotivo(e.target.value)}
+                    placeholder="Por que esta solicitação está sendo rejeitada?"
+                    rows={3}
+                    className="w-full rounded-md border border-red-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowQuickReject(false); setQuickRejectMotivo(""); }}
+                      disabled={quickRejecting}
+                      className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmQuickReject}
+                      disabled={quickRejecting || !quickRejectMotivo.trim()}
+                      className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      {quickRejecting ? "Rejeitando..." : "Confirmar rejeição"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
           )}
         </div>
       </div>
