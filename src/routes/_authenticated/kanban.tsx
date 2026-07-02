@@ -635,11 +635,13 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   const decisao = findObs(obs, /APROVADA|REJEITADA|Cotações Aprovadas|Cotações Rejeitadas/i);
   const rejeicao = findObs(obs, /REJEITADA|Cotações Rejeitadas/i);
 
-  // Buyer = first author who moved card to "Em cotação" (fallback to approver_name)
+  // Comprador Responsável: prioriza o campo persistido "buyer_name" (atribuição inicial/dinâmica).
   const compradorResponsavel =
+    card.buyer_name ||
     emCotacao?.author ||
     (!isRejected && !aprov ? card.approver_name : null) ||
     card.approver_name ||
+
     "N/A (Card Anterior à Atualização)";
 
   // ─── Fallback inteligente para cards "em trânsito" / legados ───
