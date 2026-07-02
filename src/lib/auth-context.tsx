@@ -98,6 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
         forcedLogoutRef.current = false;
       }
+      // Toast de boas-vindas: SOMENTE no evento real de SIGNED_IN.
+      // Não dispara em INITIAL_SESSION, TOKEN_REFRESHED, USER_UPDATED
+      // nem em trocas de tela / remount de componentes.
+      if (event === "SIGNED_IN" && typeof window !== "undefined") {
+        const profile = sessionStorage.getItem("welcomeProfile");
+        if (profile) {
+          sessionStorage.removeItem("welcomeProfile");
+          toast.success(`Bem Vindo, ${profile}!`);
+        }
+      }
       setSession(s);
       setTimeout(() => loadRoles(s?.user.id, s), 0);
     });
