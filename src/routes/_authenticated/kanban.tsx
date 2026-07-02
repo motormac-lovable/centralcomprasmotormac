@@ -859,7 +859,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
   const patch = async (p: Partial<Card>) => {
     const { error } = await supabase.from("kanban_cards").update(p).eq("id", card.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(translateError(error, "Não foi possível salvar as alterações."));
   };
 
   const removeItemMaterial = async (idx: number) => {
