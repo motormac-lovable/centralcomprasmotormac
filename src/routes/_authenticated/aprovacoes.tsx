@@ -58,7 +58,7 @@ function attachmentsOf(card: Card): Attachment[] {
 }
 
 function AprovacoesPage() {
-  const { isApprover, isOwner, isAdmin, approverDepartments, approverCeiling, fullName, user } = useAuth();
+  const { isApprover, isOwner, isAdmin, isAuditor, approverDepartments, approverCeiling, fullName, user } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState<Card | null>(null);
@@ -80,6 +80,8 @@ function AprovacoesPage() {
 
   const visibleCards = useMemo(() => {
     return cards.filter((c) => {
+      // Auditor: transparência total — vê todos os cards em aguardando aprovação.
+      if (isAuditor) return true;
       const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
       const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
@@ -94,9 +96,9 @@ function AprovacoesPage() {
       }
       return false;
     });
-  }, [cards, isApprover, isOwner, isAdmin, approverDepartments, approverCeiling]);
+  }, [cards, isApprover, isOwner, isAdmin, isAuditor, approverDepartments, approverCeiling]);
 
-  if (!isApprover && !isOwner && !isAdmin) {
+  if (!isApprover && !isOwner && !isAdmin && !isAuditor) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
         <ShieldAlert className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -104,6 +106,7 @@ function AprovacoesPage() {
       </div>
     );
   }
+
 
   const approve = async (card: Card, selectedSupplierId: string, justificativa: string) => {
     setBusyId(card.id);
