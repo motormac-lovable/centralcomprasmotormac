@@ -378,7 +378,7 @@ function RegisteredUsers({
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
-                      {!buyerOnly && (
+                      {!buyerOnly && !auditorOnly && (
                         <button
                           onClick={() => canEdit && setEditing(u)}
                           disabled={!canEdit}
@@ -388,19 +388,21 @@ function RegisteredUsers({
                           <Pencil className="h-3.5 w-3.5" /> Editar
                         </button>
                       )}
-                      <button
-                        onClick={() => canToggle && toggleActive(u)}
-                        disabled={!canToggle}
-                        className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
-                          active
-                            ? "bg-amber-500 text-white hover:bg-amber-600"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700"
-                        }`}
-                        title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
-                      >
-                        {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
-                      </button>
-                      {!buyerOnly && (
+                      {!auditorOnly && (
+                        <button
+                          onClick={() => canToggle && toggleActive(u)}
+                          disabled={!canToggle}
+                          className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                            active
+                              ? "bg-amber-500 text-white hover:bg-amber-600"
+                              : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          }`}
+                          title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
+                        >
+                          {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
+                        </button>
+                      )}
+                      {(!buyerOnly || auditorOnly) && (
                         <button
                           onClick={() => canDelete && setDeleting(u)}
                           disabled={!canDelete}
