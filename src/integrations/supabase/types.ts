@@ -185,6 +185,27 @@ export type Database = {
         }
         Relationships: []
       }
+      origins: {
+        Row: {
+          code: number
+          created_at: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: number
+          created_at?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: number
+          created_at?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cpf: string | null
