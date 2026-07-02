@@ -10,6 +10,7 @@ import { deleteUserCompletely, updateUserRole, setUserActiveState } from "@/lib/
 import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
+import { translateError } from "@/lib/error-messages";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
 type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
@@ -98,7 +99,7 @@ function AdminPage() {
       });
       reload();
     } catch (err) {
-      toast.error("Falha ao aprovar: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(translateError(err, "Não foi possível aprovar o cadastro."));
     }
   };
 
@@ -108,7 +109,7 @@ function AdminPage() {
       toast.success("Cadastro reprovado.", { description: `Simulação: notificação enviada para ${app.email}.` });
       reload();
     } catch (err) {
-      toast.error("Falha ao reprovar: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(translateError(err, "Não foi possível reprovar o cadastro."));
     }
   };
 
@@ -733,14 +734,14 @@ function OwnerAdminManager() {
 
   const promote = async (uid: string) => {
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: "admin" });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível promover o usuário."));
     toast.success("Comprador promovido a Administrador.");
     reload();
   };
 
   const demote = async (uid: string) => {
     const { error } = await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", "admin");
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível remover o papel de administrador."));
     toast.success("Papel de Administrador removido.");
     reload();
   };

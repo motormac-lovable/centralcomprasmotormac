@@ -8,6 +8,7 @@ import { Field, inputCls } from "@/components/forms/FormShell";
 import { isStrongPassword, passwordChecks, PASSWORD_RULE_MESSAGE } from "@/lib/password";
 import { updateOwnPassword } from "@/lib/password.functions";
 import { PasswordChecklist } from "@/components/ProfileMenu";
+import { translateError } from "@/lib/error-messages";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -50,7 +51,7 @@ function ResetPasswordPage() {
       toast.success("Senha redefinida com sucesso!");
       navigate({ to: "/auth" });
     } catch (err: any) {
-      toast.error(err?.message || "Não foi possível redefinir a senha.");
+      toast.error(translateError(err, "Não foi possível redefinir a senha."));
     } finally {
       setBusy(false);
     }

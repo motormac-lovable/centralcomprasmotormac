@@ -19,6 +19,7 @@ import {
 import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
 import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import type { Database } from "@/integrations/supabase/types";
+import { translateError } from "@/lib/error-messages";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
@@ -197,7 +198,7 @@ function KanbanPage() {
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
     const { error } = await supabase.from("kanban_cards").update(patch).eq("id", card.id);
     if (error) {
-      toast.error("Falha ao mover: " + error.message);
+      toast.error(translateError(error, "Não foi possível mover o card. Tente novamente."));
       setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
     } else {
       toast.success(`Movido para "${targetLabel}"`);
@@ -858,7 +859,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
 
   const patch = async (p: Partial<Card>) => {
     const { error } = await supabase.from("kanban_cards").update(p).eq("id", card.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(translateError(error, "Não foi possível salvar as alterações."));
   };
 
   const removeItemMaterial = async (idx: number) => {
@@ -903,7 +904,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
       const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
       const path = `${card.id}/${Date.now()}_${safeName}`;
       const { error } = await supabase.storage.from("orcamentos").upload(path, file);
-      if (error) { toast.error(`${file.name}: ${error.message}`); continue; }
+      if (error) { toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`); continue; }
       uploaded.push({ name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() });
     }
     if (uploaded.length) {

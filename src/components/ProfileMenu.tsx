@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { isStrongPassword, passwordChecks, PASSWORD_RULE_MESSAGE } from "@/lib/password";
 import { updateOwnPassword } from "@/lib/password.functions";
+import { translateError } from "@/lib/error-messages";
 
 export function ProfileMenu() {
   const { user, fullName } = useAuth();
@@ -53,7 +54,7 @@ export function ProfileMenu() {
       try {
         await updatePwd({ data: { password: next } });
       } catch (err: any) {
-        toast.error(err?.message || "Não foi possível alterar a senha");
+        toast.error(translateError(err, "Não foi possível alterar a senha."));
         setSaving(false);
         return;
       }

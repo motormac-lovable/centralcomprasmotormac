@@ -9,6 +9,7 @@ import { ShieldCheck } from "lucide-react";
 import { maskPhone } from "@/lib/masks";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import { submitBuyerApplication, registerBuyerApplicant } from "@/lib/buyer-applications.functions";
+import { translateError } from "@/lib/error-messages";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 
 
@@ -108,7 +109,7 @@ function SignInForm() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setBusy(false);
-      return toast.error(error.message);
+      return toast.error(translateError(error, "E-mail ou senha incorretos. Por favor, tente novamente."));
     }
     const uid = data.user?.id;
     const emailLogged = data.user?.email ?? email;
@@ -216,7 +217,7 @@ function ForgotPasswordModal({ initialEmail, onClose }: { initialEmail: string; 
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível enviar o e-mail de recuperação. Tente novamente."));
     toast.success("Um link de redefinição de senha foi enviado para o seu e-mail!");
     onClose();
   };
@@ -317,7 +318,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
       if (/weak|senha fraca/i.test(msg)) {
         return toast.error("A senha deve conter no mínimo 8 caracteres, incluindo letras, números e símbolos.");
       }
-      return toast.error("Falha ao enviar solicitação: " + msg);
+      return toast.error(translateError(err, "Falha ao enviar solicitação. Tente novamente em instantes."));
     }
     setBusy(false);
     toast.success("Solicitação enviada! Aguarde a aprovação do proprietário para acessar a plataforma.", { duration: 6000 });

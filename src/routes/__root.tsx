@@ -8,12 +8,13 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Layout } from "../components/Layout";
 import { AuthProvider } from "../lib/auth-context";
+import { translateError } from "../lib/error-messages";
 
 function NotFoundComponent() {
   return (
@@ -115,6 +116,36 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const shownRecently = new Set<string>();
+    const notify = (raw: unknown) => {
+      const msg = translateError(raw);
+      if (!msg) return;
+      if (shownRecently.has(msg)) return;
+      shownRecently.add(msg);
+      setTimeout(() => shownRecently.delete(msg), 3000);
+      toast.error(msg);
+    };
+    const onRejection = (e: PromiseRejectionEvent) => {
+      reportLovableError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), {
+        boundary: "window_unhandledrejection",
+      });
+      notify(e.reason);
+    };
+    const onError = (e: ErrorEvent) => {
+      // Erros de recursos (script/img) não devem gerar toast.
+      if (!e.error && !e.message) return;
+      notify(e.error ?? e.message);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("error", onError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("error", onError);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

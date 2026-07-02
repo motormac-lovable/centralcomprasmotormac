@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import type { Database } from "@/integrations/supabase/types";
 import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
+import { translateError } from "@/lib/error-messages";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -71,7 +72,7 @@ function AprovacoesPage() {
       .select("*")
       .eq("status", "aguardando_aprovacao")
       .order("status_changed_at", { ascending: true });
-    if (error) toast.error(error.message);
+    if (error) toast.error(translateError(error, "Não foi possível carregar as aprovações."));
     setCards((data ?? []) as Card[]);
     setLoading(false);
   };
@@ -116,7 +117,7 @@ function AprovacoesPage() {
       _justificativa: justificativa,
     });
     setBusyId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível aprovar a cotação."));
     toast.success(card.kind === "frete" ? "Frete aprovado — Pedido gerado." : "Cotação aprovada — segue para integração Linx.");
     reload();
   };
@@ -130,7 +131,7 @@ function AprovacoesPage() {
     });
     setBusyId(null);
     setRejecting(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível rejeitar a cotação."));
     toast.success("Cotação rejeitada — registrada com justificativa.");
     reload();
   };
