@@ -333,9 +333,10 @@ function RegisteredUsers({
               // Apenas o Proprietário pode gerenciar (editar/inativar/excluir) outros Administradores.
               const adminBlocked = targetIsAdmin && !isOwner;
               const canManage = !owner && !isSelf && !adminBlocked;
-              const canDelete = canManage;
-              const canToggle = canManage;
-              const canEdit = !owner && !adminBlocked;
+              // Auditor: apenas exclusão de Solicitantes; sem editar; sem inativar.
+              const canDelete = canManage && (auditorOnly ? u.roles.includes("solicitante") && !u.roles.some((r) => r !== "solicitante") : !buyerOnly);
+              const canToggle = canManage && !auditorOnly;
+              const canEdit = !auditorOnly && !buyerOnly && !owner && !adminBlocked;
               const active = u.is_active ?? true;
               const blockedTitle = owner
                 ? "Proprietários são intocáveis"
