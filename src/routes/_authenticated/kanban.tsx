@@ -198,7 +198,7 @@ function KanbanPage() {
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
     const { error } = await supabase.from("kanban_cards").update(patch).eq("id", card.id);
     if (error) {
-      toast.error("Falha ao mover: " + error.message);
+      toast.error(translateError(error, "Não foi possível mover o card. Tente novamente."));
       setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
     } else {
       toast.success(`Movido para "${targetLabel}"`);
