@@ -1445,16 +1445,20 @@ function SuppliersTable({
 }) {
   const [showModal, setShowModal] = useState(false);
 
-  const handleConfirm = (data: { fornecedor: string; cnpj: string; email: string; telefone: string }) => {
+  const handleConfirm = (data: {
+    fornecedor: string; valor: string; prazo: string; condicao: string; observacao: string;
+    cnpj: string; email: string; telefone: string;
+  }) => {
     onChange({
       id: crypto.randomUUID(),
       fornecedor: data.fornecedor,
       cnpj: data.cnpj,
       email: data.email,
       telefone: data.telefone,
-      valor: "",
-      prazo: "",
-      condicao: "",
+      valor: data.valor,
+      prazo: data.prazo,
+      condicao: data.condicao,
+      observacao: data.observacao,
       chosen: false,
     });
     setShowModal(false);
@@ -1484,6 +1488,7 @@ function SuppliersTable({
                 <th className="p-2 text-left">Valor Total</th>
                 <th className="p-2 text-left">Prazo</th>
                 <th className="p-2 text-left">Condição</th>
+                <th className="p-2 text-left">Observações</th>
                 {!readOnly && <th className="p-2 w-10"></th>}
               </tr>
             </thead>
@@ -1515,12 +1520,14 @@ function SuppliersTable({
                       <td className="p-2 text-sm">{s.valor || "—"}</td>
                       <td className="p-2 text-sm">{s.prazo || "—"}</td>
                       <td className="p-2 text-sm">{s.condicao || "—"}</td>
+                      <td className="p-2 text-sm max-w-[220px]"><span className="line-clamp-2" title={s.observacao || ""}>{s.observacao || "—"}</span></td>
                     </>
                   ) : (
                     <>
                       <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
                       <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
                       <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
+                      <td className="p-1"><CellInput value={s.observacao ?? ""} onChange={(v) => onChange({ ...s, observacao: v })} placeholder="Observações" /></td>
                     </>
                   )}
                   {!readOnly && (
@@ -1546,59 +1553,155 @@ function NewSupplierModal({
   onConfirm,
 }: {
   onClose: () => void;
-  onConfirm: (data: { fornecedor: string; cnpj: string; email: string; telefone: string }) => void;
+  onConfirm: (data: {
+    fornecedor: string; valor: string; prazo: string; condicao: string; observacao: string;
+    cnpj: string; email: string; telefone: string;
+  }) => void;
 }) {
   const [fornecedor, setFornecedor] = useState("");
+  const [valor, setValor] = useState("");
+  const [prazo, setPrazo] = useState("");
+  const [condicao, setCondicao] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [showContato, setShowContato] = useState(false);
   const [cnpj, setCnpj] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const valorDigits = valor.replace(/\D/g, "");
+
   const submit = () => {
     const e: Record<string, string> = {};
     if (!fornecedor.trim()) e.fornecedor = "Informe o nome do fornecedor.";
-    if (cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "CNPJ inválido.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "E-mail inválido.";
-    if (telefone.replace(/\D/g, "").length < 10) e.telefone = "Telefone inválido.";
+    if (!valorDigits || Number(valorDigits) === 0) e.valor = "Informe o valor da cotação.";
+    if (cnpj && cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "CNPJ inválido.";
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "E-mail inválido.";
+    if (telefone && telefone.replace(/\D/g, "").length < 10) e.telefone = "Telefone inválido.";
     setErrors(e);
     if (Object.keys(e).length > 0) return;
-    onConfirm({ fornecedor: fornecedor.trim(), cnpj, email: email.trim(), telefone });
+    onConfirm({
+      fornecedor: fornecedor.trim(),
+      valor: valor.trim(),
+      prazo: prazo.trim(),
+      condicao: condicao.trim(),
+      observacao: observacao.trim(),
+      cnpj,
+      email: email.trim(),
+      telefone,
+    });
   };
+
+  const condicoesSugeridas = ["À vista", "Faturado 28 dias", "30 dias", "30/60", "30/60/90", "Boleto 15 dias"];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl"
+        className="w-full max-w-xl rounded-xl border bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold">Cadastrar Fornecedor</h3>
-            <p className="text-xs text-muted-foreground">Preencha os dados cadastrais antes de adicionar a linha ao mapa comparativo.</p>
+            <h3 className="text-lg font-semibold">Nova cotação de fornecedor</h3>
+            <p className="text-xs text-muted-foreground">Preencha os dados da cotação. A linha do mapa comparativo será criada já completa.</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fechar"><X className="h-4 w-4" /></button>
         </div>
+
         <div className="space-y-3">
-          <SupplierField label="Nome do Fornecedor" error={errors.fornecedor}>
-            <input value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Razão social ou fantasia" />
+          <SupplierField label="Fornecedor *" error={errors.fornecedor}>
+            <input
+              value={fornecedor}
+              onChange={(e) => setFornecedor(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              placeholder="Razão social ou nome fantasia"
+              autoFocus
+            />
           </SupplierField>
-          <SupplierField label="CNPJ" error={errors.cnpj}>
-            <input value={cnpj} onChange={(e) => setCnpj(maskCnpjLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="00.000.000/0000-00" inputMode="numeric" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SupplierField label="Valor total *" error={errors.valor}>
+              <input
+                value={valor}
+                onChange={(e) => setValor(maskCurrencyBRL(e.target.value))}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
+              />
+            </SupplierField>
+            <SupplierField label="Prazo de entrega">
+              <input
+                value={prazo}
+                onChange={(e) => setPrazo(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                placeholder="Ex.: 5 dias úteis"
+              />
+            </SupplierField>
+          </div>
+
+          <SupplierField label="Condição / prazo de pagamento">
+            <input
+              list="cond-pgto-sugeridas"
+              value={condicao}
+              onChange={(e) => setCondicao(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              placeholder="Ex.: Faturado 28 dias, À vista, 30/60"
+            />
+            <datalist id="cond-pgto-sugeridas">
+              {condicoesSugeridas.map((c) => <option key={c} value={c} />)}
+            </datalist>
           </SupplierField>
-          <SupplierField label="E-mail" error={errors.email}>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="contato@fornecedor.com" />
+
+          <SupplierField label="Observações">
+            <textarea
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-y"
+              placeholder="Ressalvas, escopo, itens inclusos, validade da proposta…"
+            />
           </SupplierField>
-          <SupplierField label="Telefone" error={errors.telefone}>
-            <input value={telefone} onChange={(e) => setTelefone(maskPhoneLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="(00) 00000-0000" inputMode="tel" />
-          </SupplierField>
+
+          <div className="pt-2 border-t">
+            <button
+              type="button"
+              onClick={() => setShowContato((v) => !v)}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              {showContato ? "− Ocultar" : "+ Adicionar"} dados de contato (opcional)
+            </button>
+            {showContato && (
+              <div className="mt-3 space-y-3">
+                <SupplierField label="CNPJ" error={errors.cnpj}>
+                  <input value={cnpj} onChange={(e) => setCnpj(maskCnpjLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="00.000.000/0000-00" inputMode="numeric" />
+                </SupplierField>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SupplierField label="E-mail" error={errors.email}>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="contato@fornecedor.com" />
+                  </SupplierField>
+                  <SupplierField label="Telefone" error={errors.telefone}>
+                    <input value={telefone} onChange={(e) => setTelefone(maskPhoneLocal(e.target.value))} className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="(00) 00000-0000" inputMode="tel" />
+                  </SupplierField>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">Cancelar</button>
-          <button onClick={submit} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">OK</button>
+          <button onClick={submit} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Adicionar ao Mapa</button>
         </div>
       </div>
     </div>
   );
+}
+
+function maskCurrencyBRL(v: string) {
+  const digits = v.replace(/\D/g, "").slice(0, 14);
+  if (!digits) return "";
+  const n = Number(digits) / 100;
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function SupplierField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
