@@ -101,6 +101,20 @@ function FretePage() {
       <form onSubmit={submit} className="grid gap-5">
         <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
 
+        <Field label="Departamento" required error={errors.departamento} hint="Direciona a aprovação para o gestor responsável pelo departamento.">
+          <select
+            className={inputCls}
+            required
+            value={f.departamento}
+            onChange={(e) => set("departamento", e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {DEPARTAMENTOS_APOLLO.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </Field>
+
         <div className="grid sm:grid-cols-3 gap-5">
           <Field label="CNPJ do pagador do frete" required error={errors.cnpjPagador}>
             <input className={inputCls} value={f.cnpjPagador} onChange={(e) => set("cnpjPagador", maskCNPJ(e.target.value))} />
