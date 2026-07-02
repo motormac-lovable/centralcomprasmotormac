@@ -188,7 +188,7 @@ function MateriaisPage() {
           errors={errors as Partial<Record<keyof BlocoInicial, string>>}
         />
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5">
           <DepartamentoPicker
             required
             nome={form.departamento}
@@ -199,18 +199,15 @@ function MateriaisPage() {
             }
           />
 
-          <Field label="Origem" required error={errors.origem}>
-            <select
-              className={inputCls}
-              value={form.origem}
-              onChange={(e) => set("origem", e.target.value)}
-            >
-              <option value="">Selecione...</option>
-              {ORIGENS_APOLLO.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </Field>
+          <OrigemPicker
+            required
+            nome={form.origem}
+            codigo={form.origem_codigo}
+            error={errors.origem}
+            onChange={({ nome, codigo }) =>
+              setForm((f) => ({ ...f, origem: nome, origem_codigo: codigo }))
+            }
+          />
         </div>
 
         <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
