@@ -10,6 +10,7 @@ import { deleteUserCompletely, updateUserRole, setUserActiveState } from "@/lib/
 import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
+import { translateError } from "@/lib/error-messages";
 
 type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
 type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
