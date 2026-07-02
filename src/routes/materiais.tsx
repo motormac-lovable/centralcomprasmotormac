@@ -14,11 +14,11 @@ import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { maskCNPJ } from "../lib/masks";
 import {
-  DEPARTAMENTOS_APOLLO,
   ORIGENS_APOLLO,
   MATERIAIS_APOLLO,
   UNIDADES_MEDIDA_APOLLO,
 } from "../lib/apollo-data";
+import { DepartamentoPicker } from "../components/forms/DepartamentoPicker";
 import { uploadRequesterFiles } from "../lib/requester-files";
 
 export const Route = createFileRoute("/materiais")({
@@ -56,6 +56,7 @@ function MateriaisPage() {
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [form, setForm] = useState({
     departamento: "",
+    departamento_codigo: "",
     origem: "",
     descricao: "",
     tipo: "Convencional",
@@ -187,18 +188,15 @@ function MateriaisPage() {
         />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Departamento" required error={errors.departamento}>
-            <select
-              className={inputCls}
-              value={form.departamento}
-              onChange={(e) => set("departamento", e.target.value)}
-            >
-              <option value="">Selecione...</option>
-              {DEPARTAMENTOS_APOLLO.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </Field>
+          <DepartamentoPicker
+            required
+            nome={form.departamento}
+            codigo={form.departamento_codigo}
+            error={errors.departamento}
+            onChange={({ nome, codigo }) =>
+              setForm((f) => ({ ...f, departamento: nome, departamento_codigo: codigo }))
+            }
+          />
 
           <Field label="Origem" required error={errors.origem}>
             <select

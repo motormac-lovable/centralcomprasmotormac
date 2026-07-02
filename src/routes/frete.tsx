@@ -11,7 +11,7 @@ import {
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { maskCEP, maskCNPJ, maskMoney } from "../lib/masks";
-import { DEPARTAMENTOS_APOLLO } from "../lib/apollo-data";
+import { DepartamentoPicker } from "../components/forms/DepartamentoPicker";
 
 export const Route = createFileRoute("/frete")({
   head: () => ({
@@ -28,6 +28,7 @@ function FretePage() {
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [f, setF] = useState({
     departamento: "",
+    departamento_codigo: "",
     cnpjPagador: "", cnpjRemetente: "", cnpjDestinatario: "",
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
     valorNF: "", pesoBruto: "", volumes: "",
@@ -101,19 +102,16 @@ function FretePage() {
       <form onSubmit={submit} className="grid gap-5">
         <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
 
-        <Field label="Departamento" required error={errors.departamento} hint="Direciona a aprovação para o gestor responsável pelo departamento.">
-          <select
-            className={inputCls}
-            required
-            value={f.departamento}
-            onChange={(e) => set("departamento", e.target.value)}
-          >
-            <option value="">Selecione...</option>
-            {DEPARTAMENTOS_APOLLO.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </Field>
+        <DepartamentoPicker
+          required
+          nome={f.departamento}
+          codigo={f.departamento_codigo}
+          error={errors.departamento}
+          hint="Direciona a aprovação para o gestor responsável pelo departamento."
+          onChange={({ nome, codigo }) =>
+            setF((s) => ({ ...s, departamento: nome, departamento_codigo: codigo }))
+          }
+        />
 
         <div className="grid sm:grid-cols-3 gap-5">
           <Field label="CNPJ do pagador do frete" required error={errors.cnpjPagador}>

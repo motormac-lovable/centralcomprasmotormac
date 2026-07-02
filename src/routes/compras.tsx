@@ -13,7 +13,7 @@ import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { uploadRequesterFiles } from "../lib/requester-files";
 import { maskCNPJ } from "../lib/masks";
-import { DEPARTAMENTOS_APOLLO } from "../lib/apollo-data";
+import { DepartamentoPicker } from "../components/forms/DepartamentoPicker";
 
 export const Route = createFileRoute("/compras")({
   head: () => ({
@@ -39,6 +39,7 @@ function ComprasPage() {
   const [form, setForm] = useState({
     cnpj: "",
     departamento: "",
+    departamento_codigo: "",
     peca: "",
     operacao: "",
     especificacao: "",
@@ -107,19 +108,16 @@ function ComprasPage() {
           <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
         </Field>
 
-        <Field label="Departamento" required error={errors.departamento} hint="Direciona a aprovação para o gestor responsável.">
-          <select
-            className={inputCls}
-            required
-            value={form.departamento}
-            onChange={(e) => set("departamento", e.target.value)}
-          >
-            <option value="">Selecione...</option>
-            {DEPARTAMENTOS_APOLLO.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </Field>
+        <DepartamentoPicker
+          required
+          nome={form.departamento}
+          codigo={form.departamento_codigo}
+          error={errors.departamento}
+          hint="Direciona a aprovação para o gestor responsável."
+          onChange={({ nome, codigo }) =>
+            setForm((f) => ({ ...f, departamento: nome, departamento_codigo: codigo }))
+          }
+        />
 
 
 
