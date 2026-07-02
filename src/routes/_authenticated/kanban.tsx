@@ -1575,7 +1575,7 @@ function NewSupplierModal({
     const e: Record<string, string> = {};
     if (!fornecedor.trim()) e.fornecedor = "Informe o nome do fornecedor.";
     if (!valorDigits || Number(valorDigits) === 0) e.valor = "Informe o valor da cotação.";
-    if (cnpj && cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "CNPJ inválido.";
+    if (!cnpj.trim() || cnpj.replace(/\D/g, "").length !== 14) e.cnpj = "Informe o CNPJ do fornecedor.";
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "E-mail inválido.";
     if (telefone && telefone.replace(/\D/g, "").length < 10) e.telefone = "Telefone inválido.";
     setErrors(e);
