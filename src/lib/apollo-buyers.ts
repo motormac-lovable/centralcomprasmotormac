@@ -15,3 +15,7 @@ export function getCompradoraByCodigo(codigo: string | undefined | null): string
   if (!codigo) return null;
   return MATERIAL_BUYER[String(codigo).trim()] ?? null;
 }
+
+/** Lista ordenada de compradoras de materiais para revezamento cíclico (round-robin) em contratos. */
+export const MATERIAL_BUYERS: string[] = Object.keys(BUYER_GROUPS);
+

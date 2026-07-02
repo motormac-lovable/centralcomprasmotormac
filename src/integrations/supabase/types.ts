@@ -89,6 +89,24 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_buyer_rotation: {
+        Row: {
+          counter: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          counter?: number
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          counter?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           code: number
@@ -116,6 +134,8 @@ export type Database = {
           approver_name: string | null
           assigned_to: string | null
           attachments: Json
+          buyer_assigned_at: string | null
+          buyer_name: string | null
           codigo_unico: string | null
           created_at: string
           data: Json
@@ -141,6 +161,8 @@ export type Database = {
           approver_name?: string | null
           assigned_to?: string | null
           attachments?: Json
+          buyer_assigned_at?: string | null
+          buyer_name?: string | null
           codigo_unico?: string | null
           created_at?: string
           data?: Json
@@ -166,6 +188,8 @@ export type Database = {
           approver_name?: string | null
           assigned_to?: string | null
           attachments?: Json
+          buyer_assigned_at?: string | null
+          buyer_name?: string | null
           codigo_unico?: string | null
           created_at?: string
           data?: Json
@@ -359,6 +383,8 @@ export type Database = {
           approver_name: string | null
           assigned_to: string | null
           attachments: Json
+          buyer_assigned_at: string | null
+          buyer_name: string | null
           codigo_unico: string | null
           created_at: string
           data: Json
@@ -386,6 +412,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      assign_contract_buyer: { Args: { _buyers: string[] }; Returns: string }
       gerar_codigo_unico: { Args: never; Returns: string }
       get_profile_pii: {
         Args: { _user_id: string }
@@ -413,6 +440,8 @@ export type Database = {
           approver_name: string | null
           assigned_to: string | null
           attachments: Json
+          buyer_assigned_at: string | null
+          buyer_name: string | null
           codigo_unico: string | null
           created_at: string
           data: Json

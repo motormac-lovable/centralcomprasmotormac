@@ -93,7 +93,7 @@ function KanbanPage() {
       </div>
     );
   }
-  void isBuyer;
+  
 
   const onStart = (e: DragStartEvent) => {
     if (isAuditor) return;
@@ -199,7 +199,26 @@ function KanbanPage() {
           ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
           : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
     };
-    patch.observations = [...prevObs, transitionLog, ...(fallbackLog ? [fallbackLog] : [])] as never;
+
+    // Regra dinâmica: usuário Comprador que movimenta o card assume o campo "Comprador".
+    let buyerLog: Observation | null = null;
+    if (isBuyer && u.user && actorName && card.buyer_name !== actorName) {
+      (patch as Partial<Card> & { buyer_name?: string | null; buyer_assigned_at?: string | null }).buyer_name = actorName;
+      (patch as Partial<Card> & { buyer_name?: string | null; buyer_assigned_at?: string | null }).buyer_assigned_at = new Date().toISOString();
+      buyerLog = {
+        at: new Date().toISOString(),
+        author: "Sistema",
+        text: `👤 Campo Comprador atualizado para ${actorName} após movimentação na plataforma.`,
+      };
+    }
+
+    patch.observations = [
+      ...prevObs,
+      transitionLog,
+      ...(fallbackLog ? [fallbackLog] : []),
+      ...(buyerLog ? [buyerLog] : []),
+    ] as never;
+
 
     // Optimistic update
     setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, ...patch, status: newStatus, status_changed_at: new Date().toISOString() } : c)));
@@ -523,7 +542,11 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
           Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
         </div>
       )}
-      {card.approver_name ? (
+      {card.buyer_name ? (
+        <div className="mt-2 text-[11px] font-semibold text-primary truncate">
+          👤 Compradora: {decorateUserName(card.buyer_name, null, statuses)}
+        </div>
+      ) : card.approver_name ? (
         (card.status === "cotacoes_aprovadas" || card.status === "pedidos_gerados" || card.status === "em_cotacao" || card.status === "aguardando_aprovacao") && (
           <div className="mt-2 text-[11px] font-semibold text-primary truncate">
             👤 Compradora: {approverLabel}
@@ -534,6 +557,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
           👤 Compradora sugerida: {suggested}
         </div>
       )}
+
       {card.requester_name && (
         <div className="text-[11px] text-muted-foreground truncate">Solicitante: {requesterLabel}</div>
       )}
@@ -611,11 +635,13 @@ function HistoryModal({ card, onClose }: { card: Card; onClose: () => void }) {
   const decisao = findObs(obs, /APROVADA|REJEITADA|Cotações Aprovadas|Cotações Rejeitadas/i);
   const rejeicao = findObs(obs, /REJEITADA|Cotações Rejeitadas/i);
 
-  // Buyer = first author who moved card to "Em cotação" (fallback to approver_name)
+  // Comprador Responsável: prioriza o campo persistido "buyer_name" (atribuição inicial/dinâmica).
   const compradorResponsavel =
+    card.buyer_name ||
     emCotacao?.author ||
     (!isRejected && !aprov ? card.approver_name : null) ||
     card.approver_name ||
+
     "N/A (Card Anterior à Atualização)";
 
   // ─── Fallback inteligente para cards "em trânsito" / legados ───
