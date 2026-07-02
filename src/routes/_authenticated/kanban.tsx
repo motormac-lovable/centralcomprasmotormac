@@ -1156,14 +1156,16 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
                           <td className="px-3 py-2 text-right tabular-nums">{it.quantidade || "—"}</td>
                           <td className="px-3 py-2">{it.unidadeMedida || "—"}</td>
                           <td className="px-3 py-2 text-center">
-                            <button
-                              onClick={() => removeItemMaterial(i)}
-                              className="text-destructive hover:opacity-80"
-                              aria-label={`Remover item ${i + 1}`}
-                              title="Remover item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {!readOnly && (
+                              <button
+                                onClick={() => removeItemMaterial(i)}
+                                className="text-destructive hover:opacity-80"
+                                aria-label={`Remover item ${i + 1}`}
+                                title="Remover item"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
