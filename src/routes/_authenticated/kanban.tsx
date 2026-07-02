@@ -32,7 +32,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, mate
 type ColumnFilter = { kind: string; approver: string };
 
 function KanbanPage() {
-  const { isBuyer, loading } = useAuth();
+  const { isBuyer, isAuditor, loading } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
