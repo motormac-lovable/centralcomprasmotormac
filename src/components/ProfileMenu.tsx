@@ -54,7 +54,7 @@ export function ProfileMenu() {
       try {
         await updatePwd({ data: { password: next } });
       } catch (err: any) {
-        toast.error(err?.message || "Não foi possível alterar a senha");
+        toast.error(translateError(err, "Não foi possível alterar a senha."));
         setSaving(false);
         return;
       }
