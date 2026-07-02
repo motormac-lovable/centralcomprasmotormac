@@ -146,27 +146,29 @@ function SignInForm() {
       approver = (roles ?? []).some((r) => r.role === "aprovador");
       auditor = (roles ?? []).some((r) => r.role === "auditor");
     }
-    let profileLabel = "";
-    if (owner) {
-      profileLabel = "Proprietário";
-    } else if (admin) {
-      profileLabel = "Administrador";
-    } else if (auditor) {
-      profileLabel = "Auditor";
-    } else if (buyer) {
-      profileLabel = "Comprador";
-    } else if (approver) {
-      profileLabel = "Aprovador";
-    } else if (solicitante) {
-      profileLabel = "Solicitante";
-    }
-    if (profileLabel) {
-      sessionStorage.setItem("welcomeProfile", profileLabel);
+    // Notificação de boas-vindas: EXATAMENTE o perfil logado.
+    // Se o usuário acumular mais de um papel, não emitimos toast (evita rótulo errado).
+    const matched: string[] = [];
+    if (owner) matched.push("Proprietário");
+    if (admin) matched.push("Administrador");
+    if (auditor) matched.push("Auditor");
+    if (buyer) matched.push("Comprador");
+    if (approver) matched.push("Aprovador");
+    if (solicitante) matched.push("Solicitante");
+
+    const hasAny = matched.length > 0;
+    if (hasAny) {
+      if (matched.length === 1) {
+        sessionStorage.setItem("welcomeProfile", matched[0]);
+      } else {
+        sessionStorage.removeItem("welcomeProfile");
+      }
       navigate({ to: "/" });
     } else {
       toast.info("Seu cadastro ainda está aguardando aprovação do proprietário.");
       navigate({ to: "/pending" });
     }
+
 
   };
 
