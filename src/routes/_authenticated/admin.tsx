@@ -468,6 +468,7 @@ function EditUserModal({ row, allowedRoles, onClose, onSaved }: { row: ProfileRo
   const [teto, setTeto] = useState<number>(2000);
   const [deptFilter, setDeptFilter] = useState("");
   const updateRoleFn = useServerFn(updateUserRole);
+  const updateEmailFn = useServerFn(updateUserEmail);
 
   const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
 
