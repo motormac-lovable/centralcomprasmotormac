@@ -27,6 +27,7 @@ function FretePage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
   const [f, setF] = useState({
+    departamento: "",
     cnpjPagador: "", cnpjRemetente: "", cnpjDestinatario: "",
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
     valorNF: "", pesoBruto: "", volumes: "",
