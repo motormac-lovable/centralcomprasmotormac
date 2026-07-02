@@ -1488,6 +1488,7 @@ function SuppliersTable({
                 <th className="p-2 text-left">Valor Total</th>
                 <th className="p-2 text-left">Prazo</th>
                 <th className="p-2 text-left">Condição</th>
+                <th className="p-2 text-left">Observações</th>
                 {!readOnly && <th className="p-2 w-10"></th>}
               </tr>
             </thead>
@@ -1519,12 +1520,14 @@ function SuppliersTable({
                       <td className="p-2 text-sm">{s.valor || "—"}</td>
                       <td className="p-2 text-sm">{s.prazo || "—"}</td>
                       <td className="p-2 text-sm">{s.condicao || "—"}</td>
+                      <td className="p-2 text-sm max-w-[220px]"><span className="line-clamp-2" title={s.observacao || ""}>{s.observacao || "—"}</span></td>
                     </>
                   ) : (
                     <>
                       <td className="p-1"><CellInput value={s.valor} onChange={(v) => onChange({ ...s, valor: v })} placeholder="R$ 0,00" /></td>
                       <td className="p-1"><CellInput value={s.prazo} onChange={(v) => onChange({ ...s, prazo: v })} placeholder="10 dias" /></td>
                       <td className="p-1"><CellInput value={s.condicao} onChange={(v) => onChange({ ...s, condicao: v })} placeholder="30/60" /></td>
+                      <td className="p-1"><CellInput value={s.observacao ?? ""} onChange={(v) => onChange({ ...s, observacao: v })} placeholder="Observações" /></td>
                     </>
                   )}
                   {!readOnly && (
