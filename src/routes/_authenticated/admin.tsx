@@ -249,8 +249,12 @@ function RegisteredUsers({
   };
 
   const filtered = rows.filter((r) => {
-    // Comprador só enxerga Solicitantes na Gestão de Solicitantes.
-    if (buyerOnly && !r.roles.includes("solicitante")) return false;
+    // Comprador/Auditor: Gestão de Solicitantes filtra usuários que TÊM (apenas) o perfil solicitante.
+    if (restrictedTo === "solicitante") {
+      if (!r.roles.includes("solicitante")) return false;
+      // Auditor só pode agir em usuários exclusivamente Solicitantes.
+      if (auditorOnly && r.roles.some((role) => role !== "solicitante")) return false;
+    }
     const s = q.trim().toLowerCase();
     if (!s) return true;
     return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
