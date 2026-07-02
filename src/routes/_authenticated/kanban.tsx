@@ -904,7 +904,7 @@ function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void;
       const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
       const path = `${card.id}/${Date.now()}_${safeName}`;
       const { error } = await supabase.storage.from("orcamentos").upload(path, file);
-      if (error) { toast.error(`${file.name}: ${error.message}`); continue; }
+      if (error) { toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`); continue; }
       uploaded.push({ name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() });
     }
     if (uploaded.length) {
