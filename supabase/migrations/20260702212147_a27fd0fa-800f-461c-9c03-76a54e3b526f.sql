@@ -1,0 +1,2 @@
+ALTER TABLE public.kanban_cards ADD COLUMN IF NOT EXISTS ready_for_apollo_integration boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_kanban_cards_ready_for_apollo ON public.kanban_cards (ready_for_apollo_integration) WHERE ready_for_apollo_integration = true;
