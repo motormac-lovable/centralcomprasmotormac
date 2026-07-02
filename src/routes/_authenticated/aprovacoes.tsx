@@ -117,7 +117,7 @@ function AprovacoesPage() {
       _justificativa: justificativa,
     });
     setBusyId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateError(error, "Não foi possível aprovar a cotação."));
     toast.success(card.kind === "frete" ? "Frete aprovado — Pedido gerado." : "Cotação aprovada — segue para integração Linx.");
     reload();
   };
