@@ -867,7 +867,26 @@ type ItemMaterial = {
   unidadeMedida: string;
 };
 
-function CardModal({ card, onClose, onMove }: { card: Card; onClose: () => void; onMove: (c: Card, s: Status) => Promise<void> }) {
+function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: () => void; onMove: (c: Card, s: Status) => Promise<void> }) {
+  // Defesa: sempre buscar o registro fresco do banco ao abrir o card,
+  // garantindo que o "data" (incluindo materiais escolhidos pelo solicitante)
+  // permaneça fixado no card em todas as etapas do Kanban.
+  const [freshCard, setFreshCard] = useState<Card | null>(null);
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("kanban_cards")
+      .select("*")
+      .eq("id", cardProp.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data) setFreshCard(data as Card);
+      });
+    return () => {
+      active = false;
+    };
+  }, [cardProp.id]);
+  const card: Card = freshCard ?? cardProp;
   const Icon = iconFor[card.kind];
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
