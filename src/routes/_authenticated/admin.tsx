@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus, Pencil, Trash2, Ban, RotateCcw } from "lucide-react";
+import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus, Pencil, Trash2, Ban, RotateCcw, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,13 +50,16 @@ function AdminPage() {
   if (buyerOnly || auditorOnly) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {auditorOnly
-              ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
-              : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
-          </p>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {auditorOnly
+                ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
+                : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
+            </p>
+          </div>
+          <RelatoriosLink />
         </div>
         <RegisteredUsers restrictedTo="solicitante" mode={auditorOnly ? "auditor" : "buyer"} />
       </div>
@@ -115,9 +118,12 @@ function AdminPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight">Painel Admin / Governança</h1>
-        <p className="text-sm text-muted-foreground mt-1">Aprovar ou reprovar solicitações de cadastro de Compradores.</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Painel Admin / Governança</h1>
+          <p className="text-sm text-muted-foreground mt-1">Aprovar ou reprovar solicitações de cadastro de Compradores.</p>
+        </div>
+        <RelatoriosLink />
       </div>
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
@@ -847,4 +853,17 @@ function StatusPill({ status }: { status: string }) {
   };
   const label: Record<string, string> = { pending: "Pendente", approved: "Aprovado", rejected: "Reprovado" };
   return <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${map[status]}`}>{label[status]}</span>;
+}
+
+function RelatoriosLink() {
+  return (
+    <Link
+      to="/admin/relatorios"
+      className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors shadow-sm"
+      title="Abrir Relatórios de Auditoria e Gestão"
+    >
+      <BarChart3 className="h-4 w-4" />
+      Relatórios de Auditoria e Gestão
+    </Link>
+  );
 }
