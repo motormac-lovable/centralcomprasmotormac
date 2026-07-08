@@ -116,19 +116,14 @@ function AdminPage() {
     }
   };
 
-   return (
-     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
-       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-         <div>
-           <h1 className="text-3xl font-semibold tracking-tight">Painel Admin / Governança</h1>
-           <p className="text-sm text-muted-foreground mt-1">Aprovar ou reprovar solicitações de cadastro de Compradores.</p>
-         </div>
-         <RelatoriosLink />
-       </div>
-
-       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-         <table className="w-full text-sm">
-        <p className="text-sm text-muted-foreground mt-1">Aprovar ou reprovar solicitações de cadastro de Compradores.</p>
+  return (
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Painel Admin / Governança</h1>
+          <p className="text-sm text-muted-foreground mt-1">Aprovar ou reprovar solicitações de cadastro de Compradores.</p>
+        </div>
+        <RelatoriosLink />
       </div>
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
