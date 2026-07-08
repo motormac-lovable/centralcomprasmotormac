@@ -26,6 +26,7 @@ import { Route as AuthenticatedDevRouteImport } from './routes/_authenticated/de
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAprovacoesRouteImport } from './routes/_authenticated/aprovacoes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiSolicitacoesCodigo_unicoRouteImport } from './routes/api/solicitacoes.$codigo_unico'
 import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin.relatorios'
 
@@ -114,6 +115,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const ApiSolicitacoesCodigo_unicoRoute =
   ApiSolicitacoesCodigo_unicoRouteImport.update({
     id: '/api/solicitacoes/$codigo_unico',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,7 +164,6 @@ export interface FileRoutesByTo {
   '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/aprovacoes': typeof AuthenticatedAprovacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dev': typeof AuthenticatedDevRoute
@@ -166,6 +172,7 @@ export interface FileRoutesByTo {
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -210,6 +218,7 @@ export interface FileRouteTypes {
     | '/minhas-solicitacoes'
     | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,7 +230,6 @@ export interface FileRouteTypes {
     | '/materiais'
     | '/pending'
     | '/reset-password'
-    | '/admin'
     | '/aprovacoes'
     | '/dashboard'
     | '/dev'
@@ -230,6 +238,7 @@ export interface FileRouteTypes {
     | '/minhas-solicitacoes'
     | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minhas-solicitacoes'
     | '/_authenticated/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
+    | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -388,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/solicitacoes/$codigo_unico': {
       id: '/api/solicitacoes/$codigo_unico'
       path: '/api/solicitacoes/$codigo_unico'
@@ -407,10 +424,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminRelatoriosRoute: typeof AuthenticatedAdminRelatoriosRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminRelatoriosRoute: AuthenticatedAdminRelatoriosRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
