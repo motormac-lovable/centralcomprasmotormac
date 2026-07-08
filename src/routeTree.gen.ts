@@ -27,6 +27,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAprovacoesRouteImport } from './routes/_authenticated/aprovacoes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiSolicitacoesCodigo_unicoRouteImport } from './routes/api/solicitacoes.$codigo_unico'
+import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin.relatorios'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -119,6 +120,12 @@ const ApiSolicitacoesCodigo_unicoRoute =
     path: '/api/solicitacoes/$codigo_unico',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAdminRelatoriosRoute =
+  AuthenticatedAdminRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,13 +137,14 @@ export interface FileRoutesByFullPath {
   '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/aprovacoes': typeof AuthenticatedAprovacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dev': typeof AuthenticatedDevRoute
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRoutesByTo {
@@ -149,13 +157,14 @@ export interface FileRoutesByTo {
   '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/aprovacoes': typeof AuthenticatedAprovacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dev': typeof AuthenticatedDevRoute
   '/inicio': typeof AuthenticatedInicioRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRoutesById {
@@ -170,13 +179,14 @@ export interface FileRoutesById {
   '/materiais': typeof MateriaisRoute
   '/pending': typeof PendingRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/aprovacoes': typeof AuthenticatedAprovacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/dev': typeof AuthenticatedDevRoute
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
 }
 export interface FileRouteTypes {
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/kanban'
     | '/minhas-solicitacoes'
+    | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/kanban'
     | '/minhas-solicitacoes'
+    | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
   id:
     | '__root__'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inicio'
     | '/_authenticated/kanban'
     | '/_authenticated/minhas-solicitacoes'
+    | '/_authenticated/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
   fileRoutesById: FileRoutesById
 }
@@ -382,11 +395,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSolicitacoesCodigo_unicoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/relatorios': {
+      id: '/_authenticated/admin/relatorios'
+      path: '/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AuthenticatedAdminRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminRelatoriosRoute: typeof AuthenticatedAdminRelatoriosRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminRelatoriosRoute: AuthenticatedAdminRelatoriosRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAprovacoesRoute: typeof AuthenticatedAprovacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDevRoute: typeof AuthenticatedDevRoute
@@ -396,7 +427,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAprovacoesRoute: AuthenticatedAprovacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDevRoute: AuthenticatedDevRoute,
@@ -424,13 +455,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
