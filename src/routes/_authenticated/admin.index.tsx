@@ -16,7 +16,7 @@ type App = Database["public"]["Tables"]["buyer_applications"]["Row"];
 type RoleRow = { user_id: string; role: Database["public"]["Enums"]["app_role"] };
 type ProfileRow = { id: string; full_name: string | null; email: string | null; cpf?: string | null; phone?: string | null; is_active?: boolean | null; is_deleted?: boolean | null };
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Painel Admin — Motormac" }] }),
   component: AdminPage,
 });
