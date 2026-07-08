@@ -854,3 +854,16 @@ function StatusPill({ status }: { status: string }) {
   const label: Record<string, string> = { pending: "Pendente", approved: "Aprovado", rejected: "Reprovado" };
   return <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${map[status]}`}>{label[status]}</span>;
 }
+
+function RelatoriosLink() {
+  return (
+    <Link
+      to="/admin/relatorios"
+      className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors shadow-sm"
+      title="Abrir Relatórios de Auditoria e Gestão"
+    >
+      <BarChart3 className="h-4 w-4" />
+      Relatórios de Auditoria e Gestão
+    </Link>
+  );
+}
