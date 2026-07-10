@@ -923,8 +923,22 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
-    const { error } = await supabase.from("kanban_cards").update(p).eq("id", card.id);
-    if (error) toast.error(translateError(error, "Não foi possível salvar as alterações."));
+    // Atualização otimista: reflete imediatamente no modal enquanto o
+    // update persiste no banco e o realtime propaga para o restante da UI.
+    const previous = freshCard ?? cardProp;
+    setFreshCard({ ...previous, ...p } as Card);
+    const { data, error } = await supabase
+      .from("kanban_cards")
+      .update(p)
+      .eq("id", card.id)
+      .select("*")
+      .maybeSingle();
+    if (error) {
+      setFreshCard(previous);
+      toast.error(translateError(error, "Não foi possível salvar as alterações."));
+      return;
+    }
+    if (data) setFreshCard(data as Card);
   };
 
   const removeItemMaterial = async (idx: number) => {
