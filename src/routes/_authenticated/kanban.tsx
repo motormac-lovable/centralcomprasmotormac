@@ -323,12 +323,12 @@ function KanbanPage() {
 }
 
 function Column({
-  id, label, tone, bg, allCards, filter, onFilterChange, approvers, onOpen, globalQuery, dateFrom, dateTo,
+  id, label, tone, bg, allCards, query, onQueryChange, onOpen, globalQuery, dateFrom, dateTo,
 }: {
   id: Status; label: string; tone: string; bg: string;
-  allCards: Card[]; filter: ColumnFilter;
-  onFilterChange: (f: ColumnFilter) => void;
-  approvers: string[];
+  allCards: Card[];
+  query: string;
+  onQueryChange: (q: string) => void;
   onOpen: (c: Card) => void;
   globalQuery: string;
   dateFrom: string;
@@ -337,8 +337,8 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id });
 
   let filtered = allCards;
-  if (filter.kind) filtered = filtered.filter((c) => c.kind === filter.kind);
-  if (filter.approver) filtered = filtered.filter((c) => c.approver_name === filter.approver);
+  const cq = query.trim().toLowerCase();
+  if (cq) filtered = filtered.filter((c) => cardMatchesQuery(c, cq));
   const q = globalQuery.trim().toLowerCase();
   if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
   if (dateFrom) {
@@ -355,7 +355,7 @@ function Column({
     filtered = [...filtered].sort((a, b) => +new Date(b.status_changed_at) - +new Date(a.status_changed_at));
   }
 
-  const hasFilter = !!(filter.kind || filter.approver);
+  const hasFilter = !!cq;
 
   return (
     <div
@@ -373,31 +373,22 @@ function Column({
             {filtered.length} de {allCards.length}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Filter className="h-3 w-3 text-muted-foreground shrink-0" />
-          <select
-            value={filter.kind}
-            onChange={(e) => onFilterChange({ ...filter, kind: e.target.value })}
-            className="text-[11px] bg-background border rounded px-1.5 py-1 flex-1 min-w-0"
-            aria-label="Filtrar por grupo"
-          >
-            <option value="">Todos os grupos</option>
-            {Object.entries(KIND_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-          </select>
-          <select
-            value={filter.approver}
-            onChange={(e) => onFilterChange({ ...filter, approver: e.target.value })}
-            className="text-[11px] bg-background border rounded px-1.5 py-1 flex-1 min-w-0"
-            aria-label="Filtrar por aprovador"
-          >
-            <option value="">Todos compradores</option>
-            {approvers.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+        <div className="relative">
+          <Filter className="h-3 w-3 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Filtrar nesta coluna..."
+            aria-label={`Filtrar cartões da coluna ${label}`}
+            className="text-[11px] bg-background border rounded w-full pl-6 pr-6 py-1 focus:outline-none focus:ring-1 focus:ring-primary/40"
+          />
           {hasFilter && (
             <button
-              onClick={() => onFilterChange({ kind: "", approver: "" })}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Limpar filtros"
+              type="button"
+              onClick={() => onQueryChange("")}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Limpar filtro"
             >
               <X className="h-3 w-3" />
             </button>
@@ -408,7 +399,7 @@ function Column({
         {filtered.map((c) => <DraggableCard key={c.id} card={c} onOpen={() => onOpen(c)} />)}
         {filtered.length === 0 && (
           <div className="text-xs text-muted-foreground text-center py-8">
-            {hasFilter ? "Nenhum cartão com esses filtros." : "Sem cartões aqui."}
+            {hasFilter ? "Nenhum cartão com esse filtro." : "Sem cartões aqui."}
           </div>
         )}
       </div>
