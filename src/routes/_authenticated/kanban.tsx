@@ -988,25 +988,29 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   // Peças (Solicitação de Peças) — armazenadas como array estruturado { pn, descricao }.
   // Fallback: solicitações antigas gravadas como string CSV em `partNumbers`.
   const PECAS_MAX = 50;
-  const pecasList: { pn: string; descricao: string }[] = (() => {
+  const pecasList: { pn: string; descricao: string; especificacao: string }[] = (() => {
     const arr = rawData.pecas;
     if (Array.isArray(arr)) {
       return arr
         .map((p) => {
           const obj = p as Record<string, unknown>;
-          return { pn: String(obj?.pn ?? "").trim(), descricao: String(obj?.descricao ?? "").trim() };
+          return {
+            pn: String(obj?.pn ?? "").trim(),
+            descricao: String(obj?.descricao ?? "").trim(),
+            especificacao: String(obj?.especificacao ?? "").trim(),
+          };
         })
-        .filter((p) => p.pn || p.descricao);
+        .filter((p) => p.pn || p.descricao || p.especificacao);
     }
     const raw = (rawData.partNumbers as string) || "";
     return raw
       .split(/[\n,;]+/)
       .map((s) => s.trim())
       .filter(Boolean)
-      .map((pn) => ({ pn, descricao: "" }));
+      .map((pn) => ({ pn, descricao: "", especificacao: "" }));
   })();
 
-  const savePecas = async (list: { pn: string; descricao: string }[], logText: string) => {
+  const savePecas = async (list: { pn: string; descricao: string; especificacao: string }[], logText: string) => {
     const nextObs = appendObservation(observations, logText);
     await patch({
       data: {
@@ -1021,17 +1025,18 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const addPeca = async () => {
     const pn = novaPeca.pn.trim();
     const descricao = novaPeca.descricao.trim();
-    if (!pn || !descricao) {
-      toast.error("Informe o Part Number e a Descrição.");
+    const especificacao = novaPeca.especificacao.trim();
+    if (!pn || !descricao || !especificacao) {
+      toast.error("Informe Part Number, Descrição e Especificação Técnica.");
       return;
     }
     if (pecasList.length >= PECAS_MAX) {
       toast.error(`Limite máximo de ${PECAS_MAX} itens atingido por solicitação`);
       return;
     }
-    const next = [...pecasList, { pn, descricao }];
-    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu a peça ${pn} - ${descricao} na solicitação.`;
-    setNovaPeca({ pn: "", descricao: "" });
+    const next = [...pecasList, { pn, descricao, especificacao }];
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu a peça ${pn} - ${descricao} (Espec.: ${especificacao}) na solicitação.`;
+    setNovaPeca({ pn: "", descricao: "", especificacao: "" });
     await savePecas(next, logText);
     toast.success("Peça incluída.");
   };
