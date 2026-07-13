@@ -136,7 +136,7 @@ function ContratosPage() {
           <input className={inputCls} value={f.contratoAnterior} onChange={(e) => set("contratoAnterior", e.target.value)} />
         </Field>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <Field label="CNPJ do fornecedor">
             <input
               className={inputCls}
@@ -148,9 +148,6 @@ function ContratosPage() {
           <Field label="Razão social do fornecedor" required hint="Não será validado o nome fantasia." error={errors.razaoSocial}>
             <input className={inputCls} value={f.razaoSocial} onChange={(e) => set("razaoSocial", e.target.value)} />
           </Field>
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-5">
           <Field label="O processo de cotação possui validação do gestor da área?" required error={errors.validacaoGestor}>
             <select className={inputCls} value={f.validacaoGestor} onChange={(e) => set("validacaoGestor", e.target.value)}>
               <option value="">Selecione...</option>
@@ -161,16 +158,16 @@ function ContratosPage() {
           <Field label="Nome do gestor responsável" required error={errors.nomeGestor}>
             <input className={inputCls} value={f.nomeGestor} onChange={(e) => set("nomeGestor", e.target.value)} />
           </Field>
+          <Field label="Contrato validado pelo jurídico ou modelo padrão?" required error={errors.validacaoJuridica} hint="Modelo padrão Motormac também é aceito.">
+            <select className={inputCls} value={f.validacaoJuridica} onChange={(e) => set("validacaoJuridica", e.target.value)}>
+              <option value="">Selecione...</option>
+              <option>Sim</option>
+              <option>Não</option>
+              <option>Talvez, não sei</option>
+            </select>
+          </Field>
         </div>
 
-        <Field label="O contrato foi validado pelo jurídico, ou segue o modelo padrão Motormac?" required error={errors.validacaoJuridica}>
-          <select className={inputCls} value={f.validacaoJuridica} onChange={(e) => set("validacaoJuridica", e.target.value)}>
-            <option value="">Selecione...</option>
-            <option>Sim</option>
-            <option>Não</option>
-            <option>Talvez, não sei</option>
-          </select>
-        </Field>
 
         <Field
           label="Upload do Contrato Assinado"
