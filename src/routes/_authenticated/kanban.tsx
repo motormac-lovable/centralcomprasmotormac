@@ -928,7 +928,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const [quickRejecting, setQuickRejecting] = useState(false);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   const [novoMaterial, setNovoMaterial] = useState<ItemMaterial>({ material: "", codigo: "", quantidade: "", unidadeMedida: "" });
-  const [novaPeca, setNovaPeca] = useState<{ pn: string; descricao: string }>({ pn: "", descricao: "" });
+  const [novaPeca, setNovaPeca] = useState<{ pn: string; descricao: string; especificacao: string }>({ pn: "", descricao: "", especificacao: "" });
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
