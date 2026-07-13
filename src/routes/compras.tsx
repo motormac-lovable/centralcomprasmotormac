@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
