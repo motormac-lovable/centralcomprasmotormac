@@ -459,14 +459,14 @@ function RegisteredUsers({
                 const items = filtered.filter(cat.test);
                 if (items.length === 0) return null;
                 return (
-                  <React.Fragment key={cat.key}>
+                  <Fragment key={cat.key}>
                     <tr className="bg-muted/60">
                       <td colSpan={5} className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {cat.label} <span className="ml-1 text-muted-foreground/70">({items.length})</span>
                       </td>
                     </tr>
                     {items.map(renderRow)}
-                  </React.Fragment>
+                  </Fragment>
                 );
               });
             })()}
