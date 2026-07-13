@@ -63,9 +63,11 @@ function RelatoriosPage() {
     if (!canView) return;
     let active = true;
     setLoading(true);
+    // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
     supabase
       .from("kanban_cards")
       .select("*")
+      .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false })
       .limit(2000)
       .then(({ data }) => {
