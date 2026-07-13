@@ -45,6 +45,7 @@ const Ctx = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [fullName, setFullName] = useState("");
   const [approverDepartments, setApproverDepartments] = useState<string[]>([]);
@@ -52,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isActive, setIsActive] = useState<boolean>(true);
 
   const forcedLogoutRef = useRef(false);
+  // Rastreia para qual usuário o perfil já foi carregado, evitando estados
+  // intermediários onde `session` existe mas os papéis ainda são do usuário anterior
+  // (ou vazios) — causa raiz do "flash" da tela de restrição pós-login.
+  const loadedForUserRef = useRef<string | null>(null);
 
   const enforceForceLogout = async (forceAt: string | null | undefined, sess: Session | null) => {
     if (forcedLogoutRef.current) return false;
@@ -77,20 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApproverDepartments([]);
       setApproverCeiling(0);
       setIsActive(true);
+      loadedForUserRef.current = null;
+      setProfileLoading(false);
       return;
     }
-    const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-      supabase.from("profiles").select("full_name, is_active, force_logout_at").eq("id", uid).maybeSingle(),
-      (supabase as any).from("approver_settings").select("departments, teto_alcada").eq("user_id", uid).maybeSingle(),
-    ]);
-    const forced = await enforceForceLogout((profile as any)?.force_logout_at, sess ?? session);
-    if (forced) return;
-    setRoles((rolesData ?? []).map((r) => r.role as string));
-    setFullName(profile?.full_name ?? "");
-    setIsActive((profile as any)?.is_active !== false);
-    setApproverDepartments((approverCfg?.departments as string[] | undefined) ?? []);
-    setApproverCeiling(Number(approverCfg?.teto_alcada ?? 0));
+    setProfileLoading(true);
+    try {
+      const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+        supabase.from("profiles").select("full_name, is_active, force_logout_at").eq("id", uid).maybeSingle(),
+        (supabase as any).from("approver_settings").select("departments, teto_alcada").eq("user_id", uid).maybeSingle(),
+      ]);
+      const forced = await enforceForceLogout((profile as any)?.force_logout_at, sess ?? session);
+      if (forced) return;
+      setRoles((rolesData ?? []).map((r) => r.role as string));
+      setFullName(profile?.full_name ?? "");
+      setIsActive((profile as any)?.is_active !== false);
+      setApproverDepartments((approverCfg?.departments as string[] | undefined) ?? []);
+      setApproverCeiling(Number(approverCfg?.teto_alcada ?? 0));
+      loadedForUserRef.current = uid;
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -99,8 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         forcedLogoutRef.current = false;
       }
       // Toast de boas-vindas: SOMENTE no evento real de SIGNED_IN.
-      // Não dispara em INITIAL_SESSION, TOKEN_REFRESHED, USER_UPDATED
-      // nem em trocas de tela / remount de componentes.
       if (event === "SIGNED_IN" && typeof window !== "undefined") {
         const profile = sessionStorage.getItem("welcomeProfile");
         if (profile) {
@@ -108,12 +119,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           toast.success(`Bem Vindo, ${profile}!`);
         }
       }
+      // Se o usuário mudou (login/logout/troca de conta), invalida imediatamente
+      // o perfil carregado e sinaliza carregamento — evita renderizar rotas de
+      // restrição com dados obsoletos enquanto o novo perfil chega.
+      const newUid = s?.user?.id ?? null;
+      if (newUid !== loadedForUserRef.current) {
+        loadedForUserRef.current = null;
+        setRoles([]);
+        setProfileLoading(true);
+      }
       setSession(s);
       setTimeout(() => loadRoles(s?.user.id, s), 0);
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      loadRoles(data.session?.user.id, data.session).finally(() => setLoading(false));
+      if (!data.session?.user?.id) {
+        setProfileLoading(false);
+        setLoading(false);
+        return;
+      }
+      loadRoles(data.session.user.id, data.session).finally(() => setLoading(false));
     });
     // Recheca ao voltar o foco da aba — "no próximo clique" após alteração.
     const onFocus = () => {
@@ -127,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("visibilitychange", onFocus);
     };
   }, []);
+
 
   const sessionUser = session?.user ?? null;
   // E-mails do Proprietário são sempre Proprietários — sem bloqueio possível.
