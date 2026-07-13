@@ -149,6 +149,9 @@ function MateriaisPage() {
       ...form,
       itens,
       files: uploaded,
+      // compatibilidade com relatórios que esperam um único fornecedor
+      fornecedorNome: form.indicacoes[0]?.nome ?? "",
+      fornecedorCnpj: form.indicacoes[0]?.cnpj ?? "",
     };
 
     const titulo =
