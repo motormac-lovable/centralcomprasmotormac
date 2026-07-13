@@ -32,8 +32,9 @@ function AdminPage() {
 
   // Comprador (sem Admin): acesso parcial — Gestão de Solicitantes com Inativar/Reativar.
   // Auditor (sem Admin): acesso parcial — Gestão de Solicitantes com EXCLUSÃO apenas.
-  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+  // Auditor tem prioridade: mesmo que também tenha o perfil Comprador, a visão de auditoria (somente leitura, todos os usuários) prevalece.
   const auditorOnly = !isAdmin && isAuditor;
+  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
 
   if (!isAdmin && !buyerOnly && !auditorOnly) {
     return (
