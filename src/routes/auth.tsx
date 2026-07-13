@@ -194,7 +194,7 @@ function SignInForm() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          className="w-full inline-flex items-center justify-center rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
         >
           {busy ? "Entrando..." : "Entrar"}
         </button>
