@@ -207,6 +207,8 @@ export const MOCK_LINX_PAYLOAD: LinxPayload = {
     indicacao_fornecedor: {
       nome: "Lubrificantes Sul Ltda.",
       cnpj: "12.345.678/0001-90",
+      telefone: "(51) 3333-4444",
+      email: "contato@lubrificantessul.com.br",
     },
   },
   itens: [
