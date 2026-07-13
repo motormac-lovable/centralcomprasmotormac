@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
+import logoMotormac from "@/assets/logo-motormac.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,8 +54,13 @@ function Hub() {
 
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16">
-      <div className="text-center max-w-2xl mx-auto mb-12">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center">
+      <div className="text-center max-w-2xl mx-auto mb-10 flex flex-col items-center">
+        <img
+          src={logoMotormac.url}
+          alt="Motormac"
+          className="h-24 sm:h-32 w-auto mb-6 object-contain"
+        />
         <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-4">
           Plataforma Interna
         </div>
@@ -66,7 +72,7 @@ function Hub() {
         </p>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-center">
+      <div className="w-full grid gap-5 md:grid-cols-2 lg:grid-cols-4 justify-center">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
