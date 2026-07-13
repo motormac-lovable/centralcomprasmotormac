@@ -140,10 +140,16 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
       origem: (data.origem as string) ?? null,
       tipo_solicitacao: (data.tipo as string) ?? "Convencional",
       descricao: (data.descricao as string) ?? null,
-      indicacao_fornecedor: {
-        nome: (data.fornecedorNome as string) ?? null,
-        cnpj: (data.fornecedorCnpj as string) ?? null,
-      },
+      indicacao_fornecedor: (() => {
+        const indicacoes = Array.isArray(data.indicacoes)
+          ? (data.indicacoes as Array<{ nome?: string; cnpj?: string }>)
+          : [];
+        const primeiro = indicacoes.find((i) => i?.nome?.trim() || i?.cnpj?.trim()) ?? indicacoes[0];
+        return {
+          nome: primeiro?.nome?.trim() || (data.fornecedorNome as string) || null,
+          cnpj: primeiro?.cnpj?.trim() || (data.fornecedorCnpj as string) || null,
+        };
+      })(),
     },
     itens,
     fornecedor_vencedor,

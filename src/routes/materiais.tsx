@@ -51,6 +51,15 @@ const ITEM_VAZIO: ItemMaterial = {
   unidadeMedida: "",
 };
 
+type IndicacaoFornecedor = {
+  nome: string;
+  cnpj: string;
+};
+
+const INDICACAO_VAZIA: IndicacaoFornecedor = { nome: "", cnpj: "" };
+
+const MAX_INDICACOES = 10;
+
 function MateriaisPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
@@ -61,8 +70,7 @@ function MateriaisPage() {
     origem_codigo: "",
     descricao: "",
     tipo: "Convencional",
-    fornecedorNome: "",
-    fornecedorCnpj: "",
+    indicacoes: [{ ...INDICACAO_VAZIA }],
   });
   const [itens, setItens] = useState<ItemMaterial[]>([{ ...ITEM_VAZIO }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
@@ -84,6 +92,26 @@ function MateriaisPage() {
     }
     setItens((arr) => [...arr, { ...ITEM_VAZIO }]);
   };
+
+  const addIndicacao = () => {
+    if (form.indicacoes.length >= MAX_INDICACOES) {
+      toast.error(`Limite de ${MAX_INDICACOES} indicações.`);
+      return;
+    }
+    setForm((f) => ({ ...f, indicacoes: [...f.indicacoes, { ...INDICACAO_VAZIA }] }));
+  };
+
+  const updateIndicacao = (idx: number, patch: Partial<IndicacaoFornecedor>) =>
+    setForm((f) => ({
+      ...f,
+      indicacoes: f.indicacoes.map((ind, i) => (i === idx ? { ...ind, ...patch } : ind)),
+    }));
+
+  const removeIndicacao = (idx: number) =>
+    setForm((f) => ({
+      ...f,
+      indicacoes: f.indicacoes.length === 1 ? [{ ...INDICACAO_VAZIA }] : f.indicacoes.filter((_, i) => i !== idx),
+    }));
 
   const onMaterialChange = (idx: number, descricao: string) => {
     const m = MATERIAIS_APOLLO.find(
@@ -120,11 +148,10 @@ function MateriaisPage() {
         er[`item_${i}_unidadeMedida`] = "Unidade inválida";
     });
     if (!form.descricao.trim()) er.descricao = "Obrigatório";
-    if (
-      form.fornecedorCnpj &&
-      form.fornecedorCnpj.replace(/\D/g, "").length !== 14
-    )
-      er.fornecedorCnpj = "CNPJ inválido";
+    form.indicacoes.forEach((ind, i) => {
+      if (ind.cnpj && ind.cnpj.replace(/\D/g, "").length !== 14)
+        er[`indicacao_${i}_cnpj`] = "CNPJ inválido";
+    });
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
@@ -142,6 +169,9 @@ function MateriaisPage() {
       ...form,
       itens,
       files: uploaded,
+      // compatibilidade com relatórios que esperam um único fornecedor
+      fornecedorNome: form.indicacoes[0]?.nome ?? "",
+      fornecedorCnpj: form.indicacoes[0]?.cnpj ?? "",
     };
 
     const titulo =
@@ -273,29 +303,54 @@ function MateriaisPage() {
           </select>
         </Field>
 
-        <div className="rounded-xl border bg-muted/30 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Indicação de Fornecedor (opcional)
-          </h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Nome do fornecedor">
-              <input
-                className={inputCls}
-                value={form.fornecedorNome}
-                onChange={(e) => set("fornecedorNome", e.target.value)}
-              />
-            </Field>
-            <Field label="CNPJ do fornecedor" error={errors.fornecedorCnpj}>
-              <input
-                className={inputCls}
-                placeholder="00.000.000/0000-00"
-                value={form.fornecedorCnpj}
-                onChange={(e) =>
-                  set("fornecedorCnpj", maskCNPJ(e.target.value))
-                }
-              />
-            </Field>
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Indicação de Fornecedor (opcional)
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {form.indicacoes.length}/{MAX_INDICACOES}
+            </span>
           </div>
+
+          {form.indicacoes.map((ind, idx) => (
+            <div key={idx} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] items-end">
+              <Field label={`Nome do fornecedor ${idx + 1}`}>
+                <input
+                  className={inputCls}
+                  value={ind.nome}
+                  onChange={(e) => updateIndicacao(idx, { nome: e.target.value })}
+                />
+              </Field>
+              <Field label={`CNPJ do fornecedor ${idx + 1}`} error={errors[`indicacao_${idx}_cnpj`]}>
+                <input
+                  className={inputCls}
+                  placeholder="00.000.000/0000-00"
+                  value={ind.cnpj}
+                  onChange={(e) => updateIndicacao(idx, { cnpj: maskCNPJ(e.target.value) })}
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={() => removeIndicacao(idx)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input text-muted-foreground hover:bg-accent hover:text-destructive transition"
+                aria-label="Remover indicação"
+                title="Remover indicação"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addIndicacao}
+            disabled={form.indicacoes.length >= MAX_INDICACOES}
+            className="inline-flex items-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="h-4 w-4" />
+            Incluir Indicação
+          </button>
         </div>
 
         <div className="flex justify-end pt-2">
