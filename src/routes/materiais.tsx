@@ -70,8 +70,7 @@ function MateriaisPage() {
     origem_codigo: "",
     descricao: "",
     tipo: "Convencional",
-    fornecedorNome: "",
-    fornecedorCnpj: "",
+    indicacoes: [{ ...INDICACAO_VAZIA }],
   });
   const [itens, setItens] = useState<ItemMaterial[]>([{ ...ITEM_VAZIO }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
