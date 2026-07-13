@@ -224,7 +224,7 @@ function MateriaisPage() {
           errors={errors as Partial<Record<keyof BlocoInicial, string>>}
         />
 
-        <div className="grid gap-5">
+        <div className="grid gap-5 md:grid-cols-2">
           <DepartamentoPicker
             required
             nome={form.departamento}
@@ -245,6 +245,7 @@ function MateriaisPage() {
             }
           />
         </div>
+
 
         <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
           <div className="flex items-center justify-between">
