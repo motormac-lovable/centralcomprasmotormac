@@ -985,37 +985,64 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     toast.success("Material incluído na solicitação.");
   };
 
-  // Part Numbers (Solicitação de Peças) — armazenados como string separada por vírgula.
-  const partNumbersList: string[] = (() => {
+  // Peças (Solicitação de Peças) — armazenadas como array estruturado { pn, descricao }.
+  // Fallback: solicitações antigas gravadas como string CSV em `partNumbers`.
+  const PECAS_MAX = 50;
+  const pecasList: { pn: string; descricao: string }[] = (() => {
+    const arr = rawData.pecas;
+    if (Array.isArray(arr)) {
+      return arr
+        .map((p) => {
+          const obj = p as Record<string, unknown>;
+          return { pn: String(obj?.pn ?? "").trim(), descricao: String(obj?.descricao ?? "").trim() };
+        })
+        .filter((p) => p.pn || p.descricao);
+    }
     const raw = (rawData.partNumbers as string) || "";
-    return raw.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+    return raw
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((pn) => ({ pn, descricao: "" }));
   })();
 
-  const savePartNumbers = async (list: string[], logText: string) => {
+  const savePecas = async (list: { pn: string; descricao: string }[], logText: string) => {
     const nextObs = appendObservation(observations, logText);
     await patch({
-      data: { ...rawData, partNumbers: list.join(", ") } as never,
+      data: {
+        ...rawData,
+        pecas: list,
+        partNumbers: list.map((p) => p.pn).join(", "),
+      } as never,
       observations: nextObs as never,
     });
   };
 
-  const addPartNumber = async () => {
-    const pn = novoPartNumber.trim();
-    if (!pn) return;
-    const next = [...partNumbersList, pn];
-    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu o material ${pn} - Part Number (Qtd: 1) na solicitação.`;
-    setNovoPartNumber("");
-    await savePartNumbers(next, logText);
-    toast.success("Part Number incluído.");
+  const addPeca = async () => {
+    const pn = novaPeca.pn.trim();
+    const descricao = novaPeca.descricao.trim();
+    if (!pn || !descricao) {
+      toast.error("Informe o Part Number e a Descrição.");
+      return;
+    }
+    if (pecasList.length >= PECAS_MAX) {
+      toast.error(`Limite máximo de ${PECAS_MAX} itens atingido por solicitação`);
+      return;
+    }
+    const next = [...pecasList, { pn, descricao }];
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu a peça ${pn} - ${descricao} na solicitação.`;
+    setNovaPeca({ pn: "", descricao: "" });
+    await savePecas(next, logText);
+    toast.success("Peça incluída.");
   };
 
-  const removePartNumber = async (idx: number) => {
-    const pn = partNumbersList[idx];
-    if (!pn) return;
-    const next = partNumbersList.filter((_, i) => i !== idx);
-    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu o material ${pn} - Part Number da solicitação.`;
-    await savePartNumbers(next, logText);
-    toast.success("Part Number removido.");
+  const removePeca = async (idx: number) => {
+    const item = pecasList[idx];
+    if (!item) return;
+    const next = pecasList.filter((_, i) => i !== idx);
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu a peça ${item.pn} - ${item.descricao || "s/ descrição"} da solicitação.`;
+    await savePecas(next, logText);
+    toast.success("Peça removida.");
   };
 
 
