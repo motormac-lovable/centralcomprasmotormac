@@ -128,11 +128,10 @@ function MateriaisPage() {
         er[`item_${i}_unidadeMedida`] = "Unidade inválida";
     });
     if (!form.descricao.trim()) er.descricao = "Obrigatório";
-    if (
-      form.fornecedorCnpj &&
-      form.fornecedorCnpj.replace(/\D/g, "").length !== 14
-    )
-      er.fornecedorCnpj = "CNPJ inválido";
+    form.indicacoes.forEach((ind, i) => {
+      if (ind.cnpj && ind.cnpj.replace(/\D/g, "").length !== 14)
+        er[`indicacao_${i}_cnpj`] = "CNPJ inválido";
+    });
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
