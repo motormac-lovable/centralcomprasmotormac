@@ -195,7 +195,7 @@ export function IndicadoresEconomicos() {
               </div>
 
               <div className="mt-4">
-                <div className="text-[13px] uppercase tracking-wider text-muted-foreground">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   {it.label}
                 </div>
                 {it.loading ? (
@@ -203,12 +203,12 @@ export function IndicadoresEconomicos() {
                 ) : (
                   <>
                     <div
-                      className="mt-0.5 text-[26px] font-bold tracking-tight"
+                      className="mt-0.5 text-xl font-bold tracking-tight"
                       style={{ color: it.accent }}
                     >
                       {it.value}
                     </div>
-                    <div className="mt-0.5 text-[14px] text-muted-foreground/80">
+                    <div className={`mt-0.5 text-muted-foreground/80 ${it.key === "dolar" ? "text-[14px]" : "text-[11px]"}`}>
                       {it.sub}
                     </div>
                   </>
