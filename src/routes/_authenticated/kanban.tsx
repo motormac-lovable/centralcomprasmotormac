@@ -1334,45 +1334,73 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Part Numbers (PN) ({partNumbersList.length})
+                    Peças solicitadas ({pecasList.length}/{PECAS_MAX})
                   </h4>
                 </div>
-                {partNumbersList.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic mb-2">Nenhum Part Number cadastrado.</p>
+                {pecasList.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic mb-2">Nenhuma peça cadastrada.</p>
                 ) : (
-                  <ul className="space-y-1 mb-2">
-                    {partNumbersList.map((pn, i) => (
-                      <li key={`${pn}-${i}`} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm">
-                        <span className="flex-1 font-mono text-xs">{pn}</span>
-                        {canEditItens && (
-                          <button
-                            onClick={() => removePartNumber(i)}
-                            className="text-destructive hover:opacity-80"
-                            aria-label={`Remover Part Number ${pn}`}
-                            title="Remover Part Number"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="overflow-x-auto rounded-lg border mb-2">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Part Number</th>
+                          <th className="px-3 py-2 text-left">Descrição do Item</th>
+                          {canEditItens && <th className="px-3 py-2 w-12 text-center">Ações</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pecasList.map((p, i) => (
+                          <tr key={`${p.pn}-${i}`} className="border-t">
+                            <td className="px-3 py-2 font-mono text-xs">{p.pn || "—"}</td>
+                            <td className="px-3 py-2">{p.descricao || "—"}</td>
+                            {canEditItens && (
+                              <td className="px-3 py-2 text-center">
+                                <button
+                                  onClick={() => removePeca(i)}
+                                  className="text-destructive hover:opacity-80"
+                                  aria-label={`Remover peça ${p.pn}`}
+                                  title="Remover peça"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
                 {canEditItens && (
-                  <div className="flex gap-2">
-                    <input
-                      value={novoPartNumber}
-                      onChange={(e) => setNovoPartNumber(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPartNumber(); } }}
-                      placeholder="Novo Part Number (ex: PN-12345)"
-                      className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-                    />
-                    <button
-                      onClick={addPartNumber}
-                      className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Incluir PN
-                    </button>
+                  <div className="space-y-2">
+                    <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                      <input
+                        value={novaPeca.pn}
+                        onChange={(e) => setNovaPeca((s) => ({ ...s, pn: e.target.value }))}
+                        placeholder="Part Number"
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        disabled={pecasList.length >= PECAS_MAX}
+                      />
+                      <input
+                        value={novaPeca.descricao}
+                        onChange={(e) => setNovaPeca((s) => ({ ...s, descricao: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPeca(); } }}
+                        placeholder="Descrição do Item"
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        disabled={pecasList.length >= PECAS_MAX}
+                      />
+                      <button
+                        onClick={addPeca}
+                        disabled={pecasList.length >= PECAS_MAX}
+                        className="inline-flex items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Adicionar Peça
+                      </button>
+                    </div>
+                    {pecasList.length >= PECAS_MAX && (
+                      <p className="text-xs text-muted-foreground">Limite máximo de {PECAS_MAX} itens atingido por solicitação</p>
+                    )}
                   </div>
                 )}
               </div>
