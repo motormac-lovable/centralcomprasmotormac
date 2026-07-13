@@ -181,20 +181,6 @@ function ComprasPage() {
           </Field>
         </div>
 
-        <Field
-          label="Envio de arquivos"
-          required
-          hint="Envie foto, ficha técnica do equipamento para que o comprador possa ter informações complementares na solicitação aos fornecedores."
-          error={errors.files}
-        >
-          <FileUpload
-            files={files}
-            onChange={setFiles}
-            maxFiles={5}
-            maxSizeMB={100}
-            accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,image/*,video/*,audio/*"
-          />
-        </Field>
 
         <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
