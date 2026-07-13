@@ -500,6 +500,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
     card.requester_name ?? "",
     card.requester_email ?? "",
     card.approver_name ?? "",
+    card.buyer_name ?? "",
     card.unidade ?? "",
     card.empresa ?? "",
     card.codigo_unico ?? "",
