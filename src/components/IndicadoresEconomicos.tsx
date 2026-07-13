@@ -7,6 +7,7 @@ type Indicador = {
   key: Chave;
   label: string;
   value: string;
+  sub: string;
   icon: typeof DollarSign;
   accent: string;
   loading: boolean;
@@ -18,7 +19,7 @@ const FALLBACK: Record<Chave, string> = {
   igpm: "3,16%",
 };
 
-const CACHE_KEY = "motormac_indicadores_bcb_v1";
+const CACHE_KEY = "motormac_indicadores_bcb_v2";
 
 function fmtMoney(v: string | number) {
   const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
@@ -32,61 +33,82 @@ function fmtPct(v: string | number) {
   return `${n.toFixed(2).replace(".", ",")}%`;
 }
 
-async function fetchSerie(codigo: number): Promise<string | null> {
+async function fetchSerieUltimos(codigo: number, n: number): Promise<Array<{ valor: string; data: string }> | null> {
   try {
     const res = await fetch(
-      `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${codigo}/dados/ultimos/1?formato=json`,
+      `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${codigo}/dados/ultimos/${n}?formato=json`,
       { headers: { Accept: "application/json" } },
     );
     if (!res.ok) return null;
-    const data = (await res.json()) as Array<{ valor: string }>;
-    return data?.[0]?.valor ?? null;
+    return (await res.json()) as Array<{ valor: string; data: string }>;
   } catch {
     return null;
   }
 }
 
 export function IndicadoresEconomicos() {
-  const [state, setState] = useState<Record<Chave, { value: string; loading: boolean }>>(() => {
+  const [state, setState] = useState<Record<Chave, { value: string; sub: string; loading: boolean }>>(() => {
     if (typeof window !== "undefined") {
       try {
         const cached = window.localStorage.getItem(CACHE_KEY);
         if (cached) {
-          const parsed = JSON.parse(cached) as { dolar?: string; ipca?: string; igpm?: string };
+          const p = JSON.parse(cached) as Partial<Record<Chave, { value: string; sub: string }>>;
           return {
-            dolar: { value: parsed.dolar ?? FALLBACK.dolar, loading: true },
-            ipca: { value: parsed.ipca ?? FALLBACK.ipca, loading: true },
-            igpm: { value: parsed.igpm ?? FALLBACK.igpm, loading: true },
+            dolar: { value: p.dolar?.value ?? FALLBACK.dolar, sub: p.dolar?.sub ?? "Dia anterior: USD R$ -", loading: true },
+            ipca: { value: p.ipca?.value ?? FALLBACK.ipca, sub: p.ipca?.sub ?? "No mês: -", loading: true },
+            igpm: { value: p.igpm?.value ?? FALLBACK.igpm, sub: p.igpm?.sub ?? "No mês: -", loading: true },
           };
         }
       } catch {}
     }
     return {
-      dolar: { value: FALLBACK.dolar, loading: true },
-      ipca: { value: FALLBACK.ipca, loading: true },
-      igpm: { value: FALLBACK.igpm, loading: true },
+      dolar: { value: FALLBACK.dolar, sub: "Dia anterior: USD R$ -", loading: true },
+      ipca: { value: FALLBACK.ipca, sub: "No mês: -", loading: true },
+      igpm: { value: FALLBACK.igpm, sub: "No mês: -", loading: true },
     };
   });
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [dolarRaw, ipcaRaw, igpmRaw] = await Promise.all([
-        fetchSerie(10813),
-        fetchSerie(13522),
-        fetchSerie(189),
+      const [dolarArr, ipcaAcumArr, ipcaMesArr, igpmAcumArr, igpmMesArr] = await Promise.all([
+        fetchSerieUltimos(10813, 2),
+        fetchSerieUltimos(13522, 1),
+        fetchSerieUltimos(433, 1),
+        fetchSerieUltimos(189, 1),
+        fetchSerieUltimos(189, 1),
       ]);
       if (cancelled) return;
-      const dolar = (dolarRaw && fmtMoney(dolarRaw)) || FALLBACK.dolar;
-      const ipca = (ipcaRaw && fmtPct(ipcaRaw)) || FALLBACK.ipca;
-      const igpm = (igpmRaw && fmtPct(igpmRaw)) || FALLBACK.igpm;
-      setState({
-        dolar: { value: dolar, loading: false },
-        ipca: { value: ipca, loading: false },
-        igpm: { value: igpm, loading: false },
-      });
+
+      const dolarAtual = dolarArr?.[dolarArr.length - 1]?.valor;
+      const dolarAnterior = dolarArr && dolarArr.length >= 2 ? dolarArr[dolarArr.length - 2].valor : null;
+      const dolarValue = (dolarAtual && fmtMoney(dolarAtual)) || FALLBACK.dolar;
+      const dolarSubVal = dolarAnterior ? fmtMoney(dolarAnterior) : null;
+      const dolarSub = `Dia anterior: ${dolarSubVal ?? "USD R$ -"}`;
+
+      const ipcaValue = (ipcaAcumArr?.[0]?.valor && fmtPct(ipcaAcumArr[0].valor)) || FALLBACK.ipca;
+      const ipcaMes = ipcaMesArr?.[0]?.valor ? fmtPct(ipcaMesArr[0].valor) : null;
+      const ipcaSub = `No mês: ${ipcaMes ?? "-"}`;
+
+      const igpmValue = (igpmAcumArr?.[0]?.valor && fmtPct(igpmAcumArr[0].valor)) || FALLBACK.igpm;
+      const igpmMes = igpmMesArr?.[0]?.valor ? fmtPct(igpmMesArr[0].valor) : null;
+      const igpmSub = `No mês: ${igpmMes ?? "-"}`;
+
+      const next = {
+        dolar: { value: dolarValue, sub: dolarSub, loading: false },
+        ipca: { value: ipcaValue, sub: ipcaSub, loading: false },
+        igpm: { value: igpmValue, sub: igpmSub, loading: false },
+      };
+      setState(next);
       try {
-        window.localStorage.setItem(CACHE_KEY, JSON.stringify({ dolar, ipca, igpm }));
+        window.localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            dolar: { value: dolarValue, sub: dolarSub },
+            ipca: { value: ipcaValue, sub: ipcaSub },
+            igpm: { value: igpmValue, sub: igpmSub },
+          }),
+        );
       } catch {}
     })();
     return () => {
@@ -99,6 +121,7 @@ export function IndicadoresEconomicos() {
       key: "dolar",
       label: "Dólar Comercial (Venda)",
       value: state.dolar.value,
+      sub: state.dolar.sub,
       icon: DollarSign,
       accent: "oklch(0.6 0.18 150)",
       loading: state.dolar.loading,
@@ -107,6 +130,7 @@ export function IndicadoresEconomicos() {
       key: "ipca",
       label: "IPCA — Acumulado 12 meses",
       value: state.ipca.value,
+      sub: state.ipca.sub,
       icon: TrendingUp,
       accent: "oklch(0.55 0.18 250)",
       loading: state.ipca.loading,
@@ -115,6 +139,7 @@ export function IndicadoresEconomicos() {
       key: "igpm",
       label: "IGP-M — Acumulado 12 meses",
       value: state.igpm.value,
+      sub: state.igpm.sub,
       icon: BarChart3,
       accent: "oklch(0.6 0.24 27)",
       loading: state.igpm.loading,
@@ -176,12 +201,17 @@ export function IndicadoresEconomicos() {
                 {it.loading ? (
                   <div className="mt-1.5 h-6 w-28 rounded bg-muted animate-pulse" />
                 ) : (
-                  <div
-                    className="mt-0.5 text-xl font-bold tracking-tight"
-                    style={{ color: it.accent }}
-                  >
-                    {it.value}
-                  </div>
+                  <>
+                    <div
+                      className="mt-0.5 text-xl font-bold tracking-tight"
+                      style={{ color: it.accent }}
+                    >
+                      {it.value}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground/80">
+                      {it.sub}
+                    </div>
+                  </>
                 )}
               </div>
 
