@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, daysSince } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
+import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
