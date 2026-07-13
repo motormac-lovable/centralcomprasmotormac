@@ -54,9 +54,11 @@ const ITEM_VAZIO: ItemMaterial = {
 type IndicacaoFornecedor = {
   nome: string;
   cnpj: string;
+  telefone: string;
+  email: string;
 };
 
-const INDICACAO_VAZIA: IndicacaoFornecedor = { nome: "", cnpj: "" };
+const INDICACAO_VAZIA: IndicacaoFornecedor = { nome: "", cnpj: "", telefone: "", email: "" };
 
 const MAX_INDICACOES = 10;
 
