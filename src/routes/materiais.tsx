@@ -462,7 +462,7 @@ function ItemRow({
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Field
           label="Material/Serviço solicitado"
           required
@@ -498,9 +498,7 @@ function ItemRow({
             ))}
           </datalist>
         </Field>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label="Quantidade"
           required
