@@ -48,7 +48,7 @@ export type LinxPayload = {
     origem: string | null;
     tipo_solicitacao: string;
     descricao: string | null;
-    indicacao_fornecedor: { nome: string | null; cnpj: string | null };
+    indicacao_fornecedor: { nome: string | null; cnpj: string | null; telefone: string | null; email: string | null };
   };
   itens: LinxItem[];
   fornecedor_vencedor: LinxFornecedorVencedor;
