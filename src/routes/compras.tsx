@@ -198,9 +198,68 @@ function ComprasPage() {
           />
         </Field>
 
-        <Field label="Lista de Part Numbers (PN)">
-          <textarea className={`${inputCls} min-h-20`} placeholder="PN-12345, PN-67890..." value={form.partNumbers} onChange={(e) => set("partNumbers", e.target.value)} />
-        </Field>
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Peças solicitadas ({pecas.length}/{MAX_PECAS})
+            </h3>
+          </div>
+
+          {errors.pecas && <p className="text-xs text-destructive">{errors.pecas}</p>}
+
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="space-y-3 min-w-[560px] md:min-w-0">
+              {pecas.map((p, idx) => (
+                <div key={idx} className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground">Item {idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removePeca(idx)}
+                      className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
+                      aria-label={`Remover peça ${idx + 1}`}
+                      title="Remover peça"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remover
+                    </button>
+                  </div>
+                  <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+                    <Field label="Part Number" required error={errors[`peca_${idx}_pn`]}>
+                      <input
+                        className={inputCls}
+                        placeholder="Ex.: PN-12345"
+                        value={p.pn}
+                        onChange={(e) => updatePeca(idx, { pn: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Descrição do Item" required error={errors[`peca_${idx}_descricao`]}>
+                      <input
+                        className={inputCls}
+                        placeholder="Descrição da peça"
+                        value={p.descricao}
+                        onChange={(e) => updatePeca(idx, { descricao: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={addPeca}
+            disabled={pecas.length >= MAX_PECAS}
+            className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Peça
+          </button>
+          {pecas.length >= MAX_PECAS && (
+            <p className="text-xs text-muted-foreground">Limite máximo de {MAX_PECAS} itens atingido por solicitação</p>
+          )}
+        </div>
 
 
         <div className="flex justify-stretch md:justify-end pt-2">
