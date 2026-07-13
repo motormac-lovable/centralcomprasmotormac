@@ -34,6 +34,11 @@ const operacoes = [
   "Outra",
 ];
 
+const MAX_PECAS = 50;
+
+type PecaItem = { pn: string; descricao: string };
+const PECA_VAZIA: PecaItem = { pn: "", descricao: "" };
+
 function ComprasPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
@@ -45,13 +50,27 @@ function ComprasPage() {
     operacao: "",
     especificacao: "",
     os: "",
-    partNumbers: "",
     dataEsperada: "",
   });
+  const [pecas, setPecas] = useState<PecaItem[]>([{ ...PECA_VAZIA }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const updatePeca = (idx: number, patch: Partial<PecaItem>) =>
+    setPecas((arr) => arr.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+
+  const removePeca = (idx: number) =>
+    setPecas((arr) => (arr.length === 1 ? [{ ...PECA_VAZIA }] : arr.filter((_, i) => i !== idx)));
+
+  const addPeca = () => {
+    if (pecas.length >= MAX_PECAS) {
+      toast.error(`Limite máximo de ${MAX_PECAS} itens atingido por solicitação`);
+      return;
+    }
+    setPecas((arr) => [...arr, { ...PECA_VAZIA }]);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +82,16 @@ function ComprasPage() {
     if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
     if (files.length === 0) er.files = "Envie ao menos 1 arquivo";
     if (!form.dataEsperada) er.dataEsperada = "Obrigatório";
+    const pecasLimpas = pecas
+      .map((p) => ({ pn: p.pn.trim(), descricao: p.descricao.trim() }))
+      .filter((p) => p.pn || p.descricao);
+    if (pecasLimpas.length === 0) er.pecas = "Inclua ao menos 1 peça";
+    else {
+      pecasLimpas.forEach((p, i) => {
+        if (!p.pn) er[`peca_${i}_pn`] = "Obrigatório";
+        if (!p.descricao) er[`peca_${i}_descricao`] = "Obrigatório";
+      });
+    }
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
@@ -75,7 +104,14 @@ function ComprasPage() {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
       return;
     }
-    const payload = { ...bloco, ...form, files: uploaded };
+    const payload = {
+      ...bloco,
+      ...form,
+      pecas: pecasLimpas,
+      // compatibilidade com relatórios legados que esperam string de PNs
+      partNumbers: pecasLimpas.map((p) => p.pn).join(", "),
+      files: uploaded,
+    };
     try {
       await createCard({
         kind: "compras",
