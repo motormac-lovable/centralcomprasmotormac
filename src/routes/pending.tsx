@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Clock, LogOut } from "lucide-react";
+import { Clock, LogOut, Loader2 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
@@ -31,6 +32,21 @@ function PendingPage() {
   };
 
   const inactive = !!user && !isActive;
+
+  // Splash neutro enquanto a sessão/perfil ainda estão sendo carregados.
+  // Evita o "flash" da tela de restrição logo após o login, antes de sabermos
+  // o papel real do usuário e redirecioná-lo para a rota correta.
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="text-sm">Carregando seu acesso…</span>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-16">
