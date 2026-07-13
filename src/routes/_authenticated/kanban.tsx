@@ -84,10 +84,6 @@ function KanbanPage() {
     if (fresh && fresh !== open) setOpen(fresh);
   }, [cards, open]);
 
-  const approvers = useMemo(
-    () => Array.from(new Set(cards.map((c) => c.approver_name).filter(Boolean))) as string[],
-    [cards],
-  );
 
   if (loading) {
     return (
