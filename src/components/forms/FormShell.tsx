@@ -14,7 +14,7 @@ export function FormShell({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8" style={{ zoom: "85%" }}>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 md:py-8" style={{ zoom: "85%" }}>
       <Link
         to="/"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -27,11 +27,11 @@ export function FormShell({
           className="h-2"
           style={{ background: `linear-gradient(90deg, ${accent}, var(--primary-glow))` }}
         />
-        <div className="p-6 sm:p-8 border-b">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <div className="p-4 md:p-8 border-b">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
         </div>
-        <div className="p-6 sm:p-8">{children}</div>
+        <div className="p-4 md:p-8">{children}</div>
       </div>
     </div>
   );
