@@ -17,6 +17,7 @@ import {
   type Status, type Observation, type Supplier, type Attachment,
 } from "@/lib/cards";
 import { getCompradoraByCodigo } from "@/lib/apollo-buyers";
+import { MATERIAIS_APOLLO, UNIDADES_MEDIDA_APOLLO } from "@/lib/apollo-data";
 import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
