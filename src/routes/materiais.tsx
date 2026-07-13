@@ -320,31 +320,58 @@ function MateriaisPage() {
           </div>
 
           {form.indicacoes.map((ind, idx) => (
-            <div key={idx} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] items-end">
-              <Field label={`Nome do fornecedor ${idx + 1}`}>
-                <input
-                  className={inputCls}
-                  value={ind.nome}
-                  onChange={(e) => updateIndicacao(idx, { nome: e.target.value })}
-                />
-              </Field>
-              <Field label={`CNPJ do fornecedor ${idx + 1}`} error={errors[`indicacao_${idx}_cnpj`]}>
-                <input
-                  className={inputCls}
-                  placeholder="00.000.000/0000-00"
-                  value={ind.cnpj}
-                  onChange={(e) => updateIndicacao(idx, { cnpj: maskCNPJ(e.target.value) })}
-                />
-              </Field>
-              <button
-                type="button"
-                onClick={() => removeIndicacao(idx)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input text-muted-foreground hover:bg-accent hover:text-destructive transition"
-                aria-label="Remover indicação"
-                title="Remover indicação"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+            <div key={idx} className="rounded-lg border bg-card p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Fornecedor {idx + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeIndicacao(idx)}
+                  className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
+                  aria-label="Remover indicação"
+                  title="Remover indicação"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remover
+                </button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={`Nome do fornecedor ${idx + 1}`}>
+                  <input
+                    className={inputCls}
+                    value={ind.nome}
+                    onChange={(e) => updateIndicacao(idx, { nome: e.target.value })}
+                  />
+                </Field>
+                <Field label={`CNPJ do fornecedor ${idx + 1}`} error={errors[`indicacao_${idx}_cnpj`]}>
+                  <input
+                    className={inputCls}
+                    placeholder="00.000.000/0000-00"
+                    value={ind.cnpj}
+                    onChange={(e) => updateIndicacao(idx, { cnpj: maskCNPJ(e.target.value) })}
+                  />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Telefone" error={errors[`indicacao_${idx}_telefone`]}>
+                  <input
+                    className={inputCls}
+                    placeholder="(00) 00000-0000"
+                    value={ind.telefone}
+                    onChange={(e) => updateIndicacao(idx, { telefone: maskPhone(e.target.value) })}
+                  />
+                </Field>
+                <Field label="E-mail" error={errors[`indicacao_${idx}_email`]}>
+                  <input
+                    type="email"
+                    className={inputCls}
+                    placeholder="fornecedor@empresa.com"
+                    value={ind.email}
+                    onChange={(e) => updateIndicacao(idx, { email: e.target.value })}
+                  />
+                </Field>
+              </div>
             </div>
           ))}
 
