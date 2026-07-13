@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { DollarSign, TrendingUp, BarChart3 } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Activity } from "lucide-react";
+
+type Chave = "dolar" | "ipca" | "igpm";
 
 type Indicador = {
-  key: "dolar" | "ipca" | "igpm";
+  key: Chave;
   label: string;
   value: string;
   icon: typeof DollarSign;
@@ -10,7 +12,7 @@ type Indicador = {
   loading: boolean;
 };
 
-const FALLBACK = {
+const FALLBACK: Record<Chave, string> = {
   dolar: "USD R$ 5,11",
   ipca: "4,64%",
   igpm: "3,16%",
@@ -45,7 +47,7 @@ async function fetchSerie(codigo: number): Promise<string | null> {
 }
 
 export function IndicadoresEconomicos() {
-  const [state, setState] = useState<Record<"dolar" | "ipca" | "igpm", { value: string; loading: boolean }>>(() => {
+  const [state, setState] = useState<Record<Chave, { value: string; loading: boolean }>>(() => {
     if (typeof window !== "undefined") {
       try {
         const cached = window.localStorage.getItem(CACHE_KEY);
@@ -121,39 +123,78 @@ export function IndicadoresEconomicos() {
 
   return (
     <section className="w-full mt-10">
-      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-        <div className="grid gap-px bg-border sm:grid-cols-3">
-          {items.map((it) => {
-            const Icon = it.icon;
-            return (
-              <div key={it.key} className="bg-card p-5 flex items-center gap-4">
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <Activity className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+          Indicadores Econômicos Estratégicos
+        </h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {items.map((it) => {
+          const Icon = it.icon;
+          return (
+            <div
+              key={it.key}
+              className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+            >
+              <div
+                className="absolute inset-x-0 top-0 h-1 opacity-80"
+                style={{ background: it.accent }}
+              />
+
+              <div className="flex items-start justify-between gap-4">
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
                   style={{
                     background: `color-mix(in oklab, ${it.accent} 12%, transparent)`,
                     color: it.accent,
                   }}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-6 w-6" />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    {it.label}
+
+                {it.loading ? (
+                  <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                ) : (
+                  <div
+                    className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={{
+                      background: `color-mix(in oklab, ${it.accent} 10%, transparent)`,
+                      color: it.accent,
+                    }}
+                  >
+                    BCB
                   </div>
-                  {it.loading ? (
-                    <div className="mt-1 h-6 w-24 rounded bg-muted animate-pulse" />
-                  ) : (
-                    <div className="text-xl font-semibold mt-0.5" style={{ color: it.accent }}>
-                      {it.value}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+
+              <div className="mt-5">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                  {it.label}
+                </div>
+                {it.loading ? (
+                  <div className="mt-2 h-8 w-32 rounded bg-muted animate-pulse" />
+                ) : (
+                  <div
+                    className="mt-1 text-2xl font-bold tracking-tight"
+                    style={{ color: it.accent }}
+                  >
+                    {it.value}
+                  </div>
+                )}
+              </div>
+
+              <div
+                className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
+                style={{ background: it.accent }}
+              />
+            </div>
+          );
+        })}
       </div>
-      <p className="text-center text-xs text-muted-foreground mt-3">
+
+      <p className="text-center text-xs text-muted-foreground mt-4">
         Indicadores atualizados em tempo real via Banco Central do Brasil
       </p>
     </section>
