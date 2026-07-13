@@ -36,8 +36,8 @@ const operacoes = [
 
 const MAX_PECAS = 50;
 
-type PecaItem = { pn: string; descricao: string };
-const PECA_VAZIA: PecaItem = { pn: "", descricao: "" };
+type PecaItem = { pn: string; descricao: string; especificacao: string };
+const PECA_VAZIA: PecaItem = { pn: "", descricao: "", especificacao: "" };
 
 function ComprasPage() {
   const navigate = useNavigate();
@@ -46,9 +46,7 @@ function ComprasPage() {
     cnpj: "",
     departamento: "",
     departamento_codigo: "",
-    peca: "",
     operacao: "",
-    especificacao: "",
     os: "",
     dataEsperada: "",
   });
