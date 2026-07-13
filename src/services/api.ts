@@ -48,7 +48,7 @@ export type LinxPayload = {
     origem: string | null;
     tipo_solicitacao: string;
     descricao: string | null;
-    indicacao_fornecedor: { nome: string | null; cnpj: string | null };
+    indicacao_fornecedor: { nome: string | null; cnpj: string | null; telefone: string | null; email: string | null };
   };
   itens: LinxItem[];
   fornecedor_vencedor: LinxFornecedorVencedor;
@@ -142,12 +142,14 @@ export function buildLinxPayload(card: KanbanCardRow): LinxPayload {
       descricao: (data.descricao as string) ?? null,
       indicacao_fornecedor: (() => {
         const indicacoes = Array.isArray(data.indicacoes)
-          ? (data.indicacoes as Array<{ nome?: string; cnpj?: string }>)
+          ? (data.indicacoes as Array<{ nome?: string; cnpj?: string; telefone?: string; email?: string }>)
           : [];
-        const primeiro = indicacoes.find((i) => i?.nome?.trim() || i?.cnpj?.trim()) ?? indicacoes[0];
+        const primeiro = indicacoes.find((i) => i?.nome?.trim() || i?.cnpj?.trim() || i?.telefone?.trim() || i?.email?.trim()) ?? indicacoes[0];
         return {
           nome: primeiro?.nome?.trim() || (data.fornecedorNome as string) || null,
           cnpj: primeiro?.cnpj?.trim() || (data.fornecedorCnpj as string) || null,
+          telefone: primeiro?.telefone?.trim() || null,
+          email: primeiro?.email?.trim() || null,
         };
       })(),
     },
@@ -205,6 +207,8 @@ export const MOCK_LINX_PAYLOAD: LinxPayload = {
     indicacao_fornecedor: {
       nome: "Lubrificantes Sul Ltda.",
       cnpj: "12.345.678/0001-90",
+      telefone: "(51) 3333-4444",
+      email: "contato@lubrificantessul.com.br",
     },
   },
   itens: [
