@@ -76,18 +76,21 @@ function ComprasPage() {
     const er: Record<string, string> = { ...blocoEr };
     if (form.cnpj.replace(/\D/g, "").length !== 14) er.cnpj = "CNPJ inválido";
     if (!form.departamento) er.departamento = "Selecione o departamento";
-    if (!form.peca.trim()) er.peca = "Obrigatório";
-    if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
     if (files.length === 0) er.files = "Envie ao menos 1 arquivo";
     if (!form.dataEsperada) er.dataEsperada = "Obrigatório";
     const pecasLimpas = pecas
-      .map((p) => ({ pn: p.pn.trim(), descricao: p.descricao.trim() }))
-      .filter((p) => p.pn || p.descricao);
+      .map((p) => ({
+        pn: p.pn.trim(),
+        descricao: p.descricao.trim(),
+        especificacao: p.especificacao.trim(),
+      }))
+      .filter((p) => p.pn || p.descricao || p.especificacao);
     if (pecasLimpas.length === 0) er.pecas = "Inclua ao menos 1 peça";
     else {
       pecasLimpas.forEach((p, i) => {
         if (!p.pn) er[`peca_${i}_pn`] = "Obrigatório";
         if (!p.descricao) er[`peca_${i}_descricao`] = "Obrigatório";
+        if (!p.especificacao) er[`peca_${i}_especificacao`] = "Obrigatório";
       });
     }
     setErrors(er);
@@ -102,18 +105,22 @@ function ComprasPage() {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
       return;
     }
+    const tituloPeca = pecasLimpas[0]?.pn || pecasLimpas[0]?.descricao || `${pecasLimpas.length} item(ns)`;
     const payload = {
       ...bloco,
       ...form,
+      peca: tituloPeca,
       pecas: pecasLimpas,
       // compatibilidade com relatórios legados que esperam string de PNs
       partNumbers: pecasLimpas.map((p) => p.pn).join(", "),
+      // compatibilidade: especificação consolidada dos itens
+      especificacao: pecasLimpas.map((p) => `${p.pn}: ${p.especificacao}`).join(" | "),
       files: uploaded,
     };
     try {
       await createCard({
         kind: "compras",
-        title: `Compra: ${form.peca}`,
+        title: `Compra: ${tituloPeca}`,
         summary: `${bloco.nome} · ${bloco.empresa} · ${bloco.unidade}`,
         requester_name: bloco.nome,
         requester_email: bloco.email,
@@ -125,10 +132,11 @@ function ComprasPage() {
       toast.error("Falha ao enviar: " + (err as Error).message);
       return;
     }
-    addHistory({ kind: "compras", title: `Compra: ${form.peca}`, summary: `${bloco.nome} · ${bloco.unidade}`, data: payload });
+    addHistory({ kind: "compras", title: `Compra: ${tituloPeca}`, summary: `${bloco.nome} · ${bloco.unidade}`, data: payload });
     toast.success("Solicitação enviada com sucesso!", { description: "Você pode acompanhar pelo Histórico." });
     navigate({ to: "/historico" });
   };
+
 
   return (
     <FormShell
