@@ -895,7 +895,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const Icon = iconFor[card.kind];
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
-  const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "dataEsperada"];
+  const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
