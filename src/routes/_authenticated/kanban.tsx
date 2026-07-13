@@ -32,15 +32,13 @@ export const Route = createFileRoute("/_authenticated/kanban")({
 
 const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, materiais: Package } as const;
 
-type ColumnFilter = { kind: string; approver: string };
-
 function KanbanPage() {
   const { isBuyer, isAuditor, loading } = useAuth();
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Record<Status, ColumnFilter>>(() =>
-    STATUS_COLUMNS.reduce((acc, c) => ({ ...acc, [c.id]: { kind: "", approver: "" } }), {} as Record<Status, ColumnFilter>),
+  const [columnQueries, setColumnQueries] = useState<Record<Status, string>>(() =>
+    STATUS_COLUMNS.reduce((acc, c) => ({ ...acc, [c.id]: "" }), {} as Record<Status, string>),
   );
   const [globalQuery, setGlobalQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
