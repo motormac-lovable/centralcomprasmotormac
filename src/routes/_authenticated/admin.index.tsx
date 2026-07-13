@@ -232,7 +232,12 @@ function AdminPage() {
 function RegisteredUsers({
   restrictedTo,
   mode = "admin",
-}: { restrictedTo?: "solicitante"; mode?: "admin" | "buyer" | "auditor" } = {}) {
+  groupByCategory = false,
+}: {
+  restrictedTo?: "solicitante";
+  mode?: "admin" | "buyer" | "auditor";
+  groupByCategory?: boolean;
+} = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
   const buyerOnly = mode === "buyer";
