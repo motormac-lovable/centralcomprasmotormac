@@ -902,7 +902,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
   const readOnly = isAuditor;
-  const canEditItens = !isAuditor && (isBuyer || isAdmin || isOwner);
+  const canEditItens = !isAuditor && (isBuyer || isAdmin || isOwner) && card.status === "em_cotacao";
   const canQuickReject =
     !isAuditor &&
     (isBuyer || isAdmin || isOwner) &&
