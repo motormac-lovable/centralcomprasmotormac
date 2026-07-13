@@ -243,15 +243,25 @@ function KanbanPage() {
         </div>
         <div className="sm:w-[28rem] shrink-0 space-y-2">
           <div className="relative">
-            <Filter className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Filter className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
-              type="search"
+              type="text"
               value={globalQuery}
               onChange={(e) => setGlobalQuery(e.target.value)}
-              placeholder="Buscar em tudo: grupo, comprador, solicitante…"
-              className="w-full text-sm bg-background border rounded-md pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40"
+              placeholder="Filtrar em todas as colunas..."
+              className="w-full text-sm bg-background border rounded-md pl-8 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-ring/40"
               aria-label="Filtro global"
             />
+            {globalQuery && (
+              <button
+                type="button"
+                onClick={() => setGlobalQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Limpar filtro global"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <label className="text-[11px] font-medium text-muted-foreground shrink-0">De</label>
