@@ -342,7 +342,7 @@ function MateriaisPage() {
                   Remover
                 </button>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                 <Field label={`Nome do fornecedor ${idx + 1}`}>
                   <input
                     className={inputCls}
@@ -358,8 +358,6 @@ function MateriaisPage() {
                     onChange={(e) => updateIndicacao(idx, { cnpj: maskCNPJ(e.target.value) })}
                   />
                 </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Telefone" error={errors[`indicacao_${idx}_telefone`]}>
                   <input
                     className={inputCls}
@@ -378,6 +376,7 @@ function MateriaisPage() {
                   />
                 </Field>
               </div>
+
             </div>
           ))}
 
