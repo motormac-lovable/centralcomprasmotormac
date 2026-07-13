@@ -32,8 +32,9 @@ function AdminPage() {
 
   // Comprador (sem Admin): acesso parcial — Gestão de Solicitantes com Inativar/Reativar.
   // Auditor (sem Admin): acesso parcial — Gestão de Solicitantes com EXCLUSÃO apenas.
-  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
+  // Auditor tem prioridade: mesmo que também tenha o perfil Comprador, a visão de auditoria (somente leitura, todos os usuários) prevalece.
   const auditorOnly = !isAdmin && isAuditor;
+  const buyerOnly = !isAdmin && isBuyer && !isAuditor;
 
   if (!isAdmin && !buyerOnly && !auditorOnly) {
     return (
@@ -64,15 +65,13 @@ function AdminPage() {
     );
   }
 
-  if (auditorOnly) {
+  if (auditorOnly || (isAuditor && !isAdmin)) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Auditoria de Usuários</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Acesso somente leitura do Auditor: você pode visualizar todos os usuários da plataforma, organizados por Solicitantes, Compradores e Aprovadores. A única ação permitida é a exclusão de perfis exclusivamente Solicitantes.
-            </p>
+            <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
+            <p className="text-sm text-muted-foreground mt-1">Acesso do auditor.</p>
           </div>
           <RelatoriosLink />
         </div>
@@ -80,6 +79,7 @@ function AdminPage() {
       </div>
     );
   }
+
 
 
 
