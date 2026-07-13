@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
 import logoMotormac from "@/assets/logo-motormac.png.asset.json";
+import { IndicadoresEconomicos } from "@/components/IndicadoresEconomicos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -104,6 +105,8 @@ function Hub() {
           );
         })}
       </div>
+
+      <IndicadoresEconomicos />
     </div>
   );
 }
