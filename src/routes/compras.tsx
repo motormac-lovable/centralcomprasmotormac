@@ -166,10 +166,10 @@ function ComprasPage() {
         </Field>
 
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-stretch md:justify-end pt-2">
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+            className="inline-flex w-full md:w-auto items-center justify-center rounded-md bg-primary px-6 py-2.5 md:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
           >
             Enviar solicitação
           </button>
