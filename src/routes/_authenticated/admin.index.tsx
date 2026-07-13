@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Check, X, ShieldAlert, Mail, Crown, UserPlus, UserMinus, Pencil, Trash2, Ban, RotateCcw, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -47,24 +47,40 @@ function AdminPage() {
     );
   }
 
-  if (buyerOnly || auditorOnly) {
+  if (buyerOnly) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {auditorOnly
-                ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
-                : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
+              Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
             </p>
           </div>
           <RelatoriosLink />
         </div>
-        <RegisteredUsers restrictedTo="solicitante" mode={auditorOnly ? "auditor" : "buyer"} />
+        <RegisteredUsers restrictedTo="solicitante" mode="buyer" />
       </div>
     );
   }
+
+  if (auditorOnly) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Auditoria de Usuários</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Acesso somente leitura do Auditor: você pode visualizar todos os usuários da plataforma, organizados por Solicitantes, Compradores e Aprovadores. A única ação permitida é a exclusão de perfis exclusivamente Solicitantes.
+            </p>
+          </div>
+          <RelatoriosLink />
+        </div>
+        <RegisteredUsers mode="auditor" groupByCategory />
+      </div>
+    );
+  }
+
 
 
 
@@ -216,7 +232,12 @@ function AdminPage() {
 function RegisteredUsers({
   restrictedTo,
   mode = "admin",
-}: { restrictedTo?: "solicitante"; mode?: "admin" | "buyer" | "auditor" } = {}) {
+  groupByCategory = false,
+}: {
+  restrictedTo?: "solicitante";
+  mode?: "admin" | "buyer" | "auditor";
+  groupByCategory?: boolean;
+} = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
   const buyerOnly = mode === "buyer";
@@ -333,98 +354,124 @@ function RegisteredUsers({
             {filtered.length === 0 && (
               <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
             )}
-            {filtered.map((u) => {
-              const owner = isOwnerRow(u);
-              const isSelf = u.id === user?.id;
-              const targetIsAdmin = u.roles.includes("admin");
-              // Apenas o Proprietário pode gerenciar (editar/inativar/excluir) outros Administradores.
-              const adminBlocked = targetIsAdmin && !isOwner;
-              const canManage = !owner && !isSelf && !adminBlocked;
-              // Auditor: apenas exclusão de Solicitantes; sem editar; sem inativar.
-              const canDelete = canManage && (auditorOnly ? u.roles.includes("solicitante") && !u.roles.some((r) => r !== "solicitante") : !buyerOnly);
-              const canToggle = canManage && !auditorOnly;
-              const canEdit = !auditorOnly && !buyerOnly && !owner && !adminBlocked;
-              const active = u.is_active ?? true;
-              const blockedTitle = owner
-                ? "Proprietários são intocáveis"
-                : adminBlocked
-                  ? "Somente o Proprietário pode gerenciar Administradores"
-                  : isSelf
-                    ? "Você não pode alterar o próprio usuário"
-                    : "";
-              return (
-                <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
-                  <td className="p-4">
-                    <div className="font-medium flex items-center gap-2">
-                      {u.full_name || "—"}
-                      {!active && (
-                        <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Inativo</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{u.cpf || ""}</div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-1 text-xs"><Mail className="h-3 w-3" />{u.email}</div>
-                    <div className="text-xs text-muted-foreground">{u.phone}</div>
-                  </td>
-                  <td className="p-4">
-                    {u.roles.length === 0 ? (
-                      <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Sem nível (pendente)</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {u.roles.map((r) => (
-                          <span key={r} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${roleStyle[r] ?? "bg-accent text-accent-foreground"}`}>
-                            {roleLabel[r] ?? r}
-                          </span>
-                        ))}
+            {(() => {
+              const renderRow = (u: Row) => {
+                const owner = isOwnerRow(u);
+                const isSelf = u.id === user?.id;
+                const targetIsAdmin = u.roles.includes("admin");
+                const adminBlocked = targetIsAdmin && !isOwner;
+                const canManage = !owner && !isSelf && !adminBlocked;
+                const canDelete = canManage && (auditorOnly ? u.roles.includes("solicitante") && !u.roles.some((r) => r !== "solicitante") : !buyerOnly);
+                const canToggle = canManage && !auditorOnly;
+                const canEdit = !auditorOnly && !buyerOnly && !owner && !adminBlocked;
+                const active = u.is_active ?? true;
+                const blockedTitle = owner
+                  ? "Proprietários são intocáveis"
+                  : adminBlocked
+                    ? "Somente o Proprietário pode gerenciar Administradores"
+                    : isSelf
+                      ? "Você não pode alterar o próprio usuário"
+                      : auditorOnly
+                        ? "Auditor: somente leitura"
+                        : "";
+                return (
+                  <tr key={u.id} className={`border-t ${!active ? "bg-red-50/40" : ""}`}>
+                    <td className="p-4">
+                      <div className="font-medium flex items-center gap-2">
+                        {u.full_name || "—"}
+                        {!active && (
+                          <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Inativo</span>
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td className="p-4 text-xs text-muted-foreground">
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      {!buyerOnly && !auditorOnly && (
-                        <button
-                          onClick={() => canEdit && setEditing(u)}
-                          disabled={!canEdit}
-                          className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
-                        >
-                          <Pencil className="h-3.5 w-3.5" /> Editar
-                        </button>
+                      <div className="text-xs text-muted-foreground">{u.cpf || ""}</div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1 text-xs"><Mail className="h-3 w-3" />{u.email}</div>
+                      <div className="text-xs text-muted-foreground">{u.phone}</div>
+                    </td>
+                    <td className="p-4">
+                      {u.roles.length === 0 ? (
+                        <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Sem nível (pendente)</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {u.roles.map((r) => (
+                            <span key={r} className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${roleStyle[r] ?? "bg-accent text-accent-foreground"}`}>
+                              {roleLabel[r] ?? r}
+                            </span>
+                          ))}
+                        </div>
                       )}
-                      {!auditorOnly && (
-                        <button
-                          onClick={() => canToggle && toggleActive(u)}
-                          disabled={!canToggle}
-                          className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
-                            active
-                              ? "bg-amber-500 text-white hover:bg-amber-600"
-                              : "bg-emerald-600 text-white hover:bg-emerald-700"
-                          }`}
-                          title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
-                        >
-                          {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
-                        </button>
-                      )}
-                      {(!buyerOnly || auditorOnly) && (
-                        <button
-                          onClick={() => canDelete && setDeleting(u)}
-                          disabled={!canDelete}
-                          className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Excluir
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td className="p-4 text-xs text-muted-foreground">
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        {!buyerOnly && !auditorOnly && (
+                          <button
+                            onClick={() => canEdit && setEditing(u)}
+                            disabled={!canEdit}
+                            className="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={canEdit ? "Editar dados do usuário" : blockedTitle || "Sem permissão"}
+                          >
+                            <Pencil className="h-3.5 w-3.5" /> Editar
+                          </button>
+                        )}
+                        {!auditorOnly && (
+                          <button
+                            onClick={() => canToggle && toggleActive(u)}
+                            disabled={!canToggle}
+                            className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                              active
+                                ? "bg-amber-500 text-white hover:bg-amber-600"
+                                : "bg-emerald-600 text-white hover:bg-emerald-700"
+                            }`}
+                            title={canToggle ? (active ? "Inativar acesso" : "Reativar acesso") : blockedTitle || "Sem permissão"}
+                          >
+                            {active ? (<><Ban className="h-3.5 w-3.5" /> Inativar</>) : (<><RotateCcw className="h-3.5 w-3.5" /> Reativar</>)}
+                          </button>
+                        )}
+                        {(!buyerOnly || auditorOnly) && (
+                          <button
+                            onClick={() => canDelete && setDeleting(u)}
+                            disabled={!canDelete}
+                            className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={canDelete ? "Excluir usuário" : blockedTitle || "Sem permissão"}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Excluir
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              };
+
+              if (!groupByCategory) return filtered.map(renderRow);
+
+              const CATS: { key: string; label: string; test: (r: Row) => boolean }[] = [
+                { key: "solicitante", label: "Solicitantes", test: (r) => r.roles.includes("solicitante") },
+                { key: "buyer", label: "Compradores", test: (r) => r.roles.includes("buyer") && !r.roles.includes("solicitante") },
+                { key: "aprovador", label: "Aprovadores", test: (r) => r.roles.includes("aprovador") && !r.roles.includes("solicitante") && !r.roles.includes("buyer") },
+                { key: "outros", label: "Administradores e outros", test: (r) => !r.roles.some((x) => ["solicitante", "buyer", "aprovador"].includes(x)) },
+              ];
+              return CATS.map((cat) => {
+                const items = filtered.filter(cat.test);
+                if (items.length === 0) return null;
+                return (
+                  <Fragment key={cat.key}>
+                    <tr className="bg-muted/60">
+                      <td colSpan={5} className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {cat.label} <span className="ml-1 text-muted-foreground/70">({items.length})</span>
+                      </td>
+                    </tr>
+                    {items.map(renderRow)}
+                  </Fragment>
+                );
+              });
+            })()}
           </tbody>
+
         </table>
       </div>
 
