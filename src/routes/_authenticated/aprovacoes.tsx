@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import type { Database } from "@/integrations/supabase/types";
 import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
 import { translateError } from "@/lib/error-messages";
+import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -67,10 +68,12 @@ function AprovacoesPage() {
 
   const reload = async () => {
     setLoading(true);
+    // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
     const { data, error } = await supabase
       .from("kanban_cards")
       .select("*")
       .eq("status", "aguardando_aprovacao")
+      .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("status_changed_at", { ascending: true });
     if (error) toast.error(translateError(error, "Não foi possível carregar as aprovações."));
     setCards((data ?? []) as Card[]);
