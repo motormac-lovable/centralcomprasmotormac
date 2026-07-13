@@ -1348,14 +1348,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                         <tr>
                           <th className="px-3 py-2 text-left">Part Number</th>
                           <th className="px-3 py-2 text-left">Descrição do Item</th>
+                          <th className="px-3 py-2 text-left">Especificação Técnica</th>
                           {canEditItens && <th className="px-3 py-2 w-12 text-center">Ações</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {pecasList.map((p, i) => (
-                          <tr key={`${p.pn}-${i}`} className="border-t">
+                          <tr key={`${p.pn}-${i}`} className="border-t align-top">
                             <td className="px-3 py-2 font-mono text-xs">{p.pn || "—"}</td>
                             <td className="px-3 py-2">{p.descricao || "—"}</td>
+                            <td className="px-3 py-2 text-xs">{p.especificacao || "—"}</td>
                             {canEditItens && (
                               <td className="px-3 py-2 text-center">
                                 <button
@@ -1376,7 +1378,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                 )}
                 {canEditItens && (
                   <div className="space-y-2">
-                    <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                    <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
                       <input
                         value={novaPeca.pn}
                         onChange={(e) => setNovaPeca((s) => ({ ...s, pn: e.target.value }))}
@@ -1387,8 +1389,15 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                       <input
                         value={novaPeca.descricao}
                         onChange={(e) => setNovaPeca((s) => ({ ...s, descricao: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPeca(); } }}
                         placeholder="Descrição do Item"
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        disabled={pecasList.length >= PECAS_MAX}
+                      />
+                      <input
+                        value={novaPeca.especificacao}
+                        onChange={(e) => setNovaPeca((s) => ({ ...s, especificacao: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPeca(); } }}
+                        placeholder="Especificação Técnica"
                         className="rounded-md border bg-background px-3 py-2 text-sm"
                         disabled={pecasList.length >= PECAS_MAX}
                       />
