@@ -14,7 +14,7 @@ export function FormShell({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8" style={{ zoom: "85%" }}>
       <Link
         to="/"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
