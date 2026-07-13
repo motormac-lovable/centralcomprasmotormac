@@ -55,7 +55,7 @@ function Hub() {
 
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center" style={{ zoom: "80%" }}>
       <div className="text-center max-w-2xl mx-auto mb-10 flex flex-col items-center">
         <img
           src={logoMotormac.url}
