@@ -122,21 +122,21 @@ export function IndicadoresEconomicos() {
   ];
 
   return (
-    <section className="w-full mt-10">
-      <div className="flex items-center justify-center gap-2 mb-4">
+    <section className="w-full mt-8">
+      <div className="flex items-center justify-center gap-2 mb-3">
         <Activity className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Indicadores Econômicos Estratégicos
         </h2>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {items.map((it) => {
           const Icon = it.icon;
           return (
             <div
               key={it.key}
-              className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+              className="group relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
             >
               <div
                 className="absolute inset-x-0 top-0 h-1 opacity-80"
@@ -145,20 +145,20 @@ export function IndicadoresEconomicos() {
 
               <div className="flex items-start justify-between gap-4">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
                   style={{
                     background: `color-mix(in oklab, ${it.accent} 12%, transparent)`,
                     color: it.accent,
                   }}
                 >
-                  <Icon className="h-6 w-6" />
+                  <Icon className="h-5 w-5" />
                 </div>
 
                 {it.loading ? (
-                  <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                  <div className="h-4 w-14 rounded bg-muted animate-pulse" />
                 ) : (
                   <div
-                    className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
                     style={{
                       background: `color-mix(in oklab, ${it.accent} 10%, transparent)`,
                       color: it.accent,
@@ -169,15 +169,15 @@ export function IndicadoresEconomicos() {
                 )}
               </div>
 
-              <div className="mt-5">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              <div className="mt-4">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   {it.label}
                 </div>
                 {it.loading ? (
-                  <div className="mt-2 h-8 w-32 rounded bg-muted animate-pulse" />
+                  <div className="mt-1.5 h-6 w-28 rounded bg-muted animate-pulse" />
                 ) : (
                   <div
-                    className="mt-1 text-2xl font-bold tracking-tight"
+                    className="mt-0.5 text-xl font-bold tracking-tight"
                     style={{ color: it.accent }}
                   >
                     {it.value}
@@ -186,7 +186,7 @@ export function IndicadoresEconomicos() {
               </div>
 
               <div
-                className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
+                className="absolute -bottom-5 -right-5 w-20 h-20 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
                 style={{ background: it.accent }}
               />
             </div>
@@ -194,7 +194,7 @@ export function IndicadoresEconomicos() {
         })}
       </div>
 
-      <p className="text-center text-xs text-muted-foreground mt-4">
+      <p className="text-center text-[10px] text-muted-foreground mt-3">
         Indicadores atualizados em tempo real via Banco Central do Brasil
       </p>
     </section>
