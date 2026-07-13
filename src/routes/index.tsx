@@ -54,13 +54,8 @@ function Hub() {
 
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center" style={{ zoom: "80%" }}>
-      <div className="text-center max-w-2xl mx-auto mb-10 flex flex-col items-center">
-        <img
-          src={logoMotormac.url}
-          alt="Motormac"
-          className="h-24 sm:h-32 w-auto mb-6 object-contain"
-        />
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center min-h-screen justify-center" style={{ zoom: "80%" }}>
+      <div className="text-center max-w-2xl mx-auto mb-8 flex flex-col items-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-4">
           Plataforma Interna
         </div>
@@ -71,6 +66,7 @@ function Hub() {
           Escolha abaixo o tipo de requisição que deseja abrir. Tudo registrado, rastreável e em um só lugar.
         </p>
       </div>
+
 
       <div className="w-full grid gap-5 md:grid-cols-2 lg:grid-cols-4 justify-center">
         {cards.map((c) => {
