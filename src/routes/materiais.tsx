@@ -51,6 +51,15 @@ const ITEM_VAZIO: ItemMaterial = {
   unidadeMedida: "",
 };
 
+type IndicacaoFornecedor = {
+  nome: string;
+  cnpj: string;
+};
+
+const INDICACAO_VAZIA: IndicacaoFornecedor = { nome: "", cnpj: "" };
+
+const MAX_INDICACOES = 10;
+
 function MateriaisPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
