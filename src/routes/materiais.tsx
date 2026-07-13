@@ -254,30 +254,35 @@ function MateriaisPage() {
             </h3>
           </div>
 
-          {itens.map((it, idx) => (
-            <ItemRow
-              key={idx}
-              idx={idx}
-              item={it}
-              errors={errors}
-              onMaterialChange={onMaterialChange}
-              onCodigoChange={onCodigoChange}
-              updateItem={updateItem}
-              removeItem={removeItem}
-              canRemove={itens.length > 1}
-            />
-          ))}
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="space-y-4 min-w-[640px] md:min-w-0">
+              {itens.map((it, idx) => (
+                <ItemRow
+                  key={idx}
+                  idx={idx}
+                  item={it}
+                  errors={errors}
+                  onMaterialChange={onMaterialChange}
+                  onCodigoChange={onCodigoChange}
+                  updateItem={updateItem}
+                  removeItem={removeItem}
+                  canRemove={itens.length > 1}
+                />
+              ))}
+            </div>
+          </div>
 
           <button
             type="button"
             onClick={addItem}
             disabled={!podeAdicionar}
-            className="inline-flex items-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="h-4 w-4" />
             Adicionar material
           </button>
         </div>
+
 
         <Field label="Descrição" required error={errors.descricao}>
           <textarea
