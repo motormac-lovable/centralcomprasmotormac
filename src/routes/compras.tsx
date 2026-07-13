@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
@@ -33,6 +34,11 @@ const operacoes = [
   "Outra",
 ];
 
+const MAX_PECAS = 50;
+
+type PecaItem = { pn: string; descricao: string };
+const PECA_VAZIA: PecaItem = { pn: "", descricao: "" };
+
 function ComprasPage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
@@ -44,13 +50,27 @@ function ComprasPage() {
     operacao: "",
     especificacao: "",
     os: "",
-    partNumbers: "",
     dataEsperada: "",
   });
+  const [pecas, setPecas] = useState<PecaItem[]>([{ ...PECA_VAZIA }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const updatePeca = (idx: number, patch: Partial<PecaItem>) =>
+    setPecas((arr) => arr.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+
+  const removePeca = (idx: number) =>
+    setPecas((arr) => (arr.length === 1 ? [{ ...PECA_VAZIA }] : arr.filter((_, i) => i !== idx)));
+
+  const addPeca = () => {
+    if (pecas.length >= MAX_PECAS) {
+      toast.error(`Limite máximo de ${MAX_PECAS} itens atingido por solicitação`);
+      return;
+    }
+    setPecas((arr) => [...arr, { ...PECA_VAZIA }]);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +82,16 @@ function ComprasPage() {
     if (!form.especificacao.trim()) er.especificacao = "Obrigatório";
     if (files.length === 0) er.files = "Envie ao menos 1 arquivo";
     if (!form.dataEsperada) er.dataEsperada = "Obrigatório";
+    const pecasLimpas = pecas
+      .map((p) => ({ pn: p.pn.trim(), descricao: p.descricao.trim() }))
+      .filter((p) => p.pn || p.descricao);
+    if (pecasLimpas.length === 0) er.pecas = "Inclua ao menos 1 peça";
+    else {
+      pecasLimpas.forEach((p, i) => {
+        if (!p.pn) er[`peca_${i}_pn`] = "Obrigatório";
+        if (!p.descricao) er[`peca_${i}_descricao`] = "Obrigatório";
+      });
+    }
     setErrors(er);
     if (Object.keys(er).length) {
       toast.error("Verifique os campos obrigatórios.");
@@ -74,7 +104,14 @@ function ComprasPage() {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
       return;
     }
-    const payload = { ...bloco, ...form, files: uploaded };
+    const payload = {
+      ...bloco,
+      ...form,
+      pecas: pecasLimpas,
+      // compatibilidade com relatórios legados que esperam string de PNs
+      partNumbers: pecasLimpas.map((p) => p.pn).join(", "),
+      files: uploaded,
+    };
     try {
       await createCard({
         kind: "compras",
@@ -161,9 +198,68 @@ function ComprasPage() {
           />
         </Field>
 
-        <Field label="Lista de Part Numbers (PN)">
-          <textarea className={`${inputCls} min-h-20`} placeholder="PN-12345, PN-67890..." value={form.partNumbers} onChange={(e) => set("partNumbers", e.target.value)} />
-        </Field>
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Peças solicitadas ({pecas.length}/{MAX_PECAS})
+            </h3>
+          </div>
+
+          {errors.pecas && <p className="text-xs text-destructive">{errors.pecas}</p>}
+
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="space-y-3 min-w-[560px] md:min-w-0">
+              {pecas.map((p, idx) => (
+                <div key={idx} className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground">Item {idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removePeca(idx)}
+                      className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
+                      aria-label={`Remover peça ${idx + 1}`}
+                      title="Remover peça"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remover
+                    </button>
+                  </div>
+                  <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+                    <Field label="Part Number" required error={errors[`peca_${idx}_pn`]}>
+                      <input
+                        className={inputCls}
+                        placeholder="Ex.: PN-12345"
+                        value={p.pn}
+                        onChange={(e) => updatePeca(idx, { pn: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Descrição do Item" required error={errors[`peca_${idx}_descricao`]}>
+                      <input
+                        className={inputCls}
+                        placeholder="Descrição da peça"
+                        value={p.descricao}
+                        onChange={(e) => updatePeca(idx, { descricao: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={addPeca}
+            disabled={pecas.length >= MAX_PECAS}
+            className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-md border border-dashed border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Peça
+          </button>
+          {pecas.length >= MAX_PECAS && (
+            <p className="text-xs text-muted-foreground">Limite máximo de {MAX_PECAS} itens atingido por solicitação</p>
+          )}
+        </div>
 
 
         <div className="flex justify-stretch md:justify-end pt-2">

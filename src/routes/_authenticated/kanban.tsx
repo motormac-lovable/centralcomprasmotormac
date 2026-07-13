@@ -895,7 +895,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const Icon = iconFor[card.kind];
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
-  const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "dataEsperada"];
+  const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
@@ -928,7 +928,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const [quickRejecting, setQuickRejecting] = useState(false);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   const [novoMaterial, setNovoMaterial] = useState<ItemMaterial>({ material: "", codigo: "", quantidade: "", unidadeMedida: "" });
-  const [novoPartNumber, setNovoPartNumber] = useState("");
+  const [novaPeca, setNovaPeca] = useState<{ pn: string; descricao: string }>({ pn: "", descricao: "" });
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
@@ -985,37 +985,64 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     toast.success("Material incluído na solicitação.");
   };
 
-  // Part Numbers (Solicitação de Peças) — armazenados como string separada por vírgula.
-  const partNumbersList: string[] = (() => {
+  // Peças (Solicitação de Peças) — armazenadas como array estruturado { pn, descricao }.
+  // Fallback: solicitações antigas gravadas como string CSV em `partNumbers`.
+  const PECAS_MAX = 50;
+  const pecasList: { pn: string; descricao: string }[] = (() => {
+    const arr = rawData.pecas;
+    if (Array.isArray(arr)) {
+      return arr
+        .map((p) => {
+          const obj = p as Record<string, unknown>;
+          return { pn: String(obj?.pn ?? "").trim(), descricao: String(obj?.descricao ?? "").trim() };
+        })
+        .filter((p) => p.pn || p.descricao);
+    }
     const raw = (rawData.partNumbers as string) || "";
-    return raw.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+    return raw
+      .split(/[\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((pn) => ({ pn, descricao: "" }));
   })();
 
-  const savePartNumbers = async (list: string[], logText: string) => {
+  const savePecas = async (list: { pn: string; descricao: string }[], logText: string) => {
     const nextObs = appendObservation(observations, logText);
     await patch({
-      data: { ...rawData, partNumbers: list.join(", ") } as never,
+      data: {
+        ...rawData,
+        pecas: list,
+        partNumbers: list.map((p) => p.pn).join(", "),
+      } as never,
       observations: nextObs as never,
     });
   };
 
-  const addPartNumber = async () => {
-    const pn = novoPartNumber.trim();
-    if (!pn) return;
-    const next = [...partNumbersList, pn];
-    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu o material ${pn} - Part Number (Qtd: 1) na solicitação.`;
-    setNovoPartNumber("");
-    await savePartNumbers(next, logText);
-    toast.success("Part Number incluído.");
+  const addPeca = async () => {
+    const pn = novaPeca.pn.trim();
+    const descricao = novaPeca.descricao.trim();
+    if (!pn || !descricao) {
+      toast.error("Informe o Part Number e a Descrição.");
+      return;
+    }
+    if (pecasList.length >= PECAS_MAX) {
+      toast.error(`Limite máximo de ${PECAS_MAX} itens atingido por solicitação`);
+      return;
+    }
+    const next = [...pecasList, { pn, descricao }];
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu a peça ${pn} - ${descricao} na solicitação.`;
+    setNovaPeca({ pn: "", descricao: "" });
+    await savePecas(next, logText);
+    toast.success("Peça incluída.");
   };
 
-  const removePartNumber = async (idx: number) => {
-    const pn = partNumbersList[idx];
-    if (!pn) return;
-    const next = partNumbersList.filter((_, i) => i !== idx);
-    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu o material ${pn} - Part Number da solicitação.`;
-    await savePartNumbers(next, logText);
-    toast.success("Part Number removido.");
+  const removePeca = async (idx: number) => {
+    const item = pecasList[idx];
+    if (!item) return;
+    const next = pecasList.filter((_, i) => i !== idx);
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu a peça ${item.pn} - ${item.descricao || "s/ descrição"} da solicitação.`;
+    await savePecas(next, logText);
+    toast.success("Peça removida.");
   };
 
 
@@ -1307,45 +1334,73 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Part Numbers (PN) ({partNumbersList.length})
+                    Peças solicitadas ({pecasList.length}/{PECAS_MAX})
                   </h4>
                 </div>
-                {partNumbersList.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic mb-2">Nenhum Part Number cadastrado.</p>
+                {pecasList.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic mb-2">Nenhuma peça cadastrada.</p>
                 ) : (
-                  <ul className="space-y-1 mb-2">
-                    {partNumbersList.map((pn, i) => (
-                      <li key={`${pn}-${i}`} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm">
-                        <span className="flex-1 font-mono text-xs">{pn}</span>
-                        {canEditItens && (
-                          <button
-                            onClick={() => removePartNumber(i)}
-                            className="text-destructive hover:opacity-80"
-                            aria-label={`Remover Part Number ${pn}`}
-                            title="Remover Part Number"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="overflow-x-auto rounded-lg border mb-2">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Part Number</th>
+                          <th className="px-3 py-2 text-left">Descrição do Item</th>
+                          {canEditItens && <th className="px-3 py-2 w-12 text-center">Ações</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pecasList.map((p, i) => (
+                          <tr key={`${p.pn}-${i}`} className="border-t">
+                            <td className="px-3 py-2 font-mono text-xs">{p.pn || "—"}</td>
+                            <td className="px-3 py-2">{p.descricao || "—"}</td>
+                            {canEditItens && (
+                              <td className="px-3 py-2 text-center">
+                                <button
+                                  onClick={() => removePeca(i)}
+                                  className="text-destructive hover:opacity-80"
+                                  aria-label={`Remover peça ${p.pn}`}
+                                  title="Remover peça"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
                 {canEditItens && (
-                  <div className="flex gap-2">
-                    <input
-                      value={novoPartNumber}
-                      onChange={(e) => setNovoPartNumber(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPartNumber(); } }}
-                      placeholder="Novo Part Number (ex: PN-12345)"
-                      className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-                    />
-                    <button
-                      onClick={addPartNumber}
-                      className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Incluir PN
-                    </button>
+                  <div className="space-y-2">
+                    <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                      <input
+                        value={novaPeca.pn}
+                        onChange={(e) => setNovaPeca((s) => ({ ...s, pn: e.target.value }))}
+                        placeholder="Part Number"
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        disabled={pecasList.length >= PECAS_MAX}
+                      />
+                      <input
+                        value={novaPeca.descricao}
+                        onChange={(e) => setNovaPeca((s) => ({ ...s, descricao: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPeca(); } }}
+                        placeholder="Descrição do Item"
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                        disabled={pecasList.length >= PECAS_MAX}
+                      />
+                      <button
+                        onClick={addPeca}
+                        disabled={pecasList.length >= PECAS_MAX}
+                        className="inline-flex items-center justify-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Adicionar Peça
+                      </button>
+                    </div>
+                    {pecasList.length >= PECAS_MAX && (
+                      <p className="text-xs text-muted-foreground">Limite máximo de {PECAS_MAX} itens atingido por solicitação</p>
+                    )}
                   </div>
                 )}
               </div>
