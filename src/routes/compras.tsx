@@ -104,41 +104,47 @@ function ComprasPage() {
       <form onSubmit={submit} className="grid gap-5">
         <BlocoInicialPadrao value={bloco} onChange={setBloco} errors={errors as Partial<Record<keyof BlocoInicial, string>>} />
 
-        <Field label="CNPJ da unidade pagadora" required error={errors.cnpj}>
-          <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
-        </Field>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="CNPJ da unidade pagadora" required error={errors.cnpj}>
+            <input className={inputCls} placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => set("cnpj", maskCNPJ(e.target.value))} />
+          </Field>
+          <DepartamentoPicker
+            required
+            nome={form.departamento}
+            codigo={form.departamento_codigo}
+            error={errors.departamento}
+            hint="Direciona a aprovação para o gestor responsável."
+            onChange={({ nome, codigo }) =>
+              setForm((f) => ({ ...f, departamento: nome, departamento_codigo: codigo }))
+            }
+          />
+        </div>
 
-        <DepartamentoPicker
-          required
-          nome={form.departamento}
-          codigo={form.departamento_codigo}
-          error={errors.departamento}
-          hint="Direciona a aprovação para o gestor responsável."
-          onChange={({ nome, codigo }) =>
-            setForm((f) => ({ ...f, departamento: nome, departamento_codigo: codigo }))
-          }
-        />
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
+            <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
+          </Field>
 
-
-
-        <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
-          <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
-        </Field>
-
-        <Field label="Para qual operação?">
-          <select className={inputCls} value={form.operacao} onChange={(e) => set("operacao", e.target.value)}>
-            <option value="">Selecione...</option>
-            {operacoes.map((o) => <option key={o}>{o}</option>)}
-          </select>
-        </Field>
+          <Field label="Para qual operação?">
+            <select className={inputCls} value={form.operacao} onChange={(e) => set("operacao", e.target.value)}>
+              <option value="">Selecione...</option>
+              {operacoes.map((o) => <option key={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
 
         <Field label="Especificação técnica da peça" required error={errors.especificacao}>
           <textarea className={`${inputCls} min-h-28`} value={form.especificacao} onChange={(e) => set("especificacao", e.target.value)} />
         </Field>
 
-        <Field label="Número da Ordem de Serviço" hint="Quando for peça de balcão, inserir número do contato da providência.">
-          <input className={inputCls} value={form.os} onChange={(e) => set("os", e.target.value)} />
-        </Field>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Número da Ordem de Serviço" hint="Quando for peça de balcão, inserir número do contato da providência.">
+            <input className={inputCls} value={form.os} onChange={(e) => set("os", e.target.value)} />
+          </Field>
+          <Field label="Para qual data a peça é esperada?" required error={errors.dataEsperada}>
+            <input type="date" className={inputCls} value={form.dataEsperada} onChange={(e) => set("dataEsperada", e.target.value)} />
+          </Field>
+        </div>
 
         <Field
           label="Envio de arquivos"
@@ -159,9 +165,6 @@ function ComprasPage() {
           <textarea className={`${inputCls} min-h-20`} placeholder="PN-12345, PN-67890..." value={form.partNumbers} onChange={(e) => set("partNumbers", e.target.value)} />
         </Field>
 
-        <Field label="Para qual data a peça é esperada?" required error={errors.dataEsperada}>
-          <input type="date" className={inputCls} value={form.dataEsperada} onChange={(e) => set("dataEsperada", e.target.value)} />
-        </Field>
 
         <div className="flex justify-end pt-2">
           <button
