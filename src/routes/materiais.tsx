@@ -153,6 +153,10 @@ function MateriaisPage() {
     form.indicacoes.forEach((ind, i) => {
       if (ind.cnpj && ind.cnpj.replace(/\D/g, "").length !== 14)
         er[`indicacao_${i}_cnpj`] = "CNPJ inválido";
+      if (ind.email && !isValidEmail(ind.email))
+        er[`indicacao_${i}_email`] = "E-mail inválido";
+      if (ind.telefone && ind.telefone.replace(/\D/g, "").length < 10)
+        er[`indicacao_${i}_telefone`] = "Telefone inválido";
     });
     setErrors(er);
     if (Object.keys(er).length) {
