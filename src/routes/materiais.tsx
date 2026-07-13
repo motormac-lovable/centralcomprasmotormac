@@ -12,7 +12,7 @@ import {
 } from "../components/forms/BlocoInicialPadrao";
 import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
-import { maskCNPJ } from "../lib/masks";
+import { maskCNPJ, maskPhone, isValidEmail } from "../lib/masks";
 import {
   MATERIAIS_APOLLO,
   UNIDADES_MEDIDA_APOLLO,
