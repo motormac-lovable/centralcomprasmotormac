@@ -93,6 +93,26 @@ function MateriaisPage() {
     setItens((arr) => [...arr, { ...ITEM_VAZIO }]);
   };
 
+  const addIndicacao = () => {
+    if (form.indicacoes.length >= MAX_INDICACOES) {
+      toast.error(`Limite de ${MAX_INDICACOES} indicações.`);
+      return;
+    }
+    setForm((f) => ({ ...f, indicacoes: [...f.indicacoes, { ...INDICACAO_VAZIA }] }));
+  };
+
+  const updateIndicacao = (idx: number, patch: Partial<IndicacaoFornecedor>) =>
+    setForm((f) => ({
+      ...f,
+      indicacoes: f.indicacoes.map((ind, i) => (i === idx ? { ...ind, ...patch } : ind)),
+    }));
+
+  const removeIndicacao = (idx: number) =>
+    setForm((f) => ({
+      ...f,
+      indicacoes: f.indicacoes.length === 1 ? [{ ...INDICACAO_VAZIA }] : f.indicacoes.filter((_, i) => i !== idx),
+    }));
+
   const onMaterialChange = (idx: number, descricao: string) => {
     const m = MATERIAIS_APOLLO.find(
       (x) => x.descricao.toLowerCase() === descricao.toLowerCase(),
