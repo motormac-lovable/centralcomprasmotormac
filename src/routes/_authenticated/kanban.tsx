@@ -902,6 +902,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
   const readOnly = isAuditor;
+  const canEditItens = !isAuditor && (isBuyer || isAdmin || isOwner);
   const canQuickReject =
     !isAuditor &&
     (isBuyer || isAdmin || isOwner) &&
@@ -925,6 +926,9 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const [showQuickReject, setShowQuickReject] = useState(false);
   const [quickRejectMotivo, setQuickRejectMotivo] = useState("");
   const [quickRejecting, setQuickRejecting] = useState(false);
+  const [showAddMaterial, setShowAddMaterial] = useState(false);
+  const [novoMaterial, setNovoMaterial] = useState<ItemMaterial>({ material: "", codigo: "", quantidade: "", unidadeMedida: "" });
+  const [novoPartNumber, setNovoPartNumber] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const patch = async (p: Partial<Card>) => {
@@ -946,11 +950,74 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     if (data) setFreshCard(data as Card);
   };
 
+  const buyerAuthor = fullName || user?.email || "Comprador";
+  const appendObservation = (currentObs: Observation[], text: string): Observation[] => [
+    ...currentObs,
+    { at: new Date().toISOString(), author: buyerAuthor, text },
+  ];
+  const fmtNow = () => new Date().toLocaleString("pt-BR");
+
   const removeItemMaterial = async (idx: number) => {
+    const item = itensSolicitados[idx];
+    if (!item) return;
     const next = itensSolicitados.filter((_, i) => i !== idx);
-    await patch({ data: { ...rawData, itens: next } as never });
+    const codDesc = `${item.codigo || "s/ código"} - ${item.material || "s/ descrição"}`;
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu o material ${codDesc} da solicitação.`;
+    const nextObs = appendObservation(observations, logText);
+    await patch({ data: { ...rawData, itens: next } as never, observations: nextObs as never });
     toast.success("Item removido da solicitação.");
   };
+
+  const addItemMaterial = async () => {
+    const material = novoMaterial.material.trim();
+    const codigo = novoMaterial.codigo.trim();
+    const quantidade = novoMaterial.quantidade.trim();
+    const unidadeMedida = (novoMaterial.unidadeMedida || "UN").trim().toUpperCase();
+    if (!material || !codigo) { toast.error("Informe o material e o código."); return; }
+    if (!quantidade || Number(quantidade) <= 0) { toast.error("Informe uma quantidade válida."); return; }
+    const novo: ItemMaterial = { material, codigo, quantidade, unidadeMedida };
+    const next = [...itensSolicitados, novo];
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu o material ${codigo} - ${material} (Qtd: ${quantidade}) na solicitação.`;
+    const nextObs = appendObservation(observations, logText);
+    await patch({ data: { ...rawData, itens: next } as never, observations: nextObs as never });
+    setNovoMaterial({ material: "", codigo: "", quantidade: "", unidadeMedida: "" });
+    setShowAddMaterial(false);
+    toast.success("Material incluído na solicitação.");
+  };
+
+  // Part Numbers (Solicitação de Peças) — armazenados como string separada por vírgula.
+  const partNumbersList: string[] = (() => {
+    const raw = (rawData.partNumbers as string) || "";
+    return raw.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+  })();
+
+  const savePartNumbers = async (list: string[], logText: string) => {
+    const nextObs = appendObservation(observations, logText);
+    await patch({
+      data: { ...rawData, partNumbers: list.join(", ") } as never,
+      observations: nextObs as never,
+    });
+  };
+
+  const addPartNumber = async () => {
+    const pn = novoPartNumber.trim();
+    if (!pn) return;
+    const next = [...partNumbersList, pn];
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} incluiu o material ${pn} - Part Number (Qtd: 1) na solicitação.`;
+    setNovoPartNumber("");
+    await savePartNumbers(next, logText);
+    toast.success("Part Number incluído.");
+  };
+
+  const removePartNumber = async (idx: number) => {
+    const pn = partNumbersList[idx];
+    if (!pn) return;
+    const next = partNumbersList.filter((_, i) => i !== idx);
+    const logText = `[${fmtNow()}] - O comprador ${buyerAuthor} removeu o material ${pn} - Part Number da solicitação.`;
+    await savePartNumbers(next, logText);
+    toast.success("Part Number removido.");
+  };
+
 
 
 
