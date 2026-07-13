@@ -166,7 +166,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user: session?.user ?? null,
     session,
-    loading,
+    // `loading` cobre tanto a sessão inicial quanto o carregamento do perfil
+    // (papéis + status ativo). Rotas gated devem exibir splash enquanto true,
+    // evitando renderizar "acesso restrito"/"aguardando aprovação" antes de
+    // termos os dados do usuário logado.
+    loading: loading || (!!session?.user && profileLoading),
+
     isOwner,
     isAdmin,
     isBuyer,
