@@ -113,7 +113,7 @@ function FretePage() {
           }
         />
 
-        <div className="grid sm:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <Field label="CNPJ do pagador do frete" required error={errors.cnpjPagador}>
             <input className={inputCls} value={f.cnpjPagador} onChange={(e) => set("cnpjPagador", maskCNPJ(e.target.value))} />
           </Field>
@@ -125,7 +125,7 @@ function FretePage() {
           </Field>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Field label="Cidade de origem" required error={errors.cidadeOrigem}>
             <input className={inputCls} value={f.cidadeOrigem} onChange={(e) => set("cidadeOrigem", e.target.value)} />
           </Field>
@@ -141,6 +141,7 @@ function FretePage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
+
           <Field label="Valor total da Nota Fiscal" required error={errors.valorNF}>
             <input className={inputCls} placeholder="R$ 0,00" value={f.valorNF} onChange={(e) => set("valorNF", maskMoney(e.target.value))} />
           </Field>
