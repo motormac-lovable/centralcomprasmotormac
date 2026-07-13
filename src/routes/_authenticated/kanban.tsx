@@ -47,7 +47,10 @@ function KanbanPage() {
 
   useEffect(() => {
     let active = true;
-    supabase.from("kanban_cards").select("*").order("created_at", { ascending: true })
+    // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
+    supabase.from("kanban_cards").select("*")
+      .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
+      .order("created_at", { ascending: true })
       .then(({ data }) => { if (active) setCards(data ?? []); });
     const channel = supabase
       .channel("kanban_cards_changes")
