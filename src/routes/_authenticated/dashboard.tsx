@@ -55,7 +55,8 @@ function DashboardPage() {
   const [fEmpresa, setFEmpresa] = useState<string>(ALL);
 
   useEffect(() => {
-    supabase.from("kanban_cards").select("*").then(({ data }) => setCards(data ?? []));
+    // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
+    supabase.from("kanban_cards").select("*").gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO).then(({ data }) => setCards(data ?? []));
   }, []);
 
   const unidades = useMemo(
