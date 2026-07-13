@@ -1332,9 +1332,6 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                 <Detail label="Data esperada" value={(rawData.dataEsperada as string) || "—"} />
                 <Detail label="Telefone do solicitante" value={(rawData.telefone as string) || "—"} />
               </div>
-              <div className="mt-3 grid gap-3 text-sm">
-                <Detail label="Especificação técnica" value={(rawData.especificacao as string) || "—"} />
-              </div>
 
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
