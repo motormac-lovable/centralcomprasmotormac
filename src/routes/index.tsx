@@ -54,7 +54,7 @@ function Hub() {
 
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center min-h-screen justify-center" style={{ zoom: "100%" }}>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center min-h-screen justify-center" style={{ zoom: "90%" }}>
       <div className="text-center max-w-2xl mx-auto mb-8 flex flex-col items-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-4">
           Plataforma Interna
