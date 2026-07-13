@@ -1302,7 +1302,52 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               </div>
               <div className="mt-3 grid gap-3 text-sm">
                 <Detail label="Especificação técnica" value={(rawData.especificacao as string) || "—"} />
-                <Detail label="Part Numbers (PN)" value={(rawData.partNumbers as string) || "—"} />
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Part Numbers (PN) ({partNumbersList.length})
+                  </h4>
+                </div>
+                {partNumbersList.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic mb-2">Nenhum Part Number cadastrado.</p>
+                ) : (
+                  <ul className="space-y-1 mb-2">
+                    {partNumbersList.map((pn, i) => (
+                      <li key={`${pn}-${i}`} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm">
+                        <span className="flex-1 font-mono text-xs">{pn}</span>
+                        {canEditItens && (
+                          <button
+                            onClick={() => removePartNumber(i)}
+                            className="text-destructive hover:opacity-80"
+                            aria-label={`Remover Part Number ${pn}`}
+                            title="Remover Part Number"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {canEditItens && (
+                  <div className="flex gap-2">
+                    <input
+                      value={novoPartNumber}
+                      onChange={(e) => setNovoPartNumber(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPartNumber(); } }}
+                      placeholder="Novo Part Number (ex: PN-12345)"
+                      className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={addPartNumber}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Incluir PN
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
           )}
@@ -1310,9 +1355,20 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
 
           {card.kind === "materiais" && (
             <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Itens solicitados ({itensSolicitados.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Itens solicitados ({itensSolicitados.length})
+                </h3>
+                {canEditItens && !showAddMaterial && (
+                  <button
+                    onClick={() => setShowAddMaterial(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Incluir Material
+                  </button>
+                )}
+              </div>
+
               {itensSolicitados.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-900 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -1338,7 +1394,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                           <td className="px-3 py-2 text-right tabular-nums">{it.quantidade || "—"}</td>
                           <td className="px-3 py-2">{it.unidadeMedida || "—"}</td>
                           <td className="px-3 py-2 text-center">
-                            {!readOnly && (
+                            {canEditItens && (
                               <button
                                 onClick={() => removeItemMaterial(i)}
                                 className="text-destructive hover:opacity-80"
@@ -1355,8 +1411,97 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   </table>
                 </div>
               )}
+
+              {canEditItens && showAddMaterial && (
+                <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-3">
+                  <div className="text-xs font-semibold text-muted-foreground">Incluir novo material (base Apollo)</div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[11px] text-muted-foreground">Descrição</label>
+                      <input
+                        list="kanban-apollo-mat-desc"
+                        value={novoMaterial.material}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          const m = MATERIAIS_APOLLO.find((x) => x.descricao.toLowerCase() === v.trim().toLowerCase());
+                          setNovoMaterial((s) => ({ ...s, material: v, ...(m ? { codigo: m.codigo } : {}) }));
+                        }}
+                        placeholder="Buscar por descrição"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                      <datalist id="kanban-apollo-mat-desc">
+                        {MATERIAIS_APOLLO.filter((m) => {
+                          const q = novoMaterial.material.trim().toLowerCase();
+                          return !q || m.descricao.toLowerCase().includes(q);
+                        }).slice(0, 50).map((m) => (
+                          <option key={m.codigo} value={m.descricao}>{m.codigo}</option>
+                        ))}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-muted-foreground">Código</label>
+                      <input
+                        list="kanban-apollo-mat-cod"
+                        value={novoMaterial.codigo}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          const m = MATERIAIS_APOLLO.find((x) => x.codigo === v.trim());
+                          setNovoMaterial((s) => ({ ...s, codigo: v, ...(m ? { material: m.descricao } : {}) }));
+                        }}
+                        placeholder="Código Apollo"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono"
+                      />
+                      <datalist id="kanban-apollo-mat-cod">
+                        {MATERIAIS_APOLLO.filter((m) => {
+                          const q = novoMaterial.codigo.trim().toLowerCase();
+                          return !q || m.codigo.toLowerCase().startsWith(q);
+                        }).slice(0, 50).map((m) => (
+                          <option key={m.codigo} value={m.codigo}>{m.descricao}</option>
+                        ))}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-muted-foreground">Quantidade</label>
+                      <input
+                        type="number" min={1} step={1}
+                        value={novoMaterial.quantidade}
+                        onChange={(e) => setNovoMaterial((s) => ({ ...s, quantidade: e.target.value }))}
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-muted-foreground">Unidade</label>
+                      <input
+                        list="kanban-apollo-mat-uni"
+                        value={novoMaterial.unidadeMedida}
+                        onChange={(e) => setNovoMaterial((s) => ({ ...s, unidadeMedida: e.target.value.toUpperCase() }))}
+                        placeholder="UN"
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                      <datalist id="kanban-apollo-mat-uni">
+                        {UNIDADES_MEDIDA_APOLLO.map((u) => <option key={u} value={u} />)}
+                      </datalist>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => { setShowAddMaterial(false); setNovoMaterial({ material: "", codigo: "", quantidade: "", unidadeMedida: "" }); }}
+                      className="rounded-md border px-3 py-1.5 text-xs"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={addItemMaterial}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Adicionar à solicitação
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
           )}
+
 
           {/* ── Arquivos do solicitante (anexos originários do formulário) ── */}
           <RequesterFilesSection rawData={rawData} />
