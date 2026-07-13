@@ -277,10 +277,11 @@ function RegisteredUsers({
   };
 
   const filtered = rows.filter((r) => {
+    // Auditor nunca enxerga Proprietários.
+    if (auditorOnly && (r.roles.includes("owner") || isOwnerEmail(r.email))) return false;
     // Comprador/Auditor: Gestão de Solicitantes filtra usuários que TÊM (apenas) o perfil solicitante.
     if (restrictedTo === "solicitante") {
       if (!r.roles.includes("solicitante")) return false;
-      // Auditor só pode agir em usuários exclusivamente Solicitantes.
       if (auditorOnly && r.roles.some((role) => role !== "solicitante")) return false;
     }
     const s = q.trim().toLowerCase();
