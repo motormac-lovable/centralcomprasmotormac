@@ -42,11 +42,11 @@ export function BlocoInicialPadrao({
     onChange({ ...value, [k]: v });
 
   return (
-    <div className="rounded-xl border bg-muted/30 p-4">
+    <div className="rounded-xl border bg-muted/30 p-4 md:p-5">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         Identificação do solicitante
       </h3>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Field label="Nome completo" required error={errors?.nome}>
           <input
             className={inputCls}

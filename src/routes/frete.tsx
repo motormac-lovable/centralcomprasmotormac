@@ -113,7 +113,7 @@ function FretePage() {
           }
         />
 
-        <div className="grid sm:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <Field label="CNPJ do pagador do frete" required error={errors.cnpjPagador}>
             <input className={inputCls} value={f.cnpjPagador} onChange={(e) => set("cnpjPagador", maskCNPJ(e.target.value))} />
           </Field>
@@ -125,7 +125,7 @@ function FretePage() {
           </Field>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Field label="Cidade de origem" required error={errors.cidadeOrigem}>
             <input className={inputCls} value={f.cidadeOrigem} onChange={(e) => set("cidadeOrigem", e.target.value)} />
           </Field>
@@ -141,6 +141,7 @@ function FretePage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
+
           <Field label="Valor total da Nota Fiscal" required error={errors.valorNF}>
             <input className={inputCls} placeholder="R$ 0,00" value={f.valorNF} onChange={(e) => set("valorNF", maskMoney(e.target.value))} />
           </Field>
@@ -174,10 +175,10 @@ function FretePage() {
         </div>
 
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-stretch md:justify-end pt-2">
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+            className="inline-flex w-full md:w-auto items-center justify-center rounded-md bg-primary px-6 py-2.5 md:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
           >
             Enviar solicitação
           </button>
