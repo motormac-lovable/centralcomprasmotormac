@@ -105,6 +105,8 @@ function Hub() {
           );
         })}
       </div>
+
+      <IndicadoresEconomicos />
     </div>
   );
 }
