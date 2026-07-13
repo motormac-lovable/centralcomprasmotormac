@@ -163,29 +163,21 @@ function ComprasPage() {
           />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <Field label="Qual peça precisa ser comprada?" required error={errors.peca}>
-            <input className={inputCls} value={form.peca} onChange={(e) => set("peca", e.target.value)} />
-          </Field>
-
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
           <Field label="Para qual operação?">
             <select className={inputCls} value={form.operacao} onChange={(e) => set("operacao", e.target.value)}>
               <option value="">Selecione...</option>
               {operacoes.map((o) => <option key={o}>{o}</option>)}
             </select>
           </Field>
+          <Field label="Para qual data a peça é esperada?" required error={errors.dataEsperada}>
+            <input type="date" className={inputCls} value={form.dataEsperada} onChange={(e) => set("dataEsperada", e.target.value)} />
+          </Field>
         </div>
-
-        <Field label="Especificação técnica da peça" required error={errors.especificacao}>
-          <textarea className={`${inputCls} min-h-28`} value={form.especificacao} onChange={(e) => set("especificacao", e.target.value)} />
-        </Field>
 
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Número da Ordem de Serviço" hint="Quando for peça de balcão, inserir número do contato da providência.">
             <input className={inputCls} value={form.os} onChange={(e) => set("os", e.target.value)} />
-          </Field>
-          <Field label="Para qual data a peça é esperada?" required error={errors.dataEsperada}>
-            <input type="date" className={inputCls} value={form.dataEsperada} onChange={(e) => set("dataEsperada", e.target.value)} />
           </Field>
         </div>
 
@@ -205,10 +197,13 @@ function ComprasPage() {
         </Field>
 
         <div className="rounded-xl border bg-muted/30 p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Peças solicitadas ({pecas.length}/{MAX_PECAS})
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h3 className="text-base md:text-lg font-semibold tracking-tight">
+              Peças Solicitadas: Qual peça precisa ser comprada?
             </h3>
+            <span className="text-xs font-medium text-muted-foreground">
+              {pecas.length}/{MAX_PECAS}
+            </span>
           </div>
 
           {errors.pecas && <p className="text-xs text-destructive">{errors.pecas}</p>}
@@ -230,7 +225,7 @@ function ComprasPage() {
                       Remover
                     </button>
                   </div>
-                  <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+                  <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                     <Field label="Part Number" required error={errors[`peca_${idx}_pn`]}>
                       <input
                         className={inputCls}
@@ -247,11 +242,20 @@ function ComprasPage() {
                         onChange={(e) => updatePeca(idx, { descricao: e.target.value })}
                       />
                     </Field>
+                    <Field label="Especificação Técnica da Peça" required error={errors[`peca_${idx}_especificacao`]}>
+                      <input
+                        className={inputCls}
+                        placeholder="Detalhes técnicos"
+                        value={p.especificacao}
+                        onChange={(e) => updatePeca(idx, { especificacao: e.target.value })}
+                      />
+                    </Field>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
 
           <button
             type="button"
