@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
+import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
