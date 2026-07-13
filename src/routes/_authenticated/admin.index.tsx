@@ -47,24 +47,40 @@ function AdminPage() {
     );
   }
 
-  if (buyerOnly || auditorOnly) {
+  if (buyerOnly) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Gestão de Solicitantes</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {auditorOnly
-                ? "Acesso parcial do Auditor: você pode EXCLUIR usuários com o perfil Solicitante. Aprovação de cadastros, alterações de perfis, departamentos, tetos de alçada e demais gestões são bloqueadas."
-                : "Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário."}
+              Acesso parcial do Comprador: você pode inativar ou reativar o acesso dos Solicitantes. Aprovação de novos cadastros, definição de perfis, departamentos e tetos de alçada são exclusivos do Administrador/Proprietário.
             </p>
           </div>
           <RelatoriosLink />
         </div>
-        <RegisteredUsers restrictedTo="solicitante" mode={auditorOnly ? "auditor" : "buyer"} />
+        <RegisteredUsers restrictedTo="solicitante" mode="buyer" />
       </div>
     );
   }
+
+  if (auditorOnly) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Auditoria de Usuários</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Acesso somente leitura do Auditor: você pode visualizar todos os usuários da plataforma, organizados por Solicitantes, Compradores e Aprovadores. A única ação permitida é a exclusão de perfis exclusivamente Solicitantes.
+            </p>
+          </div>
+          <RelatoriosLink />
+        </div>
+        <RegisteredUsers mode="auditor" groupByCategory />
+      </div>
+    );
+  }
+
 
 
 
