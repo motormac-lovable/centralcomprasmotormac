@@ -304,9 +304,8 @@ function KanbanPage() {
                 tone={col.tone}
                 bg={col.bg}
                 allCards={cards.filter((c) => c.status === col.id)}
-                filter={filters[col.id]}
-                onFilterChange={(f) => setFilters((prev) => ({ ...prev, [col.id]: f }))}
-                approvers={approvers}
+                query={columnQueries[col.id]}
+                onQueryChange={(q) => setColumnQueries((prev) => ({ ...prev, [col.id]: q }))}
                 onOpen={setOpen}
                 globalQuery={globalQuery}
                 dateFrom={dateFrom}
