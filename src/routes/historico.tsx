@@ -46,21 +46,34 @@ const STATUS_META: Record<Status, { label: string; tone: string }> = STATUS_COLU
 );
 
 function HistoricoPage() {
-  const { user, isBuyer, fullName } = useAuth();
+  const { user, isBuyer, isApprover, isOwner, isAdmin, approverDepartments, fullName } = useAuth();
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
 
   const reload = async () => {
     if (!user?.email) return;
     setLoading(true);
     // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
-    const { data } = await supabase
+    let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email")
-      .ilike("requester_email", user.email)
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+
+    if (approverScope && approverDepartments.length > 0) {
+      // Aprovador enxerga todas as solicitações dos departamentos sob sua alçada
+      // (em qualquer status), além das que ele mesmo criou.
+      const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
+      q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+    } else {
+      q = q.ilike("requester_email", user.email);
+    }
+
+    const { data } = await q;
+    setItems((data ?? []) as Card[]);
     setLoading(false);
   };
 
@@ -74,7 +87,23 @@ function HistoricoPage() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email]);
+  }, [user?.email, approverScope, approverDepartments.join("|")]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((it) => {
+      const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
+      return (
+        it.title?.toLowerCase().includes(q) ||
+        it.summary?.toLowerCase().includes(q) ||
+        it.codigo_unico?.toLowerCase().includes(q) ||
+        it.numero_pedido_linx?.toLowerCase().includes(q) ||
+        it.requester_email?.toLowerCase().includes(q) ||
+        dept.toLowerCase().includes(q)
+      );
+    });
+  }, [items, query]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
