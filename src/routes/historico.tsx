@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/historico")({
 type Kind = Database["public"]["Enums"]["card_kind"];
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
-  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email"
+  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "data"
 >;
 
 const iconFor: Record<Kind, typeof Package> = {
@@ -46,21 +46,34 @@ const STATUS_META: Record<Status, { label: string; tone: string }> = STATUS_COLU
 );
 
 function HistoricoPage() {
-  const { user, isBuyer, fullName } = useAuth();
+  const { user, isBuyer, isApprover, isOwner, isAdmin, approverDepartments, fullName } = useAuth();
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
 
   const reload = async () => {
     if (!user?.email) return;
     setLoading(true);
     // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
-    const { data } = await supabase
+    let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email")
-      .ilike("requester_email", user.email)
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+
+    if (approverScope && approverDepartments.length > 0) {
+      // Aprovador enxerga todas as solicitações dos departamentos sob sua alçada
+      // (em qualquer status), além das que ele mesmo criou.
+      const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
+      q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+    } else {
+      q = q.ilike("requester_email", user.email);
+    }
+
+    const { data } = await q;
+    setItems((data ?? []) as Card[]);
     setLoading(false);
   };
 
@@ -74,7 +87,23 @@ function HistoricoPage() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email]);
+  }, [user?.email, approverScope, approverDepartments.join("|")]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((it) => {
+      const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
+      return (
+        it.title?.toLowerCase().includes(q) ||
+        it.summary?.toLowerCase().includes(q) ||
+        it.codigo_unico?.toLowerCase().includes(q) ||
+        it.numero_pedido_linx?.toLowerCase().includes(q) ||
+        it.requester_email?.toLowerCase().includes(q) ||
+        dept.toLowerCase().includes(q)
+      );
+    });
+  }, [items, query]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
@@ -82,7 +111,10 @@ function HistoricoPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {fullName ? `${fullName} · ` : ""}Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real).
+            {fullName ? `${fullName} · ` : ""}
+            {approverScope
+              ? `Solicitações dos departamentos sob sua alçada${approverDepartments.length ? ` (${approverDepartments.join(", ")})` : ""} — atualizado em tempo real.`
+              : "Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real)."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -104,28 +136,46 @@ function HistoricoPage() {
         </div>
       </div>
 
+      <div className="mb-4 relative">
+        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por título, código, pedido, solicitante ou departamento…"
+          className="w-full rounded-md border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </div>
+
       {loading ? (
         <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
           <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-          <h2 className="mt-4 text-lg font-medium">Nenhuma solicitação ainda</h2>
+          <h2 className="mt-4 text-lg font-medium">
+            {items.length === 0 ? "Nenhuma solicitação ainda" : "Nenhum resultado para a busca"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Quando você abrir uma requisição, ela aparecerá aqui.
+            {items.length === 0
+              ? "Quando uma requisição for aberta, ela aparecerá aqui."
+              : "Ajuste os termos de busca para ver mais resultados."}
           </p>
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground mt-6 hover:bg-primary/90 transition"
-          >
-            Abrir primeira solicitação
-          </Link>
+          {items.length === 0 && (
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground mt-6 hover:bg-primary/90 transition"
+            >
+              Abrir primeira solicitação
+            </Link>
+          )}
         </div>
       ) : (
         <ul className="space-y-3">
-          {items.map((it) => {
+          {filtered.map((it) => {
             const Icon = iconFor[it.kind];
             const color = colorFor[it.kind];
             const meta = STATUS_META[it.status];
+            const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
             return (
               <li
                 key={it.id}
@@ -157,6 +207,20 @@ function HistoricoPage() {
                       <>
                         <span>·</span>
                         <span className="font-mono text-emerald-700 font-semibold">Pedido #{it.numero_pedido_linx}</span>
+                      </>
+                    )}
+                    {approverScope && dept && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+                          {dept}
+                        </span>
+                      </>
+                    )}
+                    {approverScope && it.requester_email && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate max-w-[220px]">{it.requester_email}</span>
                       </>
                     )}
                   </div>
