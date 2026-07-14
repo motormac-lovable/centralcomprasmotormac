@@ -136,28 +136,46 @@ function HistoricoPage() {
         </div>
       </div>
 
+      <div className="mb-4 relative">
+        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por título, código, pedido, solicitante ou departamento…"
+          className="w-full rounded-md border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </div>
+
       {loading ? (
         <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
           <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-          <h2 className="mt-4 text-lg font-medium">Nenhuma solicitação ainda</h2>
+          <h2 className="mt-4 text-lg font-medium">
+            {items.length === 0 ? "Nenhuma solicitação ainda" : "Nenhum resultado para a busca"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Quando você abrir uma requisição, ela aparecerá aqui.
+            {items.length === 0
+              ? "Quando uma requisição for aberta, ela aparecerá aqui."
+              : "Ajuste os termos de busca para ver mais resultados."}
           </p>
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground mt-6 hover:bg-primary/90 transition"
-          >
-            Abrir primeira solicitação
-          </Link>
+          {items.length === 0 && (
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground mt-6 hover:bg-primary/90 transition"
+            >
+              Abrir primeira solicitação
+            </Link>
+          )}
         </div>
       ) : (
         <ul className="space-y-3">
-          {items.map((it) => {
+          {filtered.map((it) => {
             const Icon = iconFor[it.kind];
             const color = colorFor[it.kind];
             const meta = STATUS_META[it.status];
+            const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
             return (
               <li
                 key={it.id}
@@ -189,6 +207,20 @@ function HistoricoPage() {
                       <>
                         <span>·</span>
                         <span className="font-mono text-emerald-700 font-semibold">Pedido #{it.numero_pedido_linx}</span>
+                      </>
+                    )}
+                    {approverScope && dept && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+                          {dept}
+                        </span>
+                      </>
+                    )}
+                    {approverScope && it.requester_email && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate max-w-[220px]">{it.requester_email}</span>
                       </>
                     )}
                   </div>
