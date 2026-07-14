@@ -194,11 +194,11 @@ function ComprasPage() {
 
           {errors.pecas && <p className="text-xs text-destructive">{errors.pecas}</p>}
 
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="space-y-3 min-w-[560px] md:min-w-0">
+          <div className="-mx-1 overflow-x-auto md:mx-0">
+            <div className="space-y-3 min-w-0">
               {pecas.map((p, idx) => (
                 <div key={idx} className="rounded-lg border bg-card p-3">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <span className="text-xs font-semibold text-muted-foreground">Item {idx + 1}</span>
                     <button
                       type="button"
@@ -241,6 +241,7 @@ function ComprasPage() {
               ))}
             </div>
           </div>
+
 
 
           <button

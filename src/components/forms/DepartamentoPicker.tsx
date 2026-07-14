@@ -46,7 +46,7 @@ export function DepartamentoPicker({
         : hint;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)]">
       <Field label="Código" required={required}>
         <input
           className={inputCls}
