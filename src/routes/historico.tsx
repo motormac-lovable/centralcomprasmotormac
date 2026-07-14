@@ -20,8 +20,19 @@ export const Route = createFileRoute("/historico")({
 type Kind = Database["public"]["Enums"]["card_kind"];
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
-  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "data"
+  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "data" | "buyer_name" | "status_changed_at"
 >;
+
+function formatBR(iso: string | null | undefined) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} às ${hh}:${mi}`;
+}
 
 const iconFor: Record<Kind, typeof Package> = {
   compras: Package,
@@ -59,7 +70,7 @@ function HistoricoPage() {
     // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
     let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data")
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data, buyer_name, status_changed_at")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
@@ -226,9 +237,31 @@ function HistoricoPage() {
                   </div>
                   <h3 className="font-medium mt-0.5 truncate">{it.title}</h3>
                   {it.summary && <p className="text-sm text-muted-foreground truncate">{it.summary}</p>}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <span aria-hidden>👤</span>
+                      <span className="font-medium text-foreground/80">Comprador:</span>
+                      <span className={it.buyer_name ? "" : "italic text-muted-foreground"}>
+                        {it.buyer_name || "Aguardando atribuição"}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <span aria-hidden>📅</span>
+                      <span className="font-medium text-foreground/80">Última movimentação:</span>
+                      <span>{formatBR(it.status_changed_at || it.created_at)}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                    style={{ background: meta?.tone ?? "var(--primary)" }}
+                  >
+                    {meta?.label ?? it.status}
+                  </span>
                 </div>
                 <span
-                  className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
+                  className="sm:hidden inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
                   style={{ background: meta?.tone ?? "var(--primary)" }}
                 >
                   {meta?.label ?? it.status}
