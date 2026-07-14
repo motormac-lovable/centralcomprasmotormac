@@ -237,9 +237,31 @@ function HistoricoPage() {
                   </div>
                   <h3 className="font-medium mt-0.5 truncate">{it.title}</h3>
                   {it.summary && <p className="text-sm text-muted-foreground truncate">{it.summary}</p>}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <span aria-hidden>👤</span>
+                      <span className="font-medium text-foreground/80">Comprador:</span>
+                      <span className={it.buyer_name ? "" : "italic text-muted-foreground"}>
+                        {it.buyer_name || "Aguardando atribuição"}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <span aria-hidden>📅</span>
+                      <span className="font-medium text-foreground/80">Última movimentação:</span>
+                      <span>{formatBR(it.status_changed_at || it.created_at)}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                    style={{ background: meta?.tone ?? "var(--primary)" }}
+                  >
+                    {meta?.label ?? it.status}
+                  </span>
                 </div>
                 <span
-                  className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
+                  className="sm:hidden inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
                   style={{ background: meta?.tone ?? "var(--primary)" }}
                 >
                   {meta?.label ?? it.status}
