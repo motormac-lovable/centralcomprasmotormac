@@ -111,7 +111,10 @@ function HistoricoPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {fullName ? `${fullName} · ` : ""}Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real).
+            {fullName ? `${fullName} · ` : ""}
+            {approverScope
+              ? `Solicitações dos departamentos sob sua alçada${approverDepartments.length ? ` (${approverDepartments.join(", ")})` : ""} — atualizado em tempo real.`
+              : "Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real)."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
