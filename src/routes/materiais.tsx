@@ -254,8 +254,8 @@ function MateriaisPage() {
             </h3>
           </div>
 
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="space-y-4 min-w-[640px] md:min-w-0">
+          <div className="-mx-1 overflow-x-auto md:mx-0">
+            <div className="space-y-4 min-w-0">
               {itens.map((it, idx) => (
                 <ItemRow
                   key={idx}
