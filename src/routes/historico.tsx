@@ -70,7 +70,7 @@ function HistoricoPage() {
     // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
     let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data")
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data, buyer_name, status_changed_at")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
