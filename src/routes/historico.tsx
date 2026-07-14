@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
