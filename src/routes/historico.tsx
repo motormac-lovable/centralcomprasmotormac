@@ -20,7 +20,7 @@ export const Route = createFileRoute("/historico")({
 type Kind = Database["public"]["Enums"]["card_kind"];
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
-  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email"
+  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "data"
 >;
 
 const iconFor: Record<Kind, typeof Package> = {
