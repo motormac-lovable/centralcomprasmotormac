@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
+import { useNavBadges } from "@/hooks/useNavBadges";
 
 // Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
 const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
@@ -14,6 +15,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
+  const { minhasCount, aprovacoesCount } = useNavBadges();
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
   useEffect(() => {
@@ -86,6 +88,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 to="/minhas-solicitacoes"
                 active={pathname.startsWith("/minhas-solicitacoes")}
                 icon={<ClipboardList className="h-4 w-4" />}
+                badge={minhasCount}
               >
                 Minhas Solicitações
               </NavLink>
@@ -97,6 +100,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 to="/aprovacoes"
                 active={pathname.startsWith("/aprovacoes")}
                 icon={<CheckSquare className="h-4 w-4" />}
+                badge={aprovacoesCount}
               >
                 Aprovações
               </NavLink>
@@ -145,16 +149,21 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ to, active, icon, children }: { to: string; active: boolean; icon: ReactNode; children: ReactNode }) {
+function NavLink({ to, active, icon, children, badge }: { to: string; active: boolean; icon: ReactNode; children: ReactNode; badge?: number }) {
   return (
     <Link
       to={to}
-      className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      className={`relative inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
         active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
       }`}
     >
       {icon}
       <span className="hidden sm:inline">{children}</span>
+      {badge && badge > 0 ? (
+        <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center animate-pulse shadow">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </Link>
   );
 }
