@@ -88,6 +88,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 to="/minhas-solicitacoes"
                 active={pathname.startsWith("/minhas-solicitacoes")}
                 icon={<ClipboardList className="h-4 w-4" />}
+                badge={minhasCount}
               >
                 Minhas Solicitações
               </NavLink>
@@ -99,6 +100,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 to="/aprovacoes"
                 active={pathname.startsWith("/aprovacoes")}
                 icon={<CheckSquare className="h-4 w-4" />}
+                badge={aprovacoesCount}
               >
                 Aprovações
               </NavLink>
