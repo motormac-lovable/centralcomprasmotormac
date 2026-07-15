@@ -149,16 +149,21 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ to, active, icon, children }: { to: string; active: boolean; icon: ReactNode; children: ReactNode }) {
+function NavLink({ to, active, icon, children, badge }: { to: string; active: boolean; icon: ReactNode; children: ReactNode; badge?: number }) {
   return (
     <Link
       to={to}
-      className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      className={`relative inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
         active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
       }`}
     >
       {icon}
       <span className="hidden sm:inline">{children}</span>
+      {badge && badge > 0 ? (
+        <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center animate-pulse shadow">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </Link>
   );
 }
