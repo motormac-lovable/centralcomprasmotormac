@@ -63,6 +63,7 @@ function HistoricoPage() {
   const [query, setQuery] = useState("");
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
+  const ownerScope = isOwner;
 
   const reload = async () => {
     if (!user?.email) return;
@@ -74,7 +75,9 @@ function HistoricoPage() {
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
-    if (approverScope && approverDepartments.length > 0) {
+    if (ownerScope) {
+      // Proprietário enxerga TODAS as solicitações emitidas no sistema em tempo real.
+    } else if (approverScope && approverDepartments.length > 0) {
       // Aprovador enxerga todas as solicitações dos departamentos sob sua alçada
       // (em qualquer status), além das que ele mesmo criou.
       const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
@@ -98,7 +101,7 @@ function HistoricoPage() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, approverScope, approverDepartments.join("|")]);
+  }, [user?.email, approverScope, ownerScope, approverDepartments.join("|")]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -123,7 +126,9 @@ function HistoricoPage() {
           <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {fullName ? `${fullName} · ` : ""}
-            {approverScope
+            {ownerScope
+              ? "Todas as solicitações emitidas no sistema — atualizado em tempo real."
+              : approverScope
               ? `Solicitações dos departamentos sob sua alçada${approverDepartments.length ? ` (${approverDepartments.join(", ")})` : ""} — atualizado em tempo real.`
               : "Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real)."}
           </p>
