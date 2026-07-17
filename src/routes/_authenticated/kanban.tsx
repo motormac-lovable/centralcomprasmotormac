@@ -1071,23 +1071,39 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     await patch({ suppliers: suppliers.map((s) => ({ ...s, chosen: s.id === id })) as never });
   };
 
+  const MAX_ATTACHMENTS = 20;
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (attachments.length + files.length > 4) {
-      toast.error("Máximo de 4 arquivos por card.");
+    if (attachments.length + files.length > MAX_ATTACHMENTS) {
+      toast.error(`Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
       return;
     }
-    const uploaded: Attachment[] = [];
-    for (const file of Array.from(files)) {
-      const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
-      const path = `${card.id}/${Date.now()}_${safeName}`;
-      const { error } = await supabase.storage.from("orcamentos").upload(path, file);
-      if (error) { toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`); continue; }
-      uploaded.push({ name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() });
-    }
+    const arr = Array.from(files);
+    const results = await Promise.all(
+      arr.map(async (file) => {
+        const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
+        const path = `${card.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+        const { error } = await supabase.storage.from("orcamentos").upload(path, file);
+        if (error) {
+          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`);
+          return null;
+        }
+        return { name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() } as Attachment;
+      }),
+    );
+    const uploaded = results.filter((x): x is Attachment => x !== null);
     if (uploaded.length) {
-      await patch({ attachments: [...attachments, ...uploaded] as never });
-      toast.success(`${uploaded.length} arquivo(s) enviado(s).`);
+      const author = fullName || user?.email || "Comprador";
+      const auditObs: Observation[] = uploaded.map((a) => ({
+        at: new Date().toISOString(),
+        author,
+        text: `📎 ${author} anexou o arquivo "${a.name}" (${(a.size / 1024).toFixed(0)} KB) ao card.`,
+      }));
+      await patch({
+        attachments: [...attachments, ...uploaded] as never,
+        observations: [...observations, ...auditObs] as never,
+      });
+      toast.success(`${uploaded.length} arquivo(s) enviado(s) simultaneamente.`);
     }
   };
 
@@ -1113,7 +1129,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
 
   const deleteAttachment = async (a: Attachment) => {
     await supabase.storage.from("orcamentos").remove([a.path]);
-    await patch({ attachments: attachments.filter((x) => x.path !== a.path) as never });
+    const author = fullName || user?.email || "Comprador";
+    const auditObs: Observation = {
+      at: new Date().toISOString(),
+      author,
+      text: `🗑️ ${author} removeu o anexo "${a.name}" do card.`,
+    };
+    await patch({
+      attachments: attachments.filter((x) => x.path !== a.path) as never,
+      observations: [...observations, auditObs] as never,
+    });
   };
 
   const approve = async () => {
@@ -1610,7 +1635,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {/* ── Attachments (all columns) ── */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/4)
+              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/{MAX_ATTACHMENTS})
             </h3>
             <div className="space-y-2 mb-3">
               {attachments.map((a) => (
@@ -1633,7 +1658,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
             </div>
-            {!readOnly && attachments.length < 4 && (
+            {!readOnly && attachments.length < MAX_ATTACHMENTS && (
               <>
                 <input
                   ref={fileInput}
@@ -1647,7 +1672,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   onClick={() => fileInput.current?.click()}
                   className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivo (PDF / Excel / Imagem)
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · PDF / Excel / Imagem)
                 </button>
               </>
             )}
