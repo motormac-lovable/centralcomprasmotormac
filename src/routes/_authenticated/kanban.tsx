@@ -919,6 +919,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
 
 
   const [obsText, setObsText] = useState("");
+  const [obsExpanded, setObsExpanded] = useState(false);
   const [showQuickReject, setShowQuickReject] = useState(false);
   const [quickRejectMotivo, setQuickRejectMotivo] = useState("");
   const [quickRejecting, setQuickRejecting] = useState(false);
