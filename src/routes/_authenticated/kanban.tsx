@@ -1654,7 +1654,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
             </div>
-            {!readOnly && attachments.length < MAX_ATTACHMENTS && (
+            {!readOnly && (
               <>
                 <input
                   ref={fileInput}
@@ -1667,7 +1667,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   onClick={() => fileInput.current?.click()}
                   className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS} arquivos · 100 MB no total)
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · sem limite)
                 </button>
               </>
             )}
