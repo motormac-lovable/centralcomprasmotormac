@@ -363,13 +363,41 @@ function HistoricoPage() {
                   >
                     {meta?.label ?? it.status}
                   </span>
+                  {(() => {
+                    const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
+                    if (!isOwnRow) return null;
+                    const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
+                    return (
+                      <ComplementaryUploadButton
+                        card={{ id: it.id }}
+                        kind={it.kind}
+                        disabled={!canUpload}
+                        onUploaded={reload}
+                      />
+                    );
+                  })()}
                 </div>
-                <span
-                  className="sm:hidden inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
-                  style={{ background: meta?.tone ?? "var(--primary)" }}
-                >
-                  {meta?.label ?? it.status}
-                </span>
+                <div className="sm:hidden flex items-center gap-2 shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                    style={{ background: meta?.tone ?? "var(--primary)" }}
+                  >
+                    {meta?.label ?? it.status}
+                  </span>
+                  {(() => {
+                    const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
+                    if (!isOwnRow) return null;
+                    const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
+                    return (
+                      <ComplementaryUploadButton
+                        card={{ id: it.id }}
+                        kind={it.kind}
+                        disabled={!canUpload}
+                        onUploaded={reload}
+                      />
+                    );
+                  })()}
+                </div>
               </li>
             );
           })}
