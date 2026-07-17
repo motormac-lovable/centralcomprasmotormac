@@ -1071,23 +1071,39 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     await patch({ suppliers: suppliers.map((s) => ({ ...s, chosen: s.id === id })) as never });
   };
 
+  const MAX_ATTACHMENTS = 20;
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (attachments.length + files.length > 4) {
-      toast.error("Máximo de 4 arquivos por card.");
+    if (attachments.length + files.length > MAX_ATTACHMENTS) {
+      toast.error(`Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
       return;
     }
-    const uploaded: Attachment[] = [];
-    for (const file of Array.from(files)) {
-      const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
-      const path = `${card.id}/${Date.now()}_${safeName}`;
-      const { error } = await supabase.storage.from("orcamentos").upload(path, file);
-      if (error) { toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`); continue; }
-      uploaded.push({ name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() });
-    }
+    const arr = Array.from(files);
+    const results = await Promise.all(
+      arr.map(async (file) => {
+        const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
+        const path = `${card.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+        const { error } = await supabase.storage.from("orcamentos").upload(path, file);
+        if (error) {
+          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`);
+          return null;
+        }
+        return { name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() } as Attachment;
+      }),
+    );
+    const uploaded = results.filter((x): x is Attachment => x !== null);
     if (uploaded.length) {
-      await patch({ attachments: [...attachments, ...uploaded] as never });
-      toast.success(`${uploaded.length} arquivo(s) enviado(s).`);
+      const author = fullName || user?.email || "Comprador";
+      const auditObs: Observation[] = uploaded.map((a) => ({
+        at: new Date().toISOString(),
+        author,
+        text: `📎 ${author} anexou o arquivo "${a.name}" (${(a.size / 1024).toFixed(0)} KB) ao card.`,
+      }));
+      await patch({
+        attachments: [...attachments, ...uploaded] as never,
+        observations: [...observations, ...auditObs] as never,
+      });
+      toast.success(`${uploaded.length} arquivo(s) enviado(s) simultaneamente.`);
     }
   };
 
