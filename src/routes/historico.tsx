@@ -126,7 +126,9 @@ function HistoricoPage() {
           <h1 className="text-3xl font-semibold tracking-tight">Histórico de Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {fullName ? `${fullName} · ` : ""}
-            {approverScope
+            {ownerScope
+              ? "Todas as solicitações emitidas no sistema — atualizado em tempo real."
+              : approverScope
               ? `Solicitações dos departamentos sob sua alçada${approverDepartments.length ? ` (${approverDepartments.join(", ")})` : ""} — atualizado em tempo real.`
               : "Suas solicitações emitidas e o status atual no Kanban (atualizado em tempo real)."}
           </p>
