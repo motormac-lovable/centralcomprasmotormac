@@ -1074,8 +1074,12 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const MAX_ATTACHMENTS = 4;
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (files.length > MAX_ATTACHMENTS) {
+      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por envio.`);
+      return;
+    }
     if (attachments.length + files.length > MAX_ATTACHMENTS) {
-      toast.error(`Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
+      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
       return;
     }
     const arr = Array.from(files);
