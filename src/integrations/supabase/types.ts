@@ -375,6 +375,43 @@ export type Database = {
       }
     }
     Functions: {
+      append_quotation_attachments: {
+        Args: { _card_id: string; _files: Json }
+        Returns: {
+          approver_id: string | null
+          approver_name: string | null
+          assigned_to: string | null
+          attachments: Json
+          buyer_assigned_at: string | null
+          buyer_name: string | null
+          codigo_unico: string | null
+          created_at: string
+          data: Json
+          empresa: string | null
+          id: string
+          kind: Database["public"]["Enums"]["card_kind"]
+          numero_pedido_linx: string | null
+          observations: Json
+          order_number: string | null
+          ready_for_apollo_integration: boolean
+          requester_email: string | null
+          requester_id: string | null
+          requester_name: string | null
+          status: Database["public"]["Enums"]["card_status"]
+          status_changed_at: string
+          summary: string | null
+          suppliers: Json
+          title: string
+          unidade: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "kanban_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       append_requester_file: {
         Args: { _card_id: string; _file: Json }
         Returns: {
