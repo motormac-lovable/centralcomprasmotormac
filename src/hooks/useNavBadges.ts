@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
-import { getLastVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+import { getLastVisit, markVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+
 
 export function useNavBadges() {
   const { user, isApprover, isBuyer, isOwner, isAdmin, isAuditor, isSolicitante, approverDepartments } = useAuth();
