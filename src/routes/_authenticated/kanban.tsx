@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
   CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon, Send,
+  ChevronDown,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -918,6 +919,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
 
 
   const [obsText, setObsText] = useState("");
+  const [obsExpanded, setObsExpanded] = useState(false);
   const [showQuickReject, setShowQuickReject] = useState(false);
   const [quickRejectMotivo, setQuickRejectMotivo] = useState("");
   const [quickRejecting, setQuickRejecting] = useState(false);
@@ -1599,37 +1601,54 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {/* ── Observations log (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
             <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                <MessageSquare className="h-3.5 w-3.5" /> Histórico de Observações
-              </h3>
-              <div className="space-y-2 mb-3">
-                {observations.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhuma observação registrada ainda.</p>}
-                {observations.map((o, i) => (
-                  <div key={i} className="rounded-lg border bg-muted/30 p-3 text-sm">
-                    <div className="text-[11px] text-muted-foreground mb-1">
-                      {new Date(o.at).toLocaleString("pt-BR")} · <strong>{o.author}</strong>
-                    </div>
-                    <p className="whitespace-pre-wrap">{o.text}</p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <MessageSquare className="h-3.5 w-3.5" /> Histórico de Observações
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setObsExpanded((v) => !v)}
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition"
+                  aria-expanded={obsExpanded}
+                  aria-controls="observacoes-panel"
+                >
+                  {obsExpanded ? "Recolher" : "Saiba mais"}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${obsExpanded ? "rotate-180" : ""}`} />
+                </button>
               </div>
-              {!readOnly && (
-                <div className="flex gap-2">
-                  <textarea
-                    value={obsText}
-                    onChange={(e) => setObsText(e.target.value)}
-                    placeholder="Adicionar observação…"
-                    rows={2}
-                    className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
-                  />
-                  <button
-                    onClick={addObservation}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Registrar
-                  </button>
+              <div
+                id="observacoes-panel"
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${obsExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+              >
+                <div className="space-y-2 mb-3">
+                  {observations.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhuma observação registrada ainda.</p>}
+                  {observations.map((o, i) => (
+                    <div key={i} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                      <div className="text-[11px] text-muted-foreground mb-1">
+                        {new Date(o.at).toLocaleString("pt-BR")} · <strong>{o.author}</strong>
+                      </div>
+                      <p className="whitespace-pre-wrap">{o.text}</p>
+                    </div>
+                  ))}
                 </div>
-              )}
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <textarea
+                      value={obsText}
+                      onChange={(e) => setObsText(e.target.value)}
+                      placeholder="Adicionar observação…"
+                      rows={2}
+                      className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={addObservation}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium self-start"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Registrar
+                    </button>
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
