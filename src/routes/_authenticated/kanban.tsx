@@ -1074,6 +1074,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const arr = Array.from(files);
+    const uploadedAt = new Date().toISOString();
     const results = await Promise.all(
       arr.map(async (file) => {
         const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
@@ -1083,23 +1084,27 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo.")}`);
           return null;
         }
-        return { name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() } as Attachment;
+        return { name: file.name, path, size: file.size, uploaded_at: uploadedAt } as Attachment;
       }),
     );
     const uploaded = results.filter((x): x is Attachment => x !== null);
     if (uploaded.length) {
-      const author = fullName || user?.email || "Comprador";
-      const auditObs: Observation[] = uploaded.map((a) => ({
-        at: new Date().toISOString(),
-        author,
-        text: `📎 ${author} anexou o arquivo "${a.name}" (${(a.size / 1024).toFixed(0)} KB) ao card.`,
-      }));
-      await patch({
-        attachments: [...attachments, ...uploaded] as never,
-        observations: [...observations, ...auditObs] as never,
-      });
+      const previous = freshCard ?? cardProp;
+      setFreshCard({ ...previous, attachments: [...attachments, ...uploaded] as never } as Card);
+      const { data, error } = await (supabase as any)
+        .rpc("append_quotation_attachments", { _card_id: card.id, _files: uploaded });
+
+      if (error) {
+        await supabase.storage.from("orcamentos").remove(uploaded.map((a) => a.path));
+        setFreshCard(previous);
+        toast.error(translateError(error, "Não foi possível registrar o anexo no card."));
+        return;
+      }
+
+      if (data) setFreshCard(data as Card);
       toast.success(`${uploaded.length} arquivo(s) enviado(s).`);
     }
+    if (fileInput.current) fileInput.current.value = "";
   };
 
 
