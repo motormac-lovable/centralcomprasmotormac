@@ -191,13 +191,25 @@ function KanbanPage() {
     // Append a transition log entry to observations (used by History panel)
     const targetLabel = STATUS_COLUMNS.find((s) => s.id === newStatus)?.label ?? newStatus;
     const prevObs = ((card.observations as unknown as Observation[]) ?? []);
+    const LOCKED = ["aguardando_aprovacao", "cotacoes_aprovadas", "cotacoes_rejeitadas", "pedidos_gerados"] as const;
+    const EDITABLE = ["solicitacoes_abertas", "em_cotacao"] as const;
+    const wasLocked = (LOCKED as readonly string[]).includes(card.status);
+    const goingBackEditable = wasLocked && (EDITABLE as readonly string[]).includes(newStatus);
+    const goingIntoLocked = !wasLocked && (LOCKED as readonly string[]).includes(newStatus);
+    let transitionText: string;
+    if (goingBackEditable) {
+      transitionText = `↩️ Solicitação movida de volta para "${targetLabel}" por ${actorName} para reajuste de valores. Campos, fornecedores e anexos foram desbloqueados para edição.`;
+    } else if (goingIntoLocked) {
+      transitionText = `🔒 Movido para "${targetLabel}" por ${actorName}. Card entrou em modo somente-leitura (lock de governança).`;
+    } else if (card.kind === "contratos") {
+      transitionText = `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`;
+    } else {
+      transitionText = `➡️ Movido para "${targetLabel}" por ${actorName}.`;
+    }
     const transitionLog: Observation = {
       at: new Date().toISOString(),
       author: actorName,
-      text:
-        card.kind === "contratos"
-          ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
-          : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
+      text: transitionText,
     };
 
     // Regra dinâmica: usuário Comprador que movimenta o card assume o campo "Comprador".
