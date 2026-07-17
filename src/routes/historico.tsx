@@ -63,6 +63,7 @@ function HistoricoPage() {
   const [query, setQuery] = useState("");
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
+  const ownerScope = isOwner;
 
   const reload = async () => {
     if (!user?.email) return;
@@ -74,7 +75,9 @@ function HistoricoPage() {
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
-    if (approverScope && approverDepartments.length > 0) {
+    if (ownerScope) {
+      // Proprietário enxerga TODAS as solicitações emitidas no sistema em tempo real.
+    } else if (approverScope && approverDepartments.length > 0) {
       // Aprovador enxerga todas as solicitações dos departamentos sob sua alçada
       // (em qualquer status), além das que ele mesmo criou.
       const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
