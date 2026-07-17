@@ -16,7 +16,24 @@ export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
-  const { minhasCount, aprovacoesCount } = useNavBadges();
+  const { minhasCount, aprovacoesCount, adminCount, historicoCount } = useNavBadges();
+
+  // Marca visita para limpar o badge assim que a tela é aberta.
+  useEffect(() => {
+    if (!user?.id) return;
+    const map: Array<[string, VisitKey]> = [
+      ["/minhas-solicitacoes", "minhas"],
+      ["/historico", "historico"],
+      ["/aprovacoes", "aprovacoes"],
+      ["/admin", "admin"],
+    ];
+    for (const [prefix, key] of map) {
+      if (pathname.startsWith(prefix)) {
+        markVisit(user.id, key);
+        break;
+      }
+    }
+  }, [pathname, user?.id]);
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
   useEffect(() => {
