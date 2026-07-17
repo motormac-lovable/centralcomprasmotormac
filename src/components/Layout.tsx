@@ -94,7 +94,7 @@ export function Layout({ children }: { children: ReactNode }) {
             {/* Admin: Proprietário/Administrador com poder total; Comprador com Gestão de Solicitantes;
                 Auditor com Gestão de Solicitantes (apenas exclusão). */}
             {(isAdmin || isBuyer || isAuditor) && (
-              <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
+              <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />} badge={isAdmin ? adminCount : 0}>Admin</NavLink>
             )}
             {isOwner && (
               <NavLink to="/dev" active={pathname.startsWith("/dev")} icon={<Code2 className="h-4 w-4" />}>Dev</NavLink>
