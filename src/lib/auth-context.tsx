@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const loadRoles = async (uid: string | undefined, sess?: Session | null) => {
+  const loadRoles = async (uid: string | undefined, sess?: Session | null, opts?: { silent?: boolean }) => {
     if (!uid) {
       setRoles([]);
       setFullName("");
@@ -86,7 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(false);
       return;
     }
-    setProfileLoading(true);
+    // `silent` evita flip de loading em revalidações (ex.: retorno de foco após
+    // diálogo nativo de arquivo), o que desmontava o Kanban/modal e cancelava
+    // o onChange do <input type="file">.
+    const silent = opts?.silent === true && loadedForUserRef.current === uid;
+    if (!silent) setProfileLoading(true);
     try {
       const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", uid),
@@ -102,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApproverCeiling(Number(approverCfg?.teto_alcada ?? 0));
       loadedForUserRef.current = uid;
     } finally {
-      setProfileLoading(false);
+      if (!silent) setProfileLoading(false);
     }
   };
 
@@ -140,9 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       loadRoles(data.session.user.id, data.session).finally(() => setLoading(false));
     });
-    // Recheca ao voltar o foco da aba — "no próximo clique" após alteração.
+    // Recheca ao voltar o foco da aba — silencioso, sem flip de loading (evita
+    // desmontar a tela e o modal quando o usuário retorna do diálogo nativo
+    // de seleção de arquivo, o que cancelava o upload em andamento).
     const onFocus = () => {
-      supabase.auth.getSession().then(({ data }) => loadRoles(data.session?.user.id, data.session));
+      supabase.auth.getSession().then(({ data }) =>
+        loadRoles(data.session?.user.id, data.session, { silent: true }),
+      );
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener("visibilitychange", onFocus);
