@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search, Paperclip, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
+import { uploadRequesterFiles } from "@/lib/requester-files";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
