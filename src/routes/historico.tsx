@@ -8,6 +8,7 @@ import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
+import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -64,48 +65,74 @@ function ComplementaryUploadButton({
   card,
   kind,
   disabled,
+  existingCount,
   onUploaded,
 }: {
   card: { id: string };
   kind: Database["public"]["Enums"]["card_kind"];
   disabled: boolean;
+  existingCount: number;
   onUploaded: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
+  const maxFiles = COMPLEMENTARY_MAX_FILES[kind] ?? 1;
+  const maxSizeMB = COMPLEMENTARY_MAX_SIZE_MB[kind] ?? 10;
+  const remaining = Math.max(0, maxFiles - existingCount);
+  const noSlotsLeft = remaining <= 0;
+  const effectivelyDisabled = disabled || noSlotsLeft;
+
   const handlePick = () => {
-    if (disabled || busy) return;
+    if (effectivelyDisabled || busy) return;
     inputRef.current?.click();
   };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const list = e.target.files ? Array.from(e.target.files) : [];
     if (inputRef.current) inputRef.current.value = "";
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo excede 10MB.");
+    if (list.length === 0) return;
+
+    if (list.length > remaining) {
+      toast.error(`Número de arquivos excedido. Limite total: ${maxFiles} (restam ${remaining}).`);
       return;
     }
+    const tooBig = list.find((f) => f.size > maxSizeMB * 1024 * 1024);
+    if (tooBig) {
+      toast.error(`"${tooBig.name}" excede ${maxSizeMB}MB.`);
+      return;
+    }
+
     setBusy(true);
     try {
-      const [uploaded] = await uploadRequesterFiles(kind, [
-        { name: file.name, size: file.size, type: file.type, file },
-      ], "Complementar");
-      const payload = {
-        name: uploaded.name,
-        path: uploaded.path,
-        size: uploaded.size,
-        type: uploaded.type,
-        category: "Complementar",
-        uploaded_at: new Date().toISOString(),
-      };
-      const { error } = await supabase.rpc("append_requester_file", {
-        _card_id: card.id,
-        _file: payload as never,
-      });
-      if (error) throw error;
-      toast.success("Arquivo complementar anexado à solicitação.");
+      const uploaded = await uploadRequesterFiles(
+        kind,
+        list.map((f) => ({ name: f.name, size: f.size, type: f.type, file: f })),
+        "Complementar",
+      );
+      const now = new Date().toISOString();
+      const results = await Promise.all(
+        uploaded.map((u) =>
+          supabase.rpc("append_requester_file", {
+            _card_id: card.id,
+            _file: {
+              name: u.name,
+              path: u.path,
+              size: u.size,
+              type: u.type,
+              category: "Complementar",
+              uploaded_at: now,
+            } as never,
+          }),
+        ),
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+      toast.success(
+        uploaded.length === 1
+          ? "Arquivo complementar anexado à solicitação."
+          : `${uploaded.length} arquivos complementares anexados à solicitação.`,
+      );
       onUploaded();
     } catch (err) {
       const msg = (err as Error).message || "Falha ao anexar arquivo";
@@ -115,7 +142,11 @@ function ComplementaryUploadButton({
     }
   };
 
-  const tooltip = disabled ? "Período de upload expirado" : "Anexar arquivo complementar";
+  const tooltip = disabled
+    ? "Período de upload expirado"
+    : noSlotsLeft
+    ? `Limite de ${maxFiles} anexos atingido`
+    : `Anexar arquivos complementares (${remaining} restante${remaining === 1 ? "" : "s"} de ${maxFiles})`;
 
   return (
     <div className="relative group shrink-0">
@@ -124,10 +155,10 @@ function ComplementaryUploadButton({
         onClick={handlePick}
         aria-label={tooltip}
         title={tooltip}
-        disabled={disabled || busy}
+        disabled={effectivelyDisabled || busy}
         className={
           "inline-flex items-center justify-center h-9 w-9 rounded-md border transition " +
-          (disabled
+          (effectivelyDisabled
             ? "bg-muted text-muted-foreground/60 border-dashed cursor-not-allowed"
             : "bg-card hover:bg-muted text-foreground border-input")
         }
@@ -143,6 +174,7 @@ function ComplementaryUploadButton({
       <input
         ref={inputRef}
         type="file"
+        multiple
         className="hidden"
         onChange={handleChange}
       />
@@ -373,6 +405,7 @@ function HistoricoPage() {
                         card={{ id: it.id }}
                         kind={it.kind}
                         disabled={!canUpload}
+                        existingCount={countExistingFiles(it.data)}
                         onUploaded={reload}
                       />
                     );
@@ -395,6 +428,7 @@ function HistoricoPage() {
                         card={{ id: it.id }}
                         kind={it.kind}
                         disabled={!canUpload}
+                        existingCount={countExistingFiles(it.data)}
                         onUploaded={reload}
                       />
                     );
