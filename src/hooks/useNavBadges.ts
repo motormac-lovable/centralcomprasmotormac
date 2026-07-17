@@ -3,7 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
-import { getLastVisit, markVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+import { getLastVisit, markVisit, type VisitKey } from "@/lib/last-visits";
 
 
 export function useNavBadges() {
@@ -13,7 +13,6 @@ export function useNavBadges() {
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
   const [historicoCount, setHistoricoCount] = useState(0);
-  const [bump, setBump] = useState(0);
 
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
   const showAprovacoes = isApprover || isOwner || isAuditor;
@@ -21,8 +20,6 @@ export function useNavBadges() {
   const showHistorico = isBuyer || isAuditor; // Histórico completo (compradores/auditores)
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
 
-  // Recomputa quando marcamos visita em alguma tela.
-  useEffect(() => subscribeVisits(() => setBump((n) => n + 1)), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +143,7 @@ export function useNavBadges() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), bump, pathname]);
+  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), pathname]);
 
   return { minhasCount, aprovacoesCount, adminCount, historicoCount };
 }
