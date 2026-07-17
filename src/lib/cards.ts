@@ -104,11 +104,18 @@ export async function createCard(input: {
     });
   }
 
+  // Sempre grava o requester_id (auth.uid) para que o Histórico do Solicitante
+  // funcione mesmo quando o e-mail digitado no formulário difere do e-mail
+  // de autenticação (comum em envios via mobile).
+  const { data: authData } = await supabase.auth.getUser();
+  const requester_id = authData?.user?.id ?? null;
+
   const insertPayload: Record<string, unknown> = {
     ...input,
     data: input.data as never,
     buyer_name,
     buyer_assigned_at: buyer_name ? new Date().toISOString() : null,
+    requester_id,
   };
   if (initialObs.length) insertPayload.observations = initialObs as never;
 
