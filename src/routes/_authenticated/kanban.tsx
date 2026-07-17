@@ -1071,33 +1071,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     await patch({ suppliers: suppliers.map((s) => ({ ...s, chosen: s.id === id })) as never });
   };
 
-  const MAX_ATTACHMENTS = 4;
-  const MAX_TOTAL_BYTES = 100 * 1024 * 1024; // 100 MB somados por card
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (files.length > MAX_ATTACHMENTS) {
-      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por envio.`);
-      return;
-    }
-    if (attachments.length + files.length > MAX_ATTACHMENTS) {
-      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
-      return;
-    }
     const arr = Array.from(files);
-    const currentBytes = attachments.reduce((s, a) => s + (a.size || 0), 0);
-    const incomingBytes = arr.reduce((s, f) => s + f.size, 0);
-    if (currentBytes + incomingBytes > MAX_TOTAL_BYTES) {
-      const usedMb = (currentBytes / (1024 * 1024)).toFixed(1);
-      toast.error(`Capacidade excedida: o total de anexos do card não pode ultrapassar 100 MB (já utilizados ${usedMb} MB).`);
-      return;
-    }
     const results = await Promise.all(
       arr.map(async (file) => {
         const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
         const path = `${card.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
         const { error } = await supabase.storage.from("orcamentos").upload(path, file);
         if (error) {
-          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`);
+          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo.")}`);
           return null;
         }
         return { name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() } as Attachment;
@@ -1115,9 +1098,10 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
         attachments: [...attachments, ...uploaded] as never,
         observations: [...observations, ...auditObs] as never,
       });
-      toast.success(`${uploaded.length} arquivo(s) enviado(s) simultaneamente.`);
+      toast.success(`${uploaded.length} arquivo(s) enviado(s).`);
     }
   };
+
 
   const downloadAttachment = async (a: Attachment) => {
     const { data, error } = await supabase.storage
