@@ -88,7 +88,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
                 <NavLink to="/dashboard" active={pathname.startsWith("/dashboard")} icon={<BarChart3 className="h-4 w-4" />}>Dashboard</NavLink>
                 <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
-                <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
+                <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />} badge={historicoCount}>Histórico</NavLink>
               </>
             )}
             {/* Admin: Proprietário/Administrador com poder total; Comprador com Gestão de Solicitantes;
