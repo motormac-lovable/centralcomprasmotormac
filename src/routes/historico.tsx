@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FileSignature, Package, Truck, Inbox, Trello, ClipboardList, Search, Paperclip, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
+import { uploadRequesterFiles } from "@/lib/requester-files";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -55,6 +57,98 @@ const STATUS_META: Record<Status, { label: string; tone: string }> = STATUS_COLU
   },
   {} as Record<Status, { label: string; tone: string }>,
 );
+
+const UPLOAD_ALLOWED_STATUSES: Status[] = ["solicitacoes_abertas", "em_cotacao"];
+
+function ComplementaryUploadButton({
+  card,
+  kind,
+  disabled,
+  onUploaded,
+}: {
+  card: { id: string };
+  kind: Database["public"]["Enums"]["card_kind"];
+  disabled: boolean;
+  onUploaded: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handlePick = () => {
+    if (disabled || busy) return;
+    inputRef.current?.click();
+  };
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (inputRef.current) inputRef.current.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo excede 10MB.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const [uploaded] = await uploadRequesterFiles(kind, [
+        { name: file.name, size: file.size, type: file.type, file },
+      ], "Complementar");
+      const payload = {
+        name: uploaded.name,
+        path: uploaded.path,
+        size: uploaded.size,
+        type: uploaded.type,
+        category: "Complementar",
+        uploaded_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.rpc("append_requester_file", {
+        _card_id: card.id,
+        _file: payload as never,
+      });
+      if (error) throw error;
+      toast.success("Arquivo complementar anexado à solicitação.");
+      onUploaded();
+    } catch (err) {
+      const msg = (err as Error).message || "Falha ao anexar arquivo";
+      toast.error(msg.includes("Período de upload") ? "Período de upload expirado" : msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tooltip = disabled ? "Período de upload expirado" : "Anexar arquivo complementar";
+
+  return (
+    <div className="relative group shrink-0">
+      <button
+        type="button"
+        onClick={handlePick}
+        aria-label={tooltip}
+        title={tooltip}
+        disabled={disabled || busy}
+        className={
+          "inline-flex items-center justify-center h-9 w-9 rounded-md border transition " +
+          (disabled
+            ? "bg-muted text-muted-foreground/60 border-dashed cursor-not-allowed"
+            : "bg-card hover:bg-muted text-foreground border-input")
+        }
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute right-0 -top-9 z-10 whitespace-nowrap rounded-md bg-foreground text-background text-[11px] font-medium px-2 py-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100 transition"
+      >
+        {tooltip}
+      </span>
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        onChange={handleChange}
+      />
+    </div>
+  );
+}
 
 function HistoricoPage() {
   const { user, isBuyer, isApprover, isOwner, isAdmin, approverDepartments, fullName } = useAuth();
@@ -269,13 +363,41 @@ function HistoricoPage() {
                   >
                     {meta?.label ?? it.status}
                   </span>
+                  {(() => {
+                    const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
+                    if (!isOwnRow) return null;
+                    const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
+                    return (
+                      <ComplementaryUploadButton
+                        card={{ id: it.id }}
+                        kind={it.kind}
+                        disabled={!canUpload}
+                        onUploaded={reload}
+                      />
+                    );
+                  })()}
                 </div>
-                <span
-                  className="sm:hidden inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shrink-0"
-                  style={{ background: meta?.tone ?? "var(--primary)" }}
-                >
-                  {meta?.label ?? it.status}
-                </span>
+                <div className="sm:hidden flex items-center gap-2 shrink-0">
+                  <span
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                    style={{ background: meta?.tone ?? "var(--primary)" }}
+                  >
+                    {meta?.label ?? it.status}
+                  </span>
+                  {(() => {
+                    const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
+                    if (!isOwnRow) return null;
+                    const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
+                    return (
+                      <ComplementaryUploadButton
+                        card={{ id: it.id }}
+                        kind={it.kind}
+                        disabled={!canUpload}
+                        onUploaded={reload}
+                      />
+                    );
+                  })()}
+                </div>
               </li>
             );
           })}
