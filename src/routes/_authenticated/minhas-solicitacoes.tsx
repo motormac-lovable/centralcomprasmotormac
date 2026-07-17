@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Inbox, RefreshCw, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
+import { uploadRequesterFiles } from "@/lib/requester-files";
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
-  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "data" | "buyer_name" | "status_changed_at"
+  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "requester_id" | "data" | "buyer_name" | "status_changed_at"
 >;
 
 export const Route = createFileRoute("/_authenticated/minhas-solicitacoes")({
@@ -28,6 +30,8 @@ const STATUS_META: Record<Status, { label: string; tone: string }> =
     return acc;
   }, {} as Record<Status, { label: string; tone: string }>);
 
+const UPLOAD_ALLOWED_STATUSES: Status[] = ["solicitacoes_abertas", "em_cotacao"];
+
 function formatBR(iso: string | null | undefined) {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -39,6 +43,91 @@ function formatBR(iso: string | null | undefined) {
   return `${dd}/${mm}/${yyyy} às ${hh}:${mi}`;
 }
 
+function ComplementaryUploadButton({
+  card,
+  kind,
+  disabled,
+  onUploaded,
+}: {
+  card: { id: string };
+  kind: Database["public"]["Enums"]["card_kind"];
+  disabled: boolean;
+  onUploaded: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handlePick = () => {
+    if (disabled || busy) return;
+    inputRef.current?.click();
+  };
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (inputRef.current) inputRef.current.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo excede 10MB.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const [uploaded] = await uploadRequesterFiles(kind, [
+        { name: file.name, size: file.size, type: file.type, file },
+      ], "Complementar");
+      const payload = {
+        name: uploaded.name,
+        path: uploaded.path,
+        size: uploaded.size,
+        type: uploaded.type,
+        category: "Complementar",
+        uploaded_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.rpc("append_requester_file", {
+        _card_id: card.id,
+        _file: payload as never,
+      });
+      if (error) throw error;
+      toast.success("Arquivo complementar anexado à solicitação.");
+      onUploaded();
+    } catch (err) {
+      const msg = (err as Error).message || "Falha ao anexar arquivo";
+      toast.error(msg.includes("Período de upload") ? "Período de upload expirado" : msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tooltip = disabled ? "Período de upload expirado" : "Anexar arquivo complementar";
+
+  return (
+    <div className="relative group shrink-0 inline-block">
+      <button
+        type="button"
+        onClick={handlePick}
+        aria-label={tooltip}
+        title={tooltip}
+        disabled={disabled || busy}
+        className={
+          "inline-flex items-center justify-center h-8 w-8 rounded-md border transition " +
+          (disabled
+            ? "bg-muted text-muted-foreground/60 border-dashed cursor-not-allowed"
+            : "bg-card hover:bg-muted text-foreground border-input")
+        }
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute right-0 -top-9 z-10 whitespace-nowrap rounded-md bg-foreground text-background text-[11px] font-medium px-2 py-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100 transition"
+      >
+        {tooltip}
+      </span>
+      <input ref={inputRef} type="file" className="hidden" onChange={handleChange} />
+    </div>
+  );
+}
+
 function MinhasSolicitacoesPage() {
   const { user, fullName, isApprover, isBuyer, isOwner, isAdmin, approverDepartments } = useAuth();
   const [items, setItems] = useState<Card[]>([]);
@@ -46,21 +135,29 @@ function MinhasSolicitacoesPage() {
   const [query, setQuery] = useState("");
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
+  const ownerScope = isOwner;
 
   const reload = async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     setLoading(true);
     let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, data, buyer_name, status_changed_at")
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, requester_id, data, buyer_name, status_changed_at")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
-    if (approverScope && approverDepartments.length > 0) {
+    if (ownerScope) {
+      // Proprietário enxerga tudo em tempo real.
+    } else if (approverScope && approverDepartments.length > 0) {
       const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
-      q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+      const emailFilter = user.email ? `,requester_email.ilike.${user.email}` : "";
+      q = q.or(`requester_id.eq.${user.id}${emailFilter},data->>departamento.in.(${deptList})`);
     } else {
-      q = q.ilike("requester_email", user.email);
+      // Solicitante: mesma regra do Histórico — casa por ID de auth (fonte de
+      // verdade do Kanban) e também por e-mail para cobrir cards antigos e
+      // envios via mobile em que o e-mail digitado difere do e-mail de login.
+      const emailFilter = user.email ? `,requester_email.ilike.${user.email}` : "";
+      q = q.or(`requester_id.eq.${user.id}${emailFilter}`);
     }
 
     const { data } = await q;
@@ -82,7 +179,7 @@ function MinhasSolicitacoesPage() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, approverScope, approverDepartments.join("|")]);
+  }, [user?.id, user?.email, approverScope, ownerScope, approverDepartments.join("|")]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,17 +198,28 @@ function MinhasSolicitacoesPage() {
     });
   }, [items, query]);
 
+  const canAttach = (it: Card) => {
+    if (it.kind !== "materiais" && it.kind !== "compras") return { show: false, enabled: false };
+    const isOwnRow =
+      (!!user?.id && it.requester_id === user.id) ||
+      (!!user?.email && !!it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
+    if (!isOwnRow && !ownerScope) return { show: false, enabled: false };
+    return { show: true, enabled: UPLOAD_ALLOWED_STATUSES.includes(it.status) };
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
-            <ClipboardList className="h-3 w-3" /> {approverScope ? "Visão do Aprovador" : "Visão do Solicitante"}
+            <ClipboardList className="h-3 w-3" /> {ownerScope ? "Visão do Proprietário" : approverScope ? "Visão do Aprovador" : "Visão do Solicitante"}
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Minhas Solicitações</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {fullName ? `${fullName} · ` : ""}
-            {approverScope
+            {ownerScope
+              ? "Todas as solicitações emitidas no sistema — atualizado em tempo real."
+              : approverScope
               ? `Solicitações dos departamentos sob sua alçada${approverDepartments.length ? ` (${approverDepartments.join(", ")})` : ""} — atualizado em tempo real.`
               : "Acompanhamento em tempo real do status no fluxo de compras."}
           </p>
@@ -177,17 +285,19 @@ function MinhasSolicitacoesPage() {
                     <th className="text-left p-4">Código</th>
                     <th className="text-left p-4">Tipo</th>
                     <th className="text-left p-4">Título / Resumo</th>
-                    {approverScope && <th className="text-left p-4">Solicitante</th>}
+                    {(approverScope || ownerScope) && <th className="text-left p-4">Solicitante</th>}
                     <th className="text-left p-4">Comprador</th>
                     <th className="text-left p-4">Última movimentação</th>
                     <th className="text-left p-4">Status atual</th>
                     <th className="text-left p-4">Pedido ERP</th>
+                    <th className="text-left p-4">Anexar</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((it) => {
                     const meta = STATUS_META[it.status];
                     const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
+                    const att = canAttach(it);
                     return (
                       <tr key={it.id} className="border-t">
                         <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
@@ -199,7 +309,7 @@ function MinhasSolicitacoesPage() {
                         <td className="p-4">
                           <div className="font-medium">{it.title}</div>
                           {it.summary && <div className="text-xs text-muted-foreground truncate max-w-md">{it.summary}</div>}
-                          {approverScope && dept && (
+                          {(approverScope || ownerScope) && dept && (
                             <div className="mt-1">
                               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
                                 {dept}
@@ -207,7 +317,7 @@ function MinhasSolicitacoesPage() {
                             </div>
                           )}
                         </td>
-                        {approverScope && (
+                        {(approverScope || ownerScope) && (
                           <td className="p-4 text-xs text-muted-foreground truncate max-w-[200px]">
                             {it.requester_email ?? "—"}
                           </td>
@@ -237,6 +347,18 @@ function MinhasSolicitacoesPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
+                        <td className="p-4">
+                          {att.show ? (
+                            <ComplementaryUploadButton
+                              card={{ id: it.id }}
+                              kind={it.kind}
+                              disabled={!att.enabled}
+                              onUploaded={reload}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -250,6 +372,7 @@ function MinhasSolicitacoesPage() {
             {filtered.map((it) => {
               const meta = STATUS_META[it.status];
               const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
+              const att = canAttach(it);
               return (
                 <li key={it.id} className="rounded-xl border bg-card p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
@@ -259,22 +382,32 @@ function MinhasSolicitacoesPage() {
                       </div>
                       <h3 className="font-medium mt-0.5 truncate">{it.title}</h3>
                     </div>
-                    <span
-                      className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold text-white shrink-0"
-                      style={{ background: meta?.tone ?? "var(--primary)" }}
-                    >
-                      {meta?.label ?? it.status}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold text-white"
+                        style={{ background: meta?.tone ?? "var(--primary)" }}
+                      >
+                        {meta?.label ?? it.status}
+                      </span>
+                      {att.show && (
+                        <ComplementaryUploadButton
+                          card={{ id: it.id }}
+                          kind={it.kind}
+                          disabled={!att.enabled}
+                          onUploaded={reload}
+                        />
+                      )}
+                    </div>
                   </div>
                   {it.summary && <p className="text-xs text-muted-foreground mt-1 truncate">{it.summary}</p>}
                   <div className="mt-2 grid grid-cols-1 gap-1 text-xs">
-                    {approverScope && (
+                    {(approverScope || ownerScope) && (
                       <div>
                         <span className="text-muted-foreground">Solicitante: </span>
                         <span className="truncate">{it.requester_email ?? "—"}</span>
                       </div>
                     )}
-                    {approverScope && dept && (
+                    {(approverScope || ownerScope) && dept && (
                       <div>
                         <span className="text-muted-foreground">Departamento: </span>
                         <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
