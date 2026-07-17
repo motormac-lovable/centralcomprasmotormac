@@ -1631,7 +1631,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {/* ── Attachments (all columns) ── */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/{MAX_ATTACHMENTS})
+              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length})
             </h3>
             <div className="space-y-2 mb-3">
               {attachments.map((a) => (
