@@ -428,6 +428,7 @@ function HistoricoPage() {
                         card={{ id: it.id }}
                         kind={it.kind}
                         disabled={!canUpload}
+                        existingCount={countExistingFiles(it.data)}
                         onUploaded={reload}
                       />
                     );
