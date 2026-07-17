@@ -147,6 +147,7 @@ export type Database = {
           order_number: string | null
           ready_for_apollo_integration: boolean
           requester_email: string | null
+          requester_id: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
           status_changed_at: string
@@ -174,6 +175,7 @@ export type Database = {
           order_number?: string | null
           ready_for_apollo_integration?: boolean
           requester_email?: string | null
+          requester_id?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
           status_changed_at?: string
@@ -201,6 +203,7 @@ export type Database = {
           order_number?: string | null
           ready_for_apollo_integration?: boolean
           requester_email?: string | null
+          requester_id?: string | null
           requester_name?: string | null
           status?: Database["public"]["Enums"]["card_status"]
           status_changed_at?: string
@@ -396,6 +399,7 @@ export type Database = {
           order_number: string | null
           ready_for_apollo_integration: boolean
           requester_email: string | null
+          requester_id: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
           status_changed_at: string
@@ -453,6 +457,7 @@ export type Database = {
           order_number: string | null
           ready_for_apollo_integration: boolean
           requester_email: string | null
+          requester_id: string | null
           requester_name: string | null
           status: Database["public"]["Enums"]["card_status"]
           status_changed_at: string
