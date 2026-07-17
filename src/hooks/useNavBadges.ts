@@ -9,6 +9,7 @@ export function useNavBadges() {
   const [minhasCount, setMinhasCount] = useState(0);
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
+  const [historicoCount, setHistoricoCount] = useState(0);
   const [bump, setBump] = useState(0);
 
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
