@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const loadRoles = async (uid: string | undefined, sess?: Session | null) => {
+  const loadRoles = async (uid: string | undefined, sess?: Session | null, opts?: { silent?: boolean }) => {
     if (!uid) {
       setRoles([]);
       setFullName("");
@@ -86,7 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(false);
       return;
     }
-    setProfileLoading(true);
+    // `silent` evita flip de loading em revalidações (ex.: retorno de foco após
+    // diálogo nativo de arquivo), o que desmontava o Kanban/modal e cancelava
+    // o onChange do <input type="file">.
+    const silent = opts?.silent === true && loadedForUserRef.current === uid;
+    if (!silent) setProfileLoading(true);
     try {
       const [{ data: rolesData }, { data: profile }, { data: approverCfg }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", uid),
@@ -102,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApproverCeiling(Number(approverCfg?.teto_alcada ?? 0));
       loadedForUserRef.current = uid;
     } finally {
-      setProfileLoading(false);
+      if (!silent) setProfileLoading(false);
     }
   };
 
