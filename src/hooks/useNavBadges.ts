@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
-import { getLastVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+import { getLastVisit, markVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+
 
 export function useNavBadges() {
   const { user, isApprover, isBuyer, isOwner, isAdmin, isAuditor, isSolicitante, approverDepartments } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [minhasCount, setMinhasCount] = useState(0);
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
@@ -31,78 +34,104 @@ export function useNavBadges() {
       return lv && lv > DATA_DE_CORTE_PRODUCAO_ISO ? lv : DATA_DE_CORTE_PRODUCAO_ISO;
     };
 
+    // Mapa rota→chave. Quando o usuário está visualizando uma rota rastreada,
+    // re-marcamos a visita a cada load() (incluindo disparos por realtime),
+    // garantindo que o badge não persista após novas entradas enquanto a tela
+    // está aberta.
+    const routeKey = (): VisitKey | null => {
+      if (pathname.startsWith("/minhas-solicitacoes")) return "minhas";
+      if (pathname.startsWith("/historico")) return "historico";
+      if (pathname.startsWith("/aprovacoes")) return "aprovacoes";
+      if (pathname.startsWith("/admin")) return "admin";
+      return null;
+    };
+
     const load = async () => {
+      const currentKey = routeKey();
+      if (currentKey && uid) markVisit(uid, currentKey);
+
       // Minhas Solicitações — novas desde a última visita
       if (showMinhas && user?.email) {
-        const since = sinceIso("minhas");
-        let q = supabase
-          .from("kanban_cards")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", since);
-
-        if (approverScope && approverDepartments.length > 0) {
-          const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
-          q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+        if (currentKey === "minhas") {
+          if (!cancelled) setMinhasCount(0);
         } else {
-          q = q.ilike("requester_email", user.email);
+          const since = sinceIso("minhas");
+          let q = supabase
+            .from("kanban_cards")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", since);
+
+          if (approverScope && approverDepartments.length > 0) {
+            const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
+            q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+          } else {
+            q = q.ilike("requester_email", user.email);
+          }
+          const { count } = await q;
+          if (!cancelled) setMinhasCount(count ?? 0);
         }
-        const { count } = await q;
-        if (!cancelled) setMinhasCount(count ?? 0);
       } else if (!cancelled) {
         setMinhasCount(0);
       }
 
       // Aprovações — novas entradas em "aguardando_aprovacao" desde a última visita
       if (showAprovacoes) {
-        const since = sinceIso("aprovacoes");
-        let q = supabase
-          .from("kanban_cards")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "aguardando_aprovacao")
-          // status_changed_at reflete a entrada na coluna; fallback para created_at.
-          .gte("status_changed_at", since);
-
-        if (isApprover && !isOwner && approverDepartments.length > 0) {
-          const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
-          q = q.filter("data->>departamento", "in", `(${deptList})`);
+        if (currentKey === "aprovacoes") {
+          if (!cancelled) setAprovacoesCount(0);
         } else if (isApprover && !isOwner && approverDepartments.length === 0) {
           if (!cancelled) setAprovacoesCount(0);
         } else {
+          const since = sinceIso("aprovacoes");
+          let q = supabase
+            .from("kanban_cards")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "aguardando_aprovacao")
+            .gte("status_changed_at", since);
+          if (isApprover && !isOwner && approverDepartments.length > 0) {
+            const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
+            q = q.filter("data->>departamento", "in", `(${deptList})`);
+          }
           const { count } = await q;
           if (!cancelled) setAprovacoesCount(count ?? 0);
-          return;
         }
-        const { count } = await q;
-        if (!cancelled) setAprovacoesCount(count ?? 0);
       } else if (!cancelled) {
         setAprovacoesCount(0);
       }
 
       // Admin — novos cadastros pendentes desde a última visita
       if (showAdmin) {
-        const since = sinceIso("admin");
-        const { count } = await supabase
-          .from("buyer_applications")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending")
-          .gte("created_at", since);
-        if (!cancelled) setAdminCount(count ?? 0);
+        if (currentKey === "admin") {
+          if (!cancelled) setAdminCount(0);
+        } else {
+          const since = sinceIso("admin");
+          const { count } = await supabase
+            .from("buyer_applications")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending")
+            .gte("created_at", since);
+          if (!cancelled) setAdminCount(count ?? 0);
+        }
       } else if (!cancelled) {
         setAdminCount(0);
       }
 
       // Histórico (compradores/auditores) — novos cards desde a última visita
       if (showHistorico) {
-        const since = sinceIso("historico");
-        const { count } = await supabase
-          .from("kanban_cards")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", since);
-        if (!cancelled) setHistoricoCount(count ?? 0);
+        if (currentKey === "historico") {
+          if (!cancelled) setHistoricoCount(0);
+        } else {
+          const since = sinceIso("historico");
+          const { count } = await supabase
+            .from("kanban_cards")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", since);
+          if (!cancelled) setHistoricoCount(count ?? 0);
+        }
       } else if (!cancelled) {
         setHistoricoCount(0);
       }
     };
+
 
     load();
 
@@ -117,7 +146,7 @@ export function useNavBadges() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), bump]);
+  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), bump, pathname]);
 
   return { minhasCount, aprovacoesCount, adminCount, historicoCount };
 }
