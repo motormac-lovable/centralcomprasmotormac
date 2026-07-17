@@ -8,6 +8,7 @@ import { getLastVisit, markVisit, subscribeVisits, type VisitKey } from "@/lib/l
 
 export function useNavBadges() {
   const { user, isApprover, isBuyer, isOwner, isAdmin, isAuditor, isSolicitante, approverDepartments } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [minhasCount, setMinhasCount] = useState(0);
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
