@@ -1683,7 +1683,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   onClick={() => fileInput.current?.click()}
                   className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS})
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS} arquivos · 100 MB no total)
                 </button>
               </>
             )}
