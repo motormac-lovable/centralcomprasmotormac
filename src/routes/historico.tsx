@@ -66,7 +66,7 @@ function HistoricoPage() {
   const ownerScope = isOwner;
 
   const reload = async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     setLoading(true);
     // Para recuperar ou visualizar as solicitações DEMO anteriores aos testes reais, altere ou comente este filtro de data.
     let q = supabase
@@ -79,11 +79,16 @@ function HistoricoPage() {
       // Proprietário enxerga TODAS as solicitações emitidas no sistema em tempo real.
     } else if (approverScope && approverDepartments.length > 0) {
       // Aprovador enxerga todas as solicitações dos departamentos sob sua alçada
-      // (em qualquer status), além das que ele mesmo criou.
+      // (em qualquer status), além das que ele mesmo criou (por ID ou e-mail).
       const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
-      q = q.or(`requester_email.ilike.${user.email},data->>departamento.in.(${deptList})`);
+      const emailFilter = user.email ? `,requester_email.ilike.${user.email}` : "";
+      q = q.or(`requester_id.eq.${user.id}${emailFilter},data->>departamento.in.(${deptList})`);
     } else {
-      q = q.ilike("requester_email", user.email);
+      // Solicitante: filtra pelo ID de autenticação (fonte de verdade, idêntica
+      // ao Kanban) e também casa por e-mail para cobrir cards antigos sem
+      // requester_id — resolve o bug de sincronização mobile.
+      const emailFilter = user.email ? `,requester_email.ilike.${user.email}` : "";
+      q = q.or(`requester_id.eq.${user.id}${emailFilter}`);
     }
 
     const { data } = await q;
