@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { markVisit, type VisitKey } from "@/lib/last-visits";
 
 // Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
 const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
@@ -15,7 +16,24 @@ export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
-  const { minhasCount, aprovacoesCount } = useNavBadges();
+  const { minhasCount, aprovacoesCount, adminCount, historicoCount } = useNavBadges();
+
+  // Marca visita para limpar o badge assim que a tela é aberta.
+  useEffect(() => {
+    if (!user?.id) return;
+    const map: Array<[string, VisitKey]> = [
+      ["/minhas-solicitacoes", "minhas"],
+      ["/historico", "historico"],
+      ["/aprovacoes", "aprovacoes"],
+      ["/admin", "admin"],
+    ];
+    for (const [prefix, key] of map) {
+      if (pathname.startsWith(prefix)) {
+        markVisit(user.id, key);
+        break;
+      }
+    }
+  }, [pathname, user?.id]);
 
   // Bloqueio de tela dinâmico: nenhuma tela acessível sem login (exceto login/cadastro/reset).
   useEffect(() => {
@@ -70,13 +88,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
                 <NavLink to="/dashboard" active={pathname.startsWith("/dashboard")} icon={<BarChart3 className="h-4 w-4" />}>Dashboard</NavLink>
                 <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
-                <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />}>Histórico</NavLink>
+                <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />} badge={historicoCount}>Histórico</NavLink>
               </>
             )}
             {/* Admin: Proprietário/Administrador com poder total; Comprador com Gestão de Solicitantes;
                 Auditor com Gestão de Solicitantes (apenas exclusão). */}
             {(isAdmin || isBuyer || isAuditor) && (
-              <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />}>Admin</NavLink>
+              <NavLink to="/admin" active={pathname.startsWith("/admin")} icon={<ShieldCheck className="h-4 w-4" />} badge={isAdmin ? adminCount : 0}>Admin</NavLink>
             )}
             {isOwner && (
               <NavLink to="/dev" active={pathname.startsWith("/dev")} icon={<Code2 className="h-4 w-4" />}>Dev</NavLink>
