@@ -365,7 +365,7 @@ function HistoricoPage() {
                   </span>
                   {(() => {
                     const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
-                    if (!isOwnRow) return null;
+                    if (!isOwnRow && !isOwner) return null;
                     if (it.kind !== "materiais" && it.kind !== "compras") return null;
                     const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
                     return (
@@ -387,7 +387,7 @@ function HistoricoPage() {
                   </span>
                   {(() => {
                     const isOwnRow = !!(user?.email && it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
-                    if (!isOwnRow) return null;
+                    if (!isOwnRow && !isOwner) return null;
                     if (it.kind !== "materiais" && it.kind !== "compras") return null;
                     const canUpload = UPLOAD_ALLOWED_STATUSES.includes(it.status);
                     return (
