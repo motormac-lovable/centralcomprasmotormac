@@ -15,6 +15,7 @@ export function useNavBadges() {
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
   const showAprovacoes = isApprover || isOwner || isAuditor;
   const showAdmin = isAdmin; // apenas Proprietário/Admin veem cadastros pendentes
+  const showHistorico = isBuyer || isAuditor; // Histórico completo (compradores/auditores)
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
 
   // Recomputa quando marcamos visita em alguma tela.
