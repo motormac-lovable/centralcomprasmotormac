@@ -1071,7 +1071,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     await patch({ suppliers: suppliers.map((s) => ({ ...s, chosen: s.id === id })) as never });
   };
 
-  const MAX_ATTACHMENTS = 20;
+  const MAX_ATTACHMENTS = 4;
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (attachments.length + files.length > MAX_ATTACHMENTS) {
