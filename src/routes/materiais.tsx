@@ -294,15 +294,14 @@ function MateriaisPage() {
 
         <Field
           label="Anexos"
-          hint="Até 5 arquivos · 100MB cada"
+          hint="Até 5 arquivos · 50MB cada"
           error={errors.files}
         >
           <FileUpload
             files={files}
             onChange={setFiles}
             maxFiles={5}
-            maxSizeMB={100}
-            accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,image/*,video/*,audio/*"
+            maxSizeMB={50}
           />
         </Field>
 
