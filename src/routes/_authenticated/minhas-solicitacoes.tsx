@@ -384,6 +384,7 @@ function MinhasSolicitacoesPage() {
                               card={{ id: it.id }}
                               kind={it.kind}
                               disabled={!att.enabled}
+                              existingCount={countExistingFiles(it.data)}
                               onUploaded={reload}
                             />
                           ) : (
