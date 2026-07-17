@@ -144,9 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       loadRoles(data.session.user.id, data.session).finally(() => setLoading(false));
     });
-    // Recheca ao voltar o foco da aba — "no próximo clique" após alteração.
+    // Recheca ao voltar o foco da aba — silencioso, sem flip de loading (evita
+    // desmontar a tela e o modal quando o usuário retorna do diálogo nativo
+    // de seleção de arquivo, o que cancelava o upload em andamento).
     const onFocus = () => {
-      supabase.auth.getSession().then(({ data }) => loadRoles(data.session?.user.id, data.session));
+      supabase.auth.getSession().then(({ data }) =>
+        loadRoles(data.session?.user.id, data.session, { silent: true }),
+      );
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener("visibilitychange", onFocus);
