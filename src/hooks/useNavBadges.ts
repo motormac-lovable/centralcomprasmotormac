@@ -143,7 +143,7 @@ export function useNavBadges() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), bump, pathname]);
+  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), pathname]);
 
   return { minhasCount, aprovacoesCount, adminCount, historicoCount };
 }
