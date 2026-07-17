@@ -1234,7 +1234,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
         <div className="p-6 overflow-y-auto space-y-6">
           {isLocked && (
             <div className="rounded-lg border-2 border-amber-300/70 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2">
-              <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+              <LockIcon className="h-4 w-4 mt-0.5 shrink-0" />
               <div>
                 <strong>Card em modo somente-leitura.</strong>{" "}
                 Após entrar em <em>Aguardando Aprovação</em>, os campos, fornecedores e anexos ficam bloqueados por governança.
