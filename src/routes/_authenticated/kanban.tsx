@@ -1071,33 +1071,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     await patch({ suppliers: suppliers.map((s) => ({ ...s, chosen: s.id === id })) as never });
   };
 
-  const MAX_ATTACHMENTS = 4;
-  const MAX_TOTAL_BYTES = 100 * 1024 * 1024; // 100 MB somados por card
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (files.length > MAX_ATTACHMENTS) {
-      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por envio.`);
-      return;
-    }
-    if (attachments.length + files.length > MAX_ATTACHMENTS) {
-      toast.error(`Número de arquivos excedido. Máximo de ${MAX_ATTACHMENTS} arquivos por card.`);
-      return;
-    }
     const arr = Array.from(files);
-    const currentBytes = attachments.reduce((s, a) => s + (a.size || 0), 0);
-    const incomingBytes = arr.reduce((s, f) => s + f.size, 0);
-    if (currentBytes + incomingBytes > MAX_TOTAL_BYTES) {
-      const usedMb = (currentBytes / (1024 * 1024)).toFixed(1);
-      toast.error(`Capacidade excedida: o total de anexos do card não pode ultrapassar 100 MB (já utilizados ${usedMb} MB).`);
-      return;
-    }
     const results = await Promise.all(
       arr.map(async (file) => {
         const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
         const path = `${card.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
         const { error } = await supabase.storage.from("orcamentos").upload(path, file);
         if (error) {
-          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo. O formato ou tamanho não é permitido.")}`);
+          toast.error(`${file.name}: ${translateError(error, "Falha ao enviar o arquivo.")}`);
           return null;
         }
         return { name: file.name, path, size: file.size, uploaded_at: new Date().toISOString() } as Attachment;
@@ -1115,9 +1098,10 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
         attachments: [...attachments, ...uploaded] as never,
         observations: [...observations, ...auditObs] as never,
       });
-      toast.success(`${uploaded.length} arquivo(s) enviado(s) simultaneamente.`);
+      toast.success(`${uploaded.length} arquivo(s) enviado(s).`);
     }
   };
+
 
   const downloadAttachment = async (a: Attachment) => {
     const { data, error } = await supabase.storage
@@ -1647,7 +1631,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {/* ── Attachments (all columns) ── */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length}/{MAX_ATTACHMENTS})
+              <Paperclip className="h-3.5 w-3.5" /> Anexos de Orçamentos ({attachments.length})
             </h3>
             <div className="space-y-2 mb-3">
               {attachments.map((a) => (
@@ -1670,7 +1654,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               ))}
               {attachments.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhum anexo.</p>}
             </div>
-            {!readOnly && attachments.length < MAX_ATTACHMENTS && (
+            {!readOnly && (
               <>
                 <input
                   ref={fileInput}
@@ -1683,7 +1667,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   onClick={() => fileInput.current?.click()}
                   className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS} arquivos · 100 MB no total)
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · sem limite)
                 </button>
               </>
             )}
