@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
   CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon, Send,
-  ChevronDown,
+  ChevronDown, Lock as LockIcon,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -191,13 +191,25 @@ function KanbanPage() {
     // Append a transition log entry to observations (used by History panel)
     const targetLabel = STATUS_COLUMNS.find((s) => s.id === newStatus)?.label ?? newStatus;
     const prevObs = ((card.observations as unknown as Observation[]) ?? []);
+    const LOCKED = ["aguardando_aprovacao", "cotacoes_aprovadas", "cotacoes_rejeitadas", "pedidos_gerados"] as const;
+    const EDITABLE = ["solicitacoes_abertas", "em_cotacao"] as const;
+    const wasLocked = (LOCKED as readonly string[]).includes(card.status);
+    const goingBackEditable = wasLocked && (EDITABLE as readonly string[]).includes(newStatus);
+    const goingIntoLocked = !wasLocked && (LOCKED as readonly string[]).includes(newStatus);
+    let transitionText: string;
+    if (goingBackEditable) {
+      transitionText = `↩️ Solicitação movida de volta para "${targetLabel}" por ${actorName} para reajuste de valores. Campos, fornecedores e anexos foram desbloqueados para edição.`;
+    } else if (goingIntoLocked) {
+      transitionText = `🔒 Movido para "${targetLabel}" por ${actorName}. Card entrou em modo somente-leitura (lock de governança).`;
+    } else if (card.kind === "contratos") {
+      transitionText = `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`;
+    } else {
+      transitionText = `➡️ Movido para "${targetLabel}" por ${actorName}.`;
+    }
     const transitionLog: Observation = {
       at: new Date().toISOString(),
       author: actorName,
-      text:
-        card.kind === "contratos"
-          ? `📄 Card assumido/movimentado pelo Comprador ${actorName} em ${new Date().toLocaleString("pt-BR")} — destino: "${targetLabel}".`
-          : `➡️ Movido para "${targetLabel}" por ${actorName}.`,
+      text: transitionText,
     };
 
     // Regra dinâmica: usuário Comprador que movimenta o card assume o campo "Comprador".
@@ -897,8 +909,12 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
-  const readOnly = isAuditor;
-  const canEditItens = !isAuditor && (isBuyer || isAdmin || isOwner) && card.status === "em_cotacao";
+  // Lock de governança: após avançar para Aprovação, o card fica somente-leitura
+  // até que seja movido de volta para "Solicitações abertas" ou "Em cotação".
+  const EDITABLE_STATUSES: Status[] = ["solicitacoes_abertas", "em_cotacao"];
+  const isLocked = !EDITABLE_STATUSES.includes(card.status);
+  const readOnly = isAuditor || isLocked;
+  const canEditItens = !isAuditor && !isLocked && (isBuyer || isAdmin || isOwner) && card.status === "em_cotacao";
   const canQuickReject =
     !isAuditor &&
     (isBuyer || isAdmin || isOwner) &&
@@ -1228,7 +1244,17 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
         </div>
 
         <div className="p-6 overflow-y-auto space-y-6">
-          {/* ── Decision module (Aguardando Aprovação) ── */}
+          {isLocked && (
+            <div className="rounded-lg border-2 border-amber-300/70 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2">
+              <LockIcon className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <strong>Card em modo somente-leitura.</strong>{" "}
+                Após entrar em <em>Aguardando Aprovação</em>, os campos, fornecedores e anexos ficam bloqueados por governança.
+                Para reajustar valores, mova o card de volta para <em>Em cotação</em>.
+              </div>
+            </div>
+          )}
+
           {card.status === "aguardando_aprovacao" && (
             canDecide ? (
               <section className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
