@@ -1072,6 +1072,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   };
 
   const MAX_ATTACHMENTS = 4;
+  const MAX_TOTAL_BYTES = 100 * 1024 * 1024; // 100 MB somados por card
   const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (files.length > MAX_ATTACHMENTS) {
@@ -1083,6 +1084,13 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
       return;
     }
     const arr = Array.from(files);
+    const currentBytes = attachments.reduce((s, a) => s + (a.size || 0), 0);
+    const incomingBytes = arr.reduce((s, f) => s + f.size, 0);
+    if (currentBytes + incomingBytes > MAX_TOTAL_BYTES) {
+      const usedMb = (currentBytes / (1024 * 1024)).toFixed(1);
+      toast.error(`Capacidade excedida: o total de anexos do card não pode ultrapassar 100 MB (já utilizados ${usedMb} MB).`);
+      return;
+    }
     const results = await Promise.all(
       arr.map(async (file) => {
         const safeName = file.name.normalize("NFKD").replace(/[^\w.\-]+/g, "_");
@@ -1675,7 +1683,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   onClick={() => fileInput.current?.click()}
                   className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS})
+                  <Plus className="h-3.5 w-3.5" /> Adicionar arquivos (seleção múltipla · qualquer formato · até {MAX_ATTACHMENTS} arquivos · 100 MB no total)
                 </button>
               </>
             )}
