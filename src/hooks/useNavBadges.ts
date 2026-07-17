@@ -13,7 +13,6 @@ export function useNavBadges() {
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
   const [historicoCount, setHistoricoCount] = useState(0);
-  const [bump, setBump] = useState(0);
 
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
   const showAprovacoes = isApprover || isOwner || isAuditor;
@@ -21,8 +20,6 @@ export function useNavBadges() {
   const showHistorico = isBuyer || isAuditor; // Histórico completo (compradores/auditores)
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
 
-  // Recomputa quando marcamos visita em alguma tela.
-  useEffect(() => subscribeVisits(() => setBump((n) => n + 1)), []);
 
   useEffect(() => {
     let cancelled = false;
