@@ -101,7 +101,7 @@ function HistoricoPage() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, approverScope, approverDepartments.join("|")]);
+  }, [user?.email, approverScope, ownerScope, approverDepartments.join("|")]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
