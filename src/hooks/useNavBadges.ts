@@ -2,29 +2,41 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
-
-const FINAL_STATUSES = ["cotacoes_rejeitadas", "pedidos_gerados"];
+import { getLastVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
 
 export function useNavBadges() {
   const { user, isApprover, isBuyer, isOwner, isAdmin, isAuditor, isSolicitante, approverDepartments } = useAuth();
   const [minhasCount, setMinhasCount] = useState(0);
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
+  const [adminCount, setAdminCount] = useState(0);
+  const [bump, setBump] = useState(0);
 
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
   const showAprovacoes = isApprover || isOwner || isAuditor;
+  const showAdmin = isAdmin; // apenas Proprietário/Admin veem cadastros pendentes
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
+
+  // Recomputa quando marcamos visita em alguma tela.
+  useEffect(() => subscribeVisits(() => setBump((n) => n + 1)), []);
 
   useEffect(() => {
     let cancelled = false;
+    const uid = user?.id;
+
+    const sinceIso = (key: VisitKey) => {
+      const lv = getLastVisit(uid, key);
+      // Se nunca visitou, usa o corte de produção como piso — evita "999+" no primeiro acesso.
+      return lv && lv > DATA_DE_CORTE_PRODUCAO_ISO ? lv : DATA_DE_CORTE_PRODUCAO_ISO;
+    };
 
     const load = async () => {
-      // Minhas Solicitações — ativas
+      // Minhas Solicitações — novas desde a última visita
       if (showMinhas && user?.email) {
+        const since = sinceIso("minhas");
         let q = supabase
           .from("kanban_cards")
           .select("id", { count: "exact", head: true })
-          .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
-          .not("status", "in", `(${FINAL_STATUSES.join(",")})`);
+          .gte("created_at", since);
 
         if (approverScope && approverDepartments.length > 0) {
           const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
@@ -38,26 +50,43 @@ export function useNavBadges() {
         setMinhasCount(0);
       }
 
-      // Aprovações — aguardando_aprovacao no depto do aprovador
+      // Aprovações — novas entradas em "aguardando_aprovacao" desde a última visita
       if (showAprovacoes) {
+        const since = sinceIso("aprovacoes");
         let q = supabase
           .from("kanban_cards")
           .select("id", { count: "exact", head: true })
           .eq("status", "aguardando_aprovacao")
-          .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO);
+          // status_changed_at reflete a entrada na coluna; fallback para created_at.
+          .gte("status_changed_at", since);
 
-        // Owner/Auditor veem todos; Aprovador filtra pelos departamentos
         if (isApprover && !isOwner && approverDepartments.length > 0) {
           const deptList = approverDepartments.map((d) => `"${d.replace(/"/g, '\\"')}"`).join(",");
           q = q.filter("data->>departamento", "in", `(${deptList})`);
         } else if (isApprover && !isOwner && approverDepartments.length === 0) {
           if (!cancelled) setAprovacoesCount(0);
+        } else {
+          const { count } = await q;
+          if (!cancelled) setAprovacoesCount(count ?? 0);
           return;
         }
         const { count } = await q;
         if (!cancelled) setAprovacoesCount(count ?? 0);
       } else if (!cancelled) {
         setAprovacoesCount(0);
+      }
+
+      // Admin — novos cadastros pendentes desde a última visita
+      if (showAdmin) {
+        const since = sinceIso("admin");
+        const { count } = await supabase
+          .from("buyer_applications")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .gte("created_at", since);
+        if (!cancelled) setAdminCount(count ?? 0);
+      } else if (!cancelled) {
+        setAdminCount(0);
       }
     };
 
@@ -66,6 +95,7 @@ export function useNavBadges() {
     const ch = supabase
       .channel("nav-badges")
       .on("postgres_changes", { event: "*", schema: "public", table: "kanban_cards" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "buyer_applications" }, () => load())
       .subscribe();
 
     return () => {
@@ -73,7 +103,7 @@ export function useNavBadges() {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, showMinhas, showAprovacoes, approverScope, isApprover, isOwner, approverDepartments.join("|")]);
+  }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, approverScope, isApprover, isOwner, approverDepartments.join("|"), bump]);
 
-  return { minhasCount, aprovacoesCount };
+  return { minhasCount, aprovacoesCount, adminCount };
 }
