@@ -3,7 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
-import { getLastVisit, markVisit, subscribeVisits, type VisitKey } from "@/lib/last-visits";
+import { getLastVisit, markVisit, type VisitKey } from "@/lib/last-visits";
 
 
 export function useNavBadges() {
