@@ -1129,7 +1129,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
 
   const deleteAttachment = async (a: Attachment) => {
     await supabase.storage.from("orcamentos").remove([a.path]);
-    await patch({ attachments: attachments.filter((x) => x.path !== a.path) as never });
+    const author = fullName || user?.email || "Comprador";
+    const auditObs: Observation = {
+      at: new Date().toISOString(),
+      author,
+      text: `🗑️ ${author} removeu o anexo "${a.name}" do card.`,
+    };
+    await patch({
+      attachments: attachments.filter((x) => x.path !== a.path) as never,
+      observations: [...observations, auditObs] as never,
+    });
   };
 
   const approve = async () => {
