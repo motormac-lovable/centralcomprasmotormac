@@ -90,6 +90,18 @@ export function useNavBadges() {
       } else if (!cancelled) {
         setAdminCount(0);
       }
+
+      // Histórico (compradores/auditores) — novos cards desde a última visita
+      if (showHistorico) {
+        const since = sinceIso("historico");
+        const { count } = await supabase
+          .from("kanban_cards")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", since);
+        if (!cancelled) setHistoricoCount(count ?? 0);
+      } else if (!cancelled) {
+        setHistoricoCount(0);
+      }
     };
 
     load();
