@@ -331,7 +331,15 @@ function MinhasSolicitacoesPage() {
                     const meta = STATUS_META[it.status];
                     const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
                     const att = canAttach(it);
+                    const fat = getFaturamento(it.data);
+                    const hasFaturamento =
+                      it.status === "pedidos_gerados" &&
+                      ((fat.notas_fiscais?.length ?? 0) > 0 ||
+                        (fat.boletos?.length ?? 0) > 0 ||
+                        !!(fat.xml && fat.xml.trim()));
+                    const totalCols = 8 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
+                      <>
                       <tr key={it.id} className="border-t">
                         <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
                         <td className="p-4">
@@ -394,6 +402,17 @@ function MinhasSolicitacoesPage() {
                           )}
                         </td>
                       </tr>
+                      {hasFaturamento && (
+                        <tr className="border-t bg-emerald-50/30 dark:bg-emerald-950/10">
+                          <td colSpan={totalCols} className="p-4">
+                            <InvoiceDocumentsSection
+                              card={{ id: it.id, data: it.data }}
+                              editable={false}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      </>
                     );
                   })}
                 </tbody>
