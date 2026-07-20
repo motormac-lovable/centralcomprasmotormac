@@ -14,10 +14,10 @@ function buildHtml() {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
       <tr><td align="center">
         <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:44px 36px;border:1px solid #eceff3;">
-          <tr><td align="center" style="padding-bottom:20px;">
-            <img src="${LOGO_URL}" alt="Motormac" width="72" height="72" style="display:block;border:0;">
+          <tr><td align="center" style="padding-bottom:24px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="140" height="140" style="display:block;border:0;width:140px;height:auto;max-width:60%;">
           </td></tr>
-          <tr><td align="center" style="font-size:20px;font-weight:700;color:#0f6b3f;padding-bottom:20px;">
+          <tr><td align="center" style="font-size:22px;font-weight:700;color:#0f6b3f;padding-bottom:20px;">
             Olá, Aprovador
           </td></tr>
           <tr><td align="center" style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
