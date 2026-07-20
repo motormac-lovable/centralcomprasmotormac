@@ -488,6 +488,16 @@ function MinhasSolicitacoesPage() {
                       </div>
                     )}
                   </div>
+                  {it.status === "pedidos_gerados" && (() => {
+                    const fat = getFaturamento(it.data);
+                    const has = (fat.notas_fiscais?.length ?? 0) > 0 || (fat.boletos?.length ?? 0) > 0 || !!(fat.xml && fat.xml.trim());
+                    if (!has) return null;
+                    return (
+                      <div className="mt-3">
+                        <InvoiceDocumentsSection card={{ id: it.id, data: it.data }} editable={false} />
+                      </div>
+                    );
+                  })()}
                 </li>
               );
             })}
