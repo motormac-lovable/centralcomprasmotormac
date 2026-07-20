@@ -412,7 +412,7 @@ function MinhasSolicitacoesPage() {
                           </td>
                         </tr>
                       )}
-                      </>
+                      </FragmentRow>
                     );
                   })}
                 </tbody>
