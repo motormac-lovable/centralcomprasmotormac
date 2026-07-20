@@ -23,20 +23,11 @@ function buildHtml() {
           <tr><td align="center" style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
             Você possui nova(s) Solicitação(ões) de compra aguardando aprovação na Central de Compras Motormac.
           </td></tr>
-          <tr><td align="center" style="font-size:14px;line-height:1.6;color:#555;padding-bottom:28px;">
-            Acesse a Central de Compras clicando no botão abaixo:
+          <tr><td align="center" style="font-size:14px;line-height:1.6;color:#555;padding-bottom:20px;">
+            Acesse a Central de Compras clicando no link abaixo:
           </td></tr>
           <tr><td align="center" style="padding-bottom:8px;">
-            <a href="${APP_URL}" target="_blank" style="display:inline-block;background:#0f6b3f;color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:10px;font-size:15px;font-weight:600;">
-              <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:middle;">
-                <tr>
-                  <td style="vertical-align:middle;padding-right:10px;">
-                    <img src="${LOGO_URL}" alt="" width="22" height="22" style="display:block;border:0;background:#ffffff;border-radius:4px;padding:2px;">
-                  </td>
-                  <td style="vertical-align:middle;color:#ffffff;font-weight:600;font-size:15px;">Central de compras Motormac</td>
-                </tr>
-              </table>
-            </a>
+            <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;font-size:15px;font-weight:600;">https://centralcomprasmotormac.lovable.app</a>
           </td></tr>
           <tr><td align="center" style="font-size:11px;color:#9aa0a6;padding-top:32px;">
             Mensagem automática — favor não responder.
