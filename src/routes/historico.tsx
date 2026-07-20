@@ -9,6 +9,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
+import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
+import { getFaturamento } from "@/lib/invoice-documents";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -387,6 +389,16 @@ function HistoricoPage() {
                       <span>{formatBR(it.status_changed_at || it.created_at)}</span>
                     </span>
                   </div>
+                  {it.status === "pedidos_gerados" && (() => {
+                    const fat = getFaturamento(it.data);
+                    const has = (fat.notas_fiscais?.length ?? 0) > 0 || (fat.boletos?.length ?? 0) > 0 || !!(fat.xml && fat.xml.trim());
+                    if (!has) return null;
+                    return (
+                      <div className="mt-3">
+                        <InvoiceDocumentsSection card={{ id: it.id, data: it.data }} editable={false} />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
                   <span

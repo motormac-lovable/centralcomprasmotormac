@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment as FragmentRow, useEffect, useMemo, useRef, useState } from "react";
 import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
+import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
+import { getFaturamento } from "@/lib/invoice-documents";
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
@@ -329,8 +331,16 @@ function MinhasSolicitacoesPage() {
                     const meta = STATUS_META[it.status];
                     const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
                     const att = canAttach(it);
+                    const fat = getFaturamento(it.data);
+                    const hasFaturamento =
+                      it.status === "pedidos_gerados" &&
+                      ((fat.notas_fiscais?.length ?? 0) > 0 ||
+                        (fat.boletos?.length ?? 0) > 0 ||
+                        !!(fat.xml && fat.xml.trim()));
+                    const totalCols = 8 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
-                      <tr key={it.id} className="border-t">
+                      <FragmentRow key={it.id}>
+                      <tr className="border-t">
                         <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
                         <td className="p-4">
                           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -392,6 +402,17 @@ function MinhasSolicitacoesPage() {
                           )}
                         </td>
                       </tr>
+                      {hasFaturamento && (
+                        <tr className="border-t bg-emerald-50/30 dark:bg-emerald-950/10">
+                          <td colSpan={totalCols} className="p-4">
+                            <InvoiceDocumentsSection
+                              card={{ id: it.id, data: it.data }}
+                              editable={false}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      </FragmentRow>
                     );
                   })}
                 </tbody>
@@ -467,6 +488,16 @@ function MinhasSolicitacoesPage() {
                       </div>
                     )}
                   </div>
+                  {it.status === "pedidos_gerados" && (() => {
+                    const fat = getFaturamento(it.data);
+                    const has = (fat.notas_fiscais?.length ?? 0) > 0 || (fat.boletos?.length ?? 0) > 0 || !!(fat.xml && fat.xml.trim());
+                    if (!has) return null;
+                    return (
+                      <div className="mt-3">
+                        <InvoiceDocumentsSection card={{ id: it.id, data: it.data }} editable={false} />
+                      </div>
+                    );
+                  })()}
                 </li>
               );
             })}
