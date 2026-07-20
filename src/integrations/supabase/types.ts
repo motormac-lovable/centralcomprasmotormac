@@ -48,7 +48,6 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          pending_password: string | null
           phone: string
           requested_ceiling: number | null
           requested_departments: string[]
@@ -64,7 +63,6 @@ export type Database = {
           email: string
           full_name: string
           id?: string
-          pending_password?: string | null
           phone: string
           requested_ceiling?: number | null
           requested_departments?: string[]
@@ -80,7 +78,6 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          pending_password?: string | null
           phone?: string
           requested_ceiling?: number | null
           requested_departments?: string[]
@@ -506,6 +503,19 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_profiles_with_pii: {
+        Args: never
+        Returns: {
+          cpf: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          is_deleted: boolean
+          phone: string
+        }[]
       }
       mark_profile_deleted: {
         Args: { _actor: string; _actor_name: string; _target: string }
