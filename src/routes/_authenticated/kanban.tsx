@@ -241,6 +241,18 @@ function KanbanPage() {
       setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
     } else {
       toast.success(`Movido para "${targetLabel}"`);
+      // Disparo assíncrono de e-mail para os aprovadores (fire-and-forget).
+      if (newStatus === "aguardando_aprovacao") {
+        const cardData = ((card.data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+        const dept = typeof cardData.departamento === "string" ? cardData.departamento.trim() : "";
+        notifyApproversPending({ data: { cardId: card.id, departamento: dept || null } })
+          .then((r) => {
+            if (r?.ok && r.sent > 0) {
+              toast.success(`📧 Notificação enviada para ${r.sent} aprovador(es).`);
+            }
+          })
+          .catch((e) => console.error("[email] Falha ao notificar aprovadores:", e));
+      }
     }
   };
 
