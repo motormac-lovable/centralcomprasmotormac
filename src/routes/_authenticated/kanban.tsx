@@ -531,6 +531,7 @@ function normalizeSearch(s: string): string {
 
 function cardMatchesQuery(card: Card, q: string): boolean {
   const emailLocal = (e?: string | null) => (e ? e.split("@")[0].replace(/[._-]+/g, " ") : "");
+  const visibleSuggestedBuyer = !card.buyer_name && !card.approver_name ? suggestedBuyer(card) : "";
   const parts: string[] = [
     KIND_LABEL[card.kind] ?? "",
     card.kind,
@@ -547,12 +548,11 @@ function cardMatchesQuery(card: Card, q: string): boolean {
     card.codigo_unico ?? "",
     (card as unknown as { numero_pedido_linx?: string | null }).numero_pedido_linx ?? "",
     (card as unknown as { order_number?: string | null }).order_number ?? "",
-    suggestedBuyer(card) ?? "",
+    visibleSuggestedBuyer ?? "",
   ];
   const dump = (v: unknown) => { try { if (v != null) parts.push(JSON.stringify(v)); } catch { /* noop */ } };
   dump(card.data);
   dump((card as unknown as { suppliers?: unknown }).suppliers);
-  dump((card as unknown as { observations?: unknown }).observations);
   dump((card as unknown as { attachments?: unknown }).attachments);
   return normalizeSearch(parts.join(" \u0001 ")).includes(q);
 }
