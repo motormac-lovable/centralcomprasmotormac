@@ -387,6 +387,16 @@ function HistoricoPage() {
                       <span>{formatBR(it.status_changed_at || it.created_at)}</span>
                     </span>
                   </div>
+                  {it.status === "pedidos_gerados" && (() => {
+                    const fat = getFaturamento(it.data);
+                    const has = (fat.notas_fiscais?.length ?? 0) > 0 || (fat.boletos?.length ?? 0) > 0 || !!(fat.xml && fat.xml.trim());
+                    if (!has) return null;
+                    return (
+                      <div className="mt-3">
+                        <InvoiceDocumentsSection card={{ id: it.id, data: it.data }} editable={false} />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
                   <span
