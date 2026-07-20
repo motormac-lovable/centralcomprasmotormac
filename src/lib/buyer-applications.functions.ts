@@ -47,10 +47,27 @@ export const registerBuyerApplicant = createServerFn({ method: "POST" })
       return { ok: true, application_id: existing.id, duplicated: true };
     }
 
+    // Cria o usuário no Auth imediatamente com a senha escolhida (hash gerenciado pelo Supabase).
+    // A senha NÃO é persistida em nenhuma tabela — apenas o hash em auth.users.
+    const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.full_name,
+        cpf: data.cpf,
+        phone: data.phone,
+      },
+    });
+    if (cErr || !created?.user) {
+      throw new Error(cErr?.message || "Falha ao criar usuário.");
+    }
+    const uid = created.user.id;
+
     const { data: inserted, error } = await supabaseAdmin
       .from("buyer_applications")
       .insert({
-        user_id: null,
+        user_id: uid,
         full_name: data.full_name,
         cpf: data.cpf,
         phone: data.phone,
@@ -59,7 +76,6 @@ export const registerBuyerApplicant = createServerFn({ method: "POST" })
         requested_departments: data.requested_departments ?? [],
         requested_ceiling: null,
         status: "pending",
-        pending_password: data.password,
       } as never)
       .select("id")
       .single();
