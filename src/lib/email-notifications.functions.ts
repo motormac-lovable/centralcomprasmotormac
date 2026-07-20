@@ -139,7 +139,7 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
     }
 
     const html = buildHtml();
-    const subject = "Nova solicitação aguardando aprovação — Central de Compras Motormac";
+    const subject = "Solicitação aguarda a sua aprovação!";
 
     let sent = 0;
     const errors: string[] = [];
