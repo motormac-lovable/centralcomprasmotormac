@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const OWNER_EMAILS = ["herllon.souza@motormac.com.br", "vanessa@motormac.com.br"];
+const OWNER_EMAILS = ["herllon.souza@motormac.com.br"];
 
 async function getActorInfo(supabaseAdmin: any, userId: string) {
   const { data: p } = await supabaseAdmin
