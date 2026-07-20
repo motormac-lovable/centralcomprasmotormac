@@ -339,8 +339,8 @@ function MinhasSolicitacoesPage() {
                         !!(fat.xml && fat.xml.trim()));
                     const totalCols = 8 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
-                      <>
-                      <tr key={it.id} className="border-t">
+                      <FragmentRow key={it.id}>
+                      <tr className="border-t">
                         <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
                         <td className="p-4">
                           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
