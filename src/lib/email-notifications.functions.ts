@@ -1,0 +1,172 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+const APP_URL = "https://centralcomprasmotormac.lovable.app";
+const LOGO_URL =
+  "https://centralcomprasmotormac.lovable.app/__l5e/assets-v1/6af60dab-ff7d-4ed5-82ca-db58892a7fcb/logo-motormac.png";
+const SENDER = "centraldecomprasmotormac@gmail.com";
+
+function buildHtml() {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:40px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <tr><td align="center" style="font-size:18px;font-weight:600;padding-bottom:16px;">Olá, Aprovador</td></tr>
+          <tr><td align="center" style="font-size:15px;line-height:1.6;color:#333;padding-bottom:24px;">
+            Você possui nova(s) Solicitação(ões) de compra aguardando aprovação na Central de Compras Motormac.
+          </td></tr>
+          <tr><td align="center" style="font-size:14px;color:#555;padding-bottom:24px;">
+            Acesse a Central de Compras, clicando no link abaixo:
+          </td></tr>
+          <tr><td align="center" style="padding:8px 0 24px 0;">
+            <a href="${APP_URL}" target="_blank" style="display:inline-block;background:#0f6b3f;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;box-shadow:0 2px 6px rgba(15,107,63,0.3);">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:middle;">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:12px;">
+                    <img src="${LOGO_URL}" alt="Motormac" width="28" height="28" style="display:block;border:0;background:#ffffff;border-radius:6px;padding:2px;">
+                  </td>
+                  <td style="vertical-align:middle;color:#ffffff;font-weight:600;font-size:16px;">Central de compras Motormac</td>
+                </tr>
+              </table>
+            </a>
+          </td></tr>
+          <tr><td align="center" style="font-size:12px;color:#8a8a8a;padding-top:16px;border-top:1px solid #eee;">
+            Central de Compras Motormac — mensagem automática, favor não responder.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function encodeRfc2822(to: string, subject: string, html: string): string {
+  const lines = [
+    `From: Central de Compras Motormac <${SENDER}>`,
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: 7bit",
+    "",
+    html,
+  ].join("\r\n");
+  return Buffer.from(lines, "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+const notifySchema = z.object({
+  cardId: z.string().uuid(),
+  departamento: z.string().nullable().optional(),
+});
+
+export const notifyApproversPending = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => notifySchema.parse(d))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    if (!lovableKey || !gmailKey) {
+      console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
+      return { ok: false, sent: 0, reason: "missing_credentials" as const };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Resolve destinatários: aprovadores do departamento + fallback global (owner/admin)
+    // quando nenhum aprovador local existir.
+    const dept = (data.departamento ?? "").trim();
+    const recipients = new Set<string>();
+
+    if (dept) {
+      const { data: settings } = await supabaseAdmin
+        .from("approver_settings")
+        .select("user_id, departments");
+      const approverIds = (settings ?? [])
+        .filter((s: any) => Array.isArray(s.departments) && s.departments.includes(dept))
+        .map((s: any) => s.user_id as string);
+
+      if (approverIds.length) {
+        const { data: roles } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", approverIds)
+          .eq("role", "aprovador");
+        const validIds = (roles ?? []).map((r: any) => r.user_id as string);
+        if (validIds.length) {
+          const { data: profs } = await supabaseAdmin
+            .from("profiles")
+            .select("email, is_active, is_deleted")
+            .in("id", validIds);
+          (profs ?? []).forEach((p: any) => {
+            if (p?.email && p.is_active !== false && !p.is_deleted) recipients.add(p.email);
+          });
+        }
+      }
+    }
+
+    // Fallback: nenhum aprovador local → notifica owners e admins ativos.
+    if (recipients.size === 0) {
+      const { data: roles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["owner", "admin"]);
+      const ids = Array.from(new Set((roles ?? []).map((r: any) => r.user_id as string)));
+      if (ids.length) {
+        const { data: profs } = await supabaseAdmin
+          .from("profiles")
+          .select("email, is_active, is_deleted")
+          .in("id", ids);
+        (profs ?? []).forEach((p: any) => {
+          if (p?.email && p.is_active !== false && !p.is_deleted) recipients.add(p.email);
+        });
+      }
+    }
+
+    if (recipients.size === 0) {
+      console.warn("[email] Nenhum destinatário para o departamento:", dept);
+      return { ok: true, sent: 0 };
+    }
+
+    const html = buildHtml();
+    const subject = "Nova solicitação aguardando aprovação — Central de Compras Motormac";
+
+    let sent = 0;
+    const errors: string[] = [];
+    await Promise.all(
+      Array.from(recipients).map(async (to) => {
+        try {
+          const raw = encodeRfc2822(to, subject, html);
+          const res = await fetch(
+            "https://connector-gateway.lovable.dev/google_mail/gmail/v1/users/me/messages/send",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${lovableKey}`,
+                "X-Connection-Api-Key": gmailKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ raw }),
+            },
+          );
+          if (!res.ok) {
+            const body = await res.text();
+            errors.push(`[${to}] ${res.status}: ${body.slice(0, 300)}`);
+            console.error("[email] Gmail send failed", to, res.status, body);
+          } else {
+            sent++;
+          }
+        } catch (e) {
+          errors.push(`[${to}] ${(e as Error).message}`);
+          console.error("[email] Exception sending to", to, e);
+        }
+      }),
+    );
+
+    return { ok: sent > 0, sent, total: recipients.size, errors };
+  });

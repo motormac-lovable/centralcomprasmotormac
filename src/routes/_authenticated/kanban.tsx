@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
@@ -23,6 +24,7 @@ import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
+import { notifyApproversPending } from "@/lib/email-notifications.functions";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
@@ -35,6 +37,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, mate
 
 function KanbanPage() {
   const { isBuyer, isAuditor, loading } = useAuth();
+  const notifyApprovers = useServerFn(notifyApproversPending);
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -240,6 +243,18 @@ function KanbanPage() {
       setCards((prev) => prev.map((c) => (c.id === card.id ? card : c)));
     } else {
       toast.success(`Movido para "${targetLabel}"`);
+      // Disparo assíncrono de e-mail para os aprovadores (fire-and-forget).
+      if (newStatus === "aguardando_aprovacao") {
+        const cardData = ((card.data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
+        const dept = typeof cardData.departamento === "string" ? cardData.departamento.trim() : "";
+        notifyApprovers({ data: { cardId: card.id, departamento: dept || null } })
+          .then((r) => {
+            if (r?.ok && r.sent > 0) {
+              toast.success(`📧 Notificação enviada para ${r.sent} aprovador(es).`);
+            }
+          })
+          .catch((e) => console.error("[email] Falha ao notificar aprovadores:", e));
+      }
     }
   };
 
