@@ -11,30 +11,35 @@ function buildHtml() {
 <html lang="pt-BR">
   <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
   <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
       <tr><td align="center">
-        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:40px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-          <tr><td align="center" style="font-size:18px;font-weight:600;padding-bottom:16px;">Olá, Aprovador</td></tr>
-          <tr><td align="center" style="font-size:15px;line-height:1.6;color:#333;padding-bottom:24px;">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:44px 36px;border:1px solid #eceff3;">
+          <tr><td align="center" style="padding-bottom:20px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="72" height="72" style="display:block;border:0;">
+          </td></tr>
+          <tr><td align="center" style="font-size:20px;font-weight:700;color:#0f6b3f;padding-bottom:20px;">
+            Olá, Aprovador
+          </td></tr>
+          <tr><td align="center" style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
             Você possui nova(s) Solicitação(ões) de compra aguardando aprovação na Central de Compras Motormac.
           </td></tr>
-          <tr><td align="center" style="font-size:14px;color:#555;padding-bottom:24px;">
-            Acesse a Central de Compras, clicando no link abaixo:
+          <tr><td align="center" style="font-size:14px;line-height:1.6;color:#555;padding-bottom:28px;">
+            Acesse a Central de Compras clicando no botão abaixo:
           </td></tr>
-          <tr><td align="center" style="padding:8px 0 24px 0;">
-            <a href="${APP_URL}" target="_blank" style="display:inline-block;background:#0f6b3f;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:16px;font-weight:600;box-shadow:0 2px 6px rgba(15,107,63,0.3);">
+          <tr><td align="center" style="padding-bottom:8px;">
+            <a href="${APP_URL}" target="_blank" style="display:inline-block;background:#0f6b3f;color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:10px;font-size:15px;font-weight:600;">
               <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:middle;">
                 <tr>
-                  <td style="vertical-align:middle;padding-right:12px;">
-                    <img src="${LOGO_URL}" alt="Motormac" width="28" height="28" style="display:block;border:0;background:#ffffff;border-radius:6px;padding:2px;">
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <img src="${LOGO_URL}" alt="" width="22" height="22" style="display:block;border:0;background:#ffffff;border-radius:4px;padding:2px;">
                   </td>
-                  <td style="vertical-align:middle;color:#ffffff;font-weight:600;font-size:16px;">Central de compras Motormac</td>
+                  <td style="vertical-align:middle;color:#ffffff;font-weight:600;font-size:15px;">Central de compras Motormac</td>
                 </tr>
               </table>
             </a>
           </td></tr>
-          <tr><td align="center" style="font-size:12px;color:#8a8a8a;padding-top:16px;border-top:1px solid #eee;">
-            Central de Compras Motormac — mensagem automática, favor não responder.
+          <tr><td align="center" style="font-size:11px;color:#9aa0a6;padding-top:32px;">
+            Mensagem automática — favor não responder.
           </td></tr>
         </table>
       </td></tr>
