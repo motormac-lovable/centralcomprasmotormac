@@ -37,6 +37,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, mate
 
 function KanbanPage() {
   const { isBuyer, isAuditor, loading } = useAuth();
+  const notifyApprovers = useServerFn(notifyApproversPending);
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
