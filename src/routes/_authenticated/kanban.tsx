@@ -1752,6 +1752,19 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             )}
           </section>
 
+          {/* ── Documentos de Faturamento (Pedidos Gerados) ── */}
+          {card.status === "pedidos_gerados" && (
+            <InvoiceDocumentsSection
+              card={{ id: card.id, data: rawData, observations }}
+              editable={!isAuditor && (isBuyer || isAdmin || isOwner)}
+              author={fullName || user?.email || "Comprador"}
+              onChanged={(fat) => {
+                const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
+                setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card);
+              }}
+            />
+          )}
+
 
           {/* ── Suppliers map (Em cotação and onwards) ── */}
           {card.status !== "solicitacoes_abertas" && (
