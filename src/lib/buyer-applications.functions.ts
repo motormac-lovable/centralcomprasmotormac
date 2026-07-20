@@ -175,7 +175,6 @@ export const rejectBuyerApplication = createServerFn({ method: "POST" })
         status: "rejected",
         decided_by: userId,
         decided_at: new Date().toISOString(),
-        pending_password: null,
       } as never)
       .eq("id", data.application_id);
     if (error) throw new Error(error.message);
