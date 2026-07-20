@@ -9,6 +9,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
+import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
+import { getFaturamento } from "@/lib/invoice-documents";
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
