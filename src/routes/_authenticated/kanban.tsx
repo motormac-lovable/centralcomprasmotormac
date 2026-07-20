@@ -529,6 +529,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
   const parts: string[] = [
     KIND_LABEL[card.kind] ?? "",
     card.kind,
+    card.status ?? "",
     card.title ?? "",
     card.summary ?? "",
     card.requester_name ?? "",
@@ -538,9 +539,15 @@ function cardMatchesQuery(card: Card, q: string): boolean {
     card.unidade ?? "",
     card.empresa ?? "",
     card.codigo_unico ?? "",
+    (card as unknown as { numero_pedido_linx?: string | null }).numero_pedido_linx ?? "",
+    (card as unknown as { order_number?: string | null }).order_number ?? "",
     suggestedBuyer(card) ?? "",
   ];
-  try { parts.push(JSON.stringify(card.data ?? {})); } catch { /* noop */ }
+  const dump = (v: unknown) => { try { if (v != null) parts.push(JSON.stringify(v)); } catch { /* noop */ } };
+  dump(card.data);
+  dump((card as unknown as { suppliers?: unknown }).suppliers);
+  dump((card as unknown as { observations?: unknown }).observations);
+  dump((card as unknown as { attachments?: unknown }).attachments);
   return parts.join(" \u0001 ").toLowerCase().includes(q);
 }
 
