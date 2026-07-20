@@ -113,47 +113,21 @@ export const approveBuyerApplication = createServerFn({ method: "POST" })
     if (aErr || !app) throw new Error("Solicitação não encontrada.");
     if ((app as any).status === "approved") throw new Error("Solicitação já aprovada.");
 
-    // Cria o usuário (ou reaproveita) e GARANTE que a senha cadastrada
-    // pelo solicitante seja a senha efetiva de acesso após a aprovação.
+    // O usuário já foi criado no Auth durante o cadastro. Aqui apenas garantimos vínculo,
+    // atribuímos o papel e marcamos como aprovado. Nenhuma senha em texto plano é armazenada.
     let uid: string | null = (app as any).user_id ?? null;
-    const pwd = (app as any).pending_password as string | null;
     const email = (app as any).email as string;
-    const meta = {
-      full_name: (app as any).full_name,
-      cpf: (app as any).cpf,
-      phone: (app as any).phone,
-    };
 
     if (!uid) {
-      if (!pwd) throw new Error("Solicitação sem senha registrada. Peça um novo cadastro.");
-      const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: pwd,
-        email_confirm: true,
-        user_metadata: meta,
-      });
-      if (cErr || !created?.user) {
-        // E-mail já existe no auth: reaproveita e força a senha cadastrada.
-        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const found = list?.users?.find(
-          (u) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
-        );
-        if (!found) throw new Error(cErr?.message || "Falha ao criar usuário.");
-        uid = found.id;
-        await supabaseAdmin.auth.admin.updateUserById(uid, {
-          password: pwd,
-          email_confirm: true,
-          user_metadata: meta,
-        });
-      } else {
-        uid = created.user.id;
+      // Fallback (aplicações legadas ou usuário criado à parte): tenta localizar por e-mail.
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const found = list?.users?.find(
+        (u) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
+      );
+      if (!found) {
+        throw new Error("Usuário não encontrado no Auth. Peça um novo cadastro para gerar as credenciais.");
       }
-    } else if (pwd) {
-      // Usuário já vinculado: sincroniza a senha para a cadastrada na solicitação.
-      await supabaseAdmin.auth.admin.updateUserById(uid, {
-        password: pwd,
-        email_confirm: true,
-      });
+      uid = found.id;
     }
 
     // Zera papéis anteriores (exceto owner) e atribui o novo.
@@ -167,7 +141,7 @@ export const approveBuyerApplication = createServerFn({ method: "POST" })
       .insert({ user_id: uid!, role: data.role } as never);
     if (rErr) throw new Error("Falha ao atribuir papel: " + rErr.message);
 
-    // Atualiza a solicitação, limpa a senha temporária.
+    // Marca solicitação como aprovada.
     const { error: uErr } = await supabaseAdmin
       .from("buyer_applications")
       .update({
@@ -175,7 +149,6 @@ export const approveBuyerApplication = createServerFn({ method: "POST" })
         user_id: uid,
         decided_by: userId,
         decided_at: new Date().toISOString(),
-        pending_password: null,
       } as never)
       .eq("id", data.application_id);
     if (uErr) throw new Error(uErr.message);
