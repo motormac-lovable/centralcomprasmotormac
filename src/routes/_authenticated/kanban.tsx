@@ -371,9 +371,9 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id });
 
   let filtered = allCards;
-  const cq = query.trim().toLowerCase();
+  const cq = normalizeSearch(query);
   if (cq) filtered = filtered.filter((c) => cardMatchesQuery(c, cq));
-  const q = globalQuery.trim().toLowerCase();
+  const q = normalizeSearch(globalQuery);
   if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
   if (dateFrom) {
     const from = new Date(dateFrom + "T00:00:00").getTime();
