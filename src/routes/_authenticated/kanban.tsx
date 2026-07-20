@@ -247,7 +247,7 @@ function KanbanPage() {
       if (newStatus === "aguardando_aprovacao") {
         const cardData = ((card.data as Record<string, unknown>) ?? {}) as Record<string, unknown>;
         const dept = typeof cardData.departamento === "string" ? cardData.departamento.trim() : "";
-        notifyApproversPending({ data: { cardId: card.id, departamento: dept || null } })
+        notifyApprovers({ data: { cardId: card.id, departamento: dept || null } })
           .then((r) => {
             if (r?.ok && r.sent > 0) {
               toast.success(`📧 Notificação enviada para ${r.sent} aprovador(es).`);
