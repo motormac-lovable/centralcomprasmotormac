@@ -371,9 +371,9 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id });
 
   let filtered = allCards;
-  const cq = query.trim().toLowerCase();
+  const cq = normalizeSearch(query);
   if (cq) filtered = filtered.filter((c) => cardMatchesQuery(c, cq));
-  const q = globalQuery.trim().toLowerCase();
+  const q = normalizeSearch(globalQuery);
   if (q) filtered = filtered.filter((c) => cardMatchesQuery(c, q));
   if (dateFrom) {
     const from = new Date(dateFrom + "T00:00:00").getTime();
@@ -525,7 +525,12 @@ function suggestedBuyer(card: Card): string | null {
   return list.length === 1 ? list[0] : `${list[0]} (+${list.length - 1})`;
 }
 
+function normalizeSearch(s: string): string {
+  return (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+}
+
 function cardMatchesQuery(card: Card, q: string): boolean {
+  const emailLocal = (e?: string | null) => (e ? e.split("@")[0].replace(/[._-]+/g, " ") : "");
   const parts: string[] = [
     KIND_LABEL[card.kind] ?? "",
     card.kind,
@@ -534,6 +539,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
     card.summary ?? "",
     card.requester_name ?? "",
     card.requester_email ?? "",
+    emailLocal(card.requester_email),
     card.approver_name ?? "",
     card.buyer_name ?? "",
     card.unidade ?? "",
@@ -548,7 +554,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
   dump((card as unknown as { suppliers?: unknown }).suppliers);
   dump((card as unknown as { observations?: unknown }).observations);
   dump((card as unknown as { attachments?: unknown }).attachments);
-  return parts.join(" \u0001 ").toLowerCase().includes(q);
+  return normalizeSearch(parts.join(" \u0001 ")).includes(q);
 }
 
 
