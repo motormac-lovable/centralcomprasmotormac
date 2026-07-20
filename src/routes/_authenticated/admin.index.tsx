@@ -252,7 +252,7 @@ function RegisteredUsers({
 
   const reload = async () => {
     const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, cpf, phone, is_active, is_deleted, created_at").eq("is_deleted", false).order("created_at", { ascending: false }),
+      (supabase as any).rpc("list_profiles_with_pii"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const byUser = new Map<string, string[]>();
