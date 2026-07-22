@@ -143,7 +143,8 @@ function AdminPage() {
       </div>
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="text-left p-4">Nome</th>
@@ -220,6 +221,7 @@ function AdminPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <RegisteredUsers />
@@ -341,7 +343,7 @@ function RegisteredUsers({
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="text-left p-4">Nome</th>
