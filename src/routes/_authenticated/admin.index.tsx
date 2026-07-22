@@ -221,6 +221,7 @@ function AdminPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <RegisteredUsers />
