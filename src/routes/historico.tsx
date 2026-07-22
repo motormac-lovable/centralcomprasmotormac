@@ -375,18 +375,18 @@ function HistoricoPage() {
                   </div>
                   <h3 className="font-medium mt-0.5 truncate">{it.title}</h3>
                   {it.summary && <p className="text-sm text-muted-foreground truncate">{it.summary}</p>}
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="flex items-baseline gap-1 text-muted-foreground min-w-0">
                       <span aria-hidden>👤</span>
-                      <span className="font-medium text-foreground/80">Comprador:</span>
-                      <span className={it.buyer_name ? "" : "italic text-muted-foreground"}>
+                      <span className="font-medium text-foreground/80 shrink-0">Comprador:</span>
+                      <span className={`truncate ${it.buyer_name ? "" : "italic text-muted-foreground"}`}>
                         {it.buyer_name || "Aguardando atribuição"}
                       </span>
                     </span>
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <span className="flex items-baseline gap-1 text-muted-foreground min-w-0">
                       <span aria-hidden>📅</span>
-                      <span className="font-medium text-foreground/80">Última movimentação:</span>
-                      <span>{formatBR(it.status_changed_at || it.created_at)}</span>
+                      <span className="font-medium text-foreground/80 shrink-0">Última movimentação:</span>
+                      <span className="truncate">{formatBR(it.status_changed_at || it.created_at)}</span>
                     </span>
                   </div>
                   {it.status === "pedidos_gerados" && (() => {
