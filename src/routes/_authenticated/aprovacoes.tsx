@@ -67,6 +67,7 @@ function AprovacoesPage() {
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState<Card | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const notifyRejected = useServerFn(notifyRequestRejected);
 
   const reload = async () => {
     setLoading(true);
