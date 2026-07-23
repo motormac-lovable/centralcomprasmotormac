@@ -130,6 +130,7 @@ function AprovacoesPage() {
 
   const confirmReject = async (motivo: string) => {
     if (!rejecting) return;
+    const rejectedId = rejecting.id;
     setBusyId(rejecting.id);
     const { error } = await (supabase as any).rpc("reject_kanban_card", {
       _card_id: rejecting.id,
@@ -139,6 +140,16 @@ function AprovacoesPage() {
     setRejecting(null);
     if (error) return toast.error(translateError(error, "Não foi possível rejeitar a cotação."));
     toast.success("Cotação rejeitada — registrada com justificativa.");
+    // Notificação por e-mail (fire-and-forget) para solicitante + aprovadores do departamento.
+    setTimeout(() => {
+      notifyRejected({ data: { cardId: rejectedId } })
+        .then((r) => {
+          if (r?.ok && r.sent > 0) {
+            toast.success(`📧 Notificação de rejeição enviada para ${r.sent} destinatário(s).`);
+          }
+        })
+        .catch((e) => console.error("[email] Falha ao notificar rejeição:", e));
+    }, 400);
     reload();
   };
 
