@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, XCircle, ShieldAlert, Filter, Crown, Package, FileText, Truck, ClipboardList, Paperclip, Download, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
 import { translateError } from "@/lib/error-messages";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
+import { notifyRequestRejected } from "@/lib/email-notifications.functions";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -65,6 +67,7 @@ function AprovacoesPage() {
   const [loading, setLoading] = useState(true);
   const [rejecting, setRejecting] = useState<Card | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const notifyRejected = useServerFn(notifyRequestRejected);
 
   const reload = async () => {
     setLoading(true);
@@ -127,6 +130,7 @@ function AprovacoesPage() {
 
   const confirmReject = async (motivo: string) => {
     if (!rejecting) return;
+    const rejectedId = rejecting.id;
     setBusyId(rejecting.id);
     const { error } = await (supabase as any).rpc("reject_kanban_card", {
       _card_id: rejecting.id,
@@ -136,6 +140,16 @@ function AprovacoesPage() {
     setRejecting(null);
     if (error) return toast.error(translateError(error, "Não foi possível rejeitar a cotação."));
     toast.success("Cotação rejeitada — registrada com justificativa.");
+    // Notificação por e-mail (fire-and-forget) para solicitante + aprovadores do departamento.
+    setTimeout(() => {
+      notifyRejected({ data: { cardId: rejectedId } })
+        .then((r) => {
+          if (r?.ok && r.sent > 0) {
+            toast.success(`📧 Notificação de rejeição enviada para ${r.sent} destinatário(s).`);
+          }
+        })
+        .catch((e) => console.error("[email] Falha ao notificar rejeição:", e));
+    }, 400);
     reload();
   };
 

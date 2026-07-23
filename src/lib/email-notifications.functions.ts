@@ -6,6 +6,15 @@ const LOGO_URL =
   "https://centralcomprasmotormac.lovable.app/__l5e/assets-v1/6af60dab-ff7d-4ed5-82ca-db58892a7fcb/logo-motormac.png";
 const SENDER = "centraldecomprasmotormac@gmail.com";
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildHtml() {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -25,6 +34,51 @@ function buildHtml() {
           </td></tr>
           <tr><td align="center" style="font-size:14px;line-height:1.6;color:#555;padding-bottom:20px;">
             Acesse a Central de Compras clicando no link abaixo:
+          </td></tr>
+          <tr><td align="center" style="padding-bottom:8px;">
+            <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;font-size:15px;font-weight:600;">https://centralcomprasmotormac.lovable.app</a>
+          </td></tr>
+          <tr><td align="center" style="font-size:11px;color:#9aa0a6;padding-top:32px;">
+            Mensagem automática — favor não responder.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function buildRejectedHtml(params: {
+  greetingName: string;
+  codigo: string;
+  motivo: string;
+  comprador: string;
+}) {
+  const g = escapeHtml(params.greetingName);
+  const c = escapeHtml(params.codigo);
+  const m = escapeHtml(params.motivo);
+  const b = escapeHtml(params.comprador);
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:44px 36px;border:1px solid #eceff3;">
+          <tr><td align="center" style="padding-bottom:24px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="140" height="140" style="display:block;border:0;width:140px;height:auto;max-width:60%;">
+          </td></tr>
+          <tr><td align="center" style="font-size:22px;font-weight:700;color:#b42318;padding-bottom:20px;">
+            Olá, ${g}
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
+            Informamos que a solicitação número "<strong>${c}</strong>" foi <strong>rejeitada</strong> pelo motivo: ${m}.
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
+            O comprador que rejeitou foi: <strong>${b}</strong>.
+          </td></tr>
+          <tr><td style="font-size:14px;line-height:1.6;color:#555;padding-bottom:20px;">
+            Em caso de dúvidas interaja com o comprador.
           </td></tr>
           <tr><td align="center" style="padding-bottom:8px;">
             <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;font-size:15px;font-weight:600;">https://centralcomprasmotormac.lovable.app</a>
@@ -160,6 +214,131 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
         } catch (e) {
           errors.push(`[${to}] ${(e as Error).message}`);
           console.error("[email] Exception sending to", to, e);
+        }
+      }),
+    );
+
+    return { ok: sent > 0, sent, total: recipients.size, errors };
+  });
+
+const rejectSchema = z.object({
+  cardId: z.string().uuid(),
+});
+
+async function sendGmail(to: string, subject: string, html: string, lovableKey: string, gmailKey: string) {
+  const raw = encodeRfc2822(to, subject, html);
+  const res = await fetch(
+    "https://connector-gateway.lovable.dev/google_mail/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": gmailKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw }),
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gmail ${res.status}: ${body.slice(0, 300)}`);
+  }
+}
+
+export const notifyRequestRejected = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => rejectSchema.parse(d))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    if (!lovableKey || !gmailKey) {
+      console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
+      return { ok: false, sent: 0, reason: "missing_credentials" as const };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: card, error } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("id, codigo_unico, requester_email, requester_name, buyer_name, data, observations")
+      .eq("id", data.cardId)
+      .maybeSingle();
+
+    if (error || !card) {
+      console.error("[email] Card não encontrado para rejeição:", data.cardId, error);
+      return { ok: false, sent: 0, reason: "card_not_found" as const };
+    }
+
+    const codigo = card.codigo_unico ?? card.id.slice(0, 8);
+    const cardData = ((card.data as Record<string, unknown> | null) ?? {}) as Record<string, unknown>;
+    const dept = typeof cardData.departamento === "string" ? (cardData.departamento as string).trim() : "";
+
+    // Extrai o motivo e o autor da rejeição a partir do log mais recente
+    // que contenha o padrão "Motivo: ..." ou "rejeitad".
+    const obs = Array.isArray(card.observations) ? (card.observations as any[]) : [];
+    let motivo = "Motivo não informado.";
+    let comprador = card.buyer_name || "Comprador";
+    for (let i = obs.length - 1; i >= 0; i--) {
+      const o = obs[i];
+      const text = typeof o?.text === "string" ? o.text : "";
+      if (/rejeit|Motivo:/i.test(text)) {
+        const m = text.match(/Motivo:\s*(.+?)\s*$/i);
+        if (m) motivo = m[1].trim();
+        if (typeof o?.author === "string" && o.author.trim()) comprador = o.author.trim();
+        break;
+      }
+    }
+
+    // Destinatários: solicitante + aprovadores do departamento.
+    const recipients = new Map<string, string>(); // email -> nome
+    if (card.requester_email) {
+      recipients.set(card.requester_email, card.requester_name || "Solicitante");
+    }
+
+    if (dept) {
+      const { data: settings } = await supabaseAdmin
+        .from("approver_settings")
+        .select("user_id, departments");
+      const approverIds = (settings ?? [])
+        .filter((s: any) => Array.isArray(s.departments) && s.departments.includes(dept))
+        .map((s: any) => s.user_id as string);
+      if (approverIds.length) {
+        const { data: roles } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", approverIds)
+          .eq("role", "aprovador");
+        const validIds = (roles ?? []).map((r: any) => r.user_id as string);
+        if (validIds.length) {
+          const { data: profs } = await supabaseAdmin
+            .from("profiles")
+            .select("email, full_name, is_active, is_deleted")
+            .in("id", validIds);
+          (profs ?? []).forEach((p: any) => {
+            if (p?.email && p.is_active !== false && !p.is_deleted) {
+              if (!recipients.has(p.email)) recipients.set(p.email, p.full_name || "Aprovador");
+            }
+          });
+        }
+      }
+    }
+
+    if (recipients.size === 0) {
+      console.warn("[email] Nenhum destinatário para rejeição do card:", codigo);
+      return { ok: true, sent: 0 };
+    }
+
+    const subject = `Solicitação #${codigo} rejeitada`;
+    let sent = 0;
+    const errors: string[] = [];
+    await Promise.all(
+      Array.from(recipients.entries()).map(async ([to, name]) => {
+        try {
+          const html = buildRejectedHtml({ greetingName: name || "Solicitante", codigo, motivo, comprador });
+          await sendGmail(to, subject, html, lovableKey, gmailKey);
+          sent++;
+        } catch (e) {
+          errors.push(`[${to}] ${(e as Error).message}`);
+          console.error("[email] Falha ao enviar rejeição:", to, e);
         }
       }),
     );

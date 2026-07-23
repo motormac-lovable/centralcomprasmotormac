@@ -24,7 +24,7 @@ import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
-import { notifyApproversPending } from "@/lib/email-notifications.functions";
+import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notifications.functions";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
@@ -39,6 +39,7 @@ const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, mate
 function KanbanPage() {
   const { isBuyer, isAuditor, loading } = useAuth();
   const notifyApprovers = useServerFn(notifyApproversPending);
+  const notifyRejected = useServerFn(notifyRequestRejected);
   const [cards, setCards] = useState<Card[]>([]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -255,6 +256,19 @@ function KanbanPage() {
             }
           })
           .catch((e) => console.error("[email] Falha ao notificar aprovadores:", e));
+      }
+      if (newStatus === "cotacoes_rejeitadas") {
+        // Aguarda um instante para garantir que a observação de rejeição já foi
+        // persistida (fluxo de quick-reject grava o log em UPDATE separado).
+        setTimeout(() => {
+          notifyRejected({ data: { cardId: card.id } })
+            .then((r) => {
+              if (r?.ok && r.sent > 0) {
+                toast.success(`📧 Notificação de rejeição enviada para ${r.sent} destinatário(s).`);
+              }
+            })
+            .catch((e) => console.error("[email] Falha ao notificar rejeição:", e));
+        }, 400);
       }
     }
   };
