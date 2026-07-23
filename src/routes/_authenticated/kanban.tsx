@@ -24,7 +24,7 @@ import { useUserStatuses, decorateUserName } from "@/lib/user-status";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
-import { notifyApproversPending } from "@/lib/email-notifications.functions";
+import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notifications.functions";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
