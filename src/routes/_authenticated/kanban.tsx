@@ -126,6 +126,25 @@ function KanbanPage() {
         ? "pedidos_gerados"
         : requestedStatus;
 
+    // Governança: mover para "Cotações Rejeitadas" exige motivo obrigatório
+    // (registrado em log com o padrão "Motivo: ..." lido pela notificação
+    // por e-mail).
+    let rejectReason: string | null = null;
+    if (newStatus === "cotacoes_rejeitadas") {
+      const input = window.prompt(
+        "Informe o motivo da rejeição desta cotação (obrigatório):",
+        "",
+      );
+      if (input === null) return; // usuário cancelou
+      const trimmed = input.trim();
+      if (!trimmed) {
+        toast.error("O motivo da rejeição é obrigatório.");
+        return;
+      }
+      rejectReason = trimmed;
+    }
+
+
     // Regra de compliance: para avançar a "Aguardando Aprovação" é obrigatório
     // ter ≥1 fornecedor no mapa comparativo E ≥1 anexo de orçamento.
     if (newStatus === "aguardando_aprovacao") {
