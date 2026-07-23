@@ -6,6 +6,15 @@ const LOGO_URL =
   "https://centralcomprasmotormac.lovable.app/__l5e/assets-v1/6af60dab-ff7d-4ed5-82ca-db58892a7fcb/logo-motormac.png";
 const SENDER = "centraldecomprasmotormac@gmail.com";
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildHtml() {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -25,6 +34,51 @@ function buildHtml() {
           </td></tr>
           <tr><td align="center" style="font-size:14px;line-height:1.6;color:#555;padding-bottom:20px;">
             Acesse a Central de Compras clicando no link abaixo:
+          </td></tr>
+          <tr><td align="center" style="padding-bottom:8px;">
+            <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;font-size:15px;font-weight:600;">https://centralcomprasmotormac.lovable.app</a>
+          </td></tr>
+          <tr><td align="center" style="font-size:11px;color:#9aa0a6;padding-top:32px;">
+            Mensagem automática — favor não responder.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function buildRejectedHtml(params: {
+  greetingName: string;
+  codigo: string;
+  motivo: string;
+  comprador: string;
+}) {
+  const g = escapeHtml(params.greetingName);
+  const c = escapeHtml(params.codigo);
+  const m = escapeHtml(params.motivo);
+  const b = escapeHtml(params.comprador);
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:44px 36px;border:1px solid #eceff3;">
+          <tr><td align="center" style="padding-bottom:24px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="140" height="140" style="display:block;border:0;width:140px;height:auto;max-width:60%;">
+          </td></tr>
+          <tr><td align="center" style="font-size:22px;font-weight:700;color:#b42318;padding-bottom:20px;">
+            Olá, ${g}
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
+            Informamos que a solicitação número "<strong>${c}</strong>" foi <strong>rejeitada</strong> pelo motivo: ${m}.
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
+            O comprador que rejeitou foi: <strong>${b}</strong>.
+          </td></tr>
+          <tr><td style="font-size:14px;line-height:1.6;color:#555;padding-bottom:20px;">
+            Em caso de dúvidas interaja com o comprador.
           </td></tr>
           <tr><td align="center" style="padding-bottom:8px;">
             <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;font-size:15px;font-weight:600;">https://centralcomprasmotormac.lovable.app</a>
