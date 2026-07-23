@@ -257,6 +257,19 @@ function KanbanPage() {
           })
           .catch((e) => console.error("[email] Falha ao notificar aprovadores:", e));
       }
+      if (newStatus === "cotacoes_rejeitadas") {
+        // Aguarda um instante para garantir que a observação de rejeição já foi
+        // persistida (fluxo de quick-reject grava o log em UPDATE separado).
+        setTimeout(() => {
+          notifyRejected({ data: { cardId: card.id } })
+            .then((r) => {
+              if (r?.ok && r.sent > 0) {
+                toast.success(`📧 Notificação de rejeição enviada para ${r.sent} destinatário(s).`);
+              }
+            })
+            .catch((e) => console.error("[email] Falha ao notificar rejeição:", e));
+        }, 400);
+      }
     }
   };
 
