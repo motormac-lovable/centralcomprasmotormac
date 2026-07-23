@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, XCircle, ShieldAlert, Filter, Crown, Package, FileText, Truck, ClipboardList, Paperclip, Download, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
 import { translateError } from "@/lib/error-messages";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
+import { notifyRequestRejected } from "@/lib/email-notifications.functions";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
