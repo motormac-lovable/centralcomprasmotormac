@@ -64,9 +64,9 @@ function buildRejectedHtml(params: {
   <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
       <tr><td align="center">
-        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:44px 36px;border:1px solid #eceff3;">
-          <tr><td align="center" style="padding-bottom:24px;">
-            <img src="${LOGO_URL}" alt="Motormac" width="140" height="140" style="display:block;border:0;width:140px;height:auto;max-width:60%;">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:36px 36px 40px;border:1px solid #eceff3;">
+          <tr><td align="center" style="padding:12px 0 36px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="110" height="110" style="display:block;border:0;width:110px;height:auto;max-width:45%;">
           </td></tr>
           <tr><td align="center" style="font-size:22px;font-weight:700;color:#b42318;padding-bottom:20px;">
             Olá, ${g}
