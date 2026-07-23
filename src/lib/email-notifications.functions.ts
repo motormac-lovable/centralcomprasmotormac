@@ -220,3 +220,128 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
 
     return { ok: sent > 0, sent, total: recipients.size, errors };
   });
+
+const rejectSchema = z.object({
+  cardId: z.string().uuid(),
+});
+
+async function sendGmail(to: string, subject: string, html: string, lovableKey: string, gmailKey: string) {
+  const raw = encodeRfc2822(to, subject, html);
+  const res = await fetch(
+    "https://connector-gateway.lovable.dev/google_mail/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": gmailKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw }),
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gmail ${res.status}: ${body.slice(0, 300)}`);
+  }
+}
+
+export const notifyRequestRejected = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => rejectSchema.parse(d))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    if (!lovableKey || !gmailKey) {
+      console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
+      return { ok: false, sent: 0, reason: "missing_credentials" as const };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: card, error } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("id, codigo_unico, requester_email, requester_name, buyer_name, data, observations")
+      .eq("id", data.cardId)
+      .maybeSingle();
+
+    if (error || !card) {
+      console.error("[email] Card não encontrado para rejeição:", data.cardId, error);
+      return { ok: false, sent: 0, reason: "card_not_found" as const };
+    }
+
+    const codigo = card.codigo_unico ?? card.id.slice(0, 8);
+    const cardData = ((card.data as Record<string, unknown> | null) ?? {}) as Record<string, unknown>;
+    const dept = typeof cardData.departamento === "string" ? (cardData.departamento as string).trim() : "";
+
+    // Extrai o motivo e o autor da rejeição a partir do log mais recente
+    // que contenha o padrão "Motivo: ..." ou "rejeitad".
+    const obs = Array.isArray(card.observations) ? (card.observations as any[]) : [];
+    let motivo = "Motivo não informado.";
+    let comprador = card.buyer_name || "Comprador";
+    for (let i = obs.length - 1; i >= 0; i--) {
+      const o = obs[i];
+      const text = typeof o?.text === "string" ? o.text : "";
+      if (/rejeit|Motivo:/i.test(text)) {
+        const m = text.match(/Motivo:\s*(.+?)\s*$/i);
+        if (m) motivo = m[1].trim();
+        if (typeof o?.author === "string" && o.author.trim()) comprador = o.author.trim();
+        break;
+      }
+    }
+
+    // Destinatários: solicitante + aprovadores do departamento.
+    const recipients = new Map<string, string>(); // email -> nome
+    if (card.requester_email) {
+      recipients.set(card.requester_email, card.requester_name || "Solicitante");
+    }
+
+    if (dept) {
+      const { data: settings } = await supabaseAdmin
+        .from("approver_settings")
+        .select("user_id, departments");
+      const approverIds = (settings ?? [])
+        .filter((s: any) => Array.isArray(s.departments) && s.departments.includes(dept))
+        .map((s: any) => s.user_id as string);
+      if (approverIds.length) {
+        const { data: roles } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", approverIds)
+          .eq("role", "aprovador");
+        const validIds = (roles ?? []).map((r: any) => r.user_id as string);
+        if (validIds.length) {
+          const { data: profs } = await supabaseAdmin
+            .from("profiles")
+            .select("email, full_name, is_active, is_deleted")
+            .in("id", validIds);
+          (profs ?? []).forEach((p: any) => {
+            if (p?.email && p.is_active !== false && !p.is_deleted) {
+              if (!recipients.has(p.email)) recipients.set(p.email, p.full_name || "Aprovador");
+            }
+          });
+        }
+      }
+    }
+
+    if (recipients.size === 0) {
+      console.warn("[email] Nenhum destinatário para rejeição do card:", codigo);
+      return { ok: true, sent: 0 };
+    }
+
+    const subject = `Solicitação #${codigo} rejeitada`;
+    let sent = 0;
+    const errors: string[] = [];
+    await Promise.all(
+      Array.from(recipients.entries()).map(async ([to, name]) => {
+        try {
+          const html = buildRejectedHtml({ greetingName: name || "Solicitante", codigo, motivo, comprador });
+          await sendGmail(to, subject, html, lovableKey, gmailKey);
+          sent++;
+        } catch (e) {
+          errors.push(`[${to}] ${(e as Error).message}`);
+          console.error("[email] Falha ao enviar rejeição:", to, e);
+        }
+      }),
+    );
+
+    return { ok: sent > 0, sent, total: recipients.size, errors };
+  });
