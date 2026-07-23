@@ -248,12 +248,22 @@ function KanbanPage() {
       };
     }
 
+    const rejectionLog: Observation | null = rejectReason
+      ? {
+          at: new Date().toISOString(),
+          author: actorName,
+          text: `❌ Cotação rejeitada por ${actorName}. Motivo: ${rejectReason}`,
+        }
+      : null;
+
     patch.observations = [
       ...prevObs,
       transitionLog,
+      ...(rejectionLog ? [rejectionLog] : []),
       ...(fallbackLog ? [fallbackLog] : []),
       ...(buyerLog ? [buyerLog] : []),
     ] as never;
+
 
 
     // Optimistic update
