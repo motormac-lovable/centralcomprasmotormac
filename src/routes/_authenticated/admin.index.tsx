@@ -238,7 +238,7 @@ function AdminPage() {
         </div>
       </div>
 
-      <RegisteredUsers />
+      <RegisteredUsers refreshTick={usersRefreshTick} />
 
       {isOwner && <OwnerAdminManager />}
     </div>
