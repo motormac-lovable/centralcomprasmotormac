@@ -51,6 +51,16 @@ async function fetchSerieUltimos(codigo: number, n: number): Promise<Array<{ val
 }
 
 export function IndicadoresEconomicos() {
+  const fetchTicker = useServerFn(getMarketTicker);
+  const { data: ticker } = useQuery<MarketTicker>({
+    queryKey: ["market-ticker"],
+    queryFn: () => fetchTicker(),
+    staleTime: 60 * 1000,
+    refetchInterval: 18 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const headlines = (ticker?.news ?? []).slice(0, 4);
+
   const [state, setState] = useState<Record<Chave, { value: string; sub: string; loading: boolean }>>(() => {
     if (typeof window !== "undefined") {
       try {
