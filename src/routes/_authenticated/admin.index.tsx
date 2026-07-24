@@ -536,6 +536,11 @@ function RegisteredUsers({
 
         </table>
       </div>
+      <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground">
+        Exibindo {filtered.length} de {rows.length} {rows.length === 1 ? "usuário" : "usuários"}
+      </div>
+
+
 
       {editing && (
         <EditUserModal
