@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Newspaper, ArrowLeft, TrendingUp, AlertCircle } from "lucide-react";
+import { Newspaper, ArrowLeft, TrendingUp, AlertCircle, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/noticias")({
   head: () => ({
@@ -24,6 +24,7 @@ const mockNews = [
     source: "Valor Econômico",
     summary: "A ata do Copom reforçou a postura de vigilância frente às incertezas fiscais e à inflação acima da meta.",
     tag: "Política Monetária",
+    url: "https://valor.globo.com/financas/",
   },
   {
     id: 2,
@@ -31,6 +32,7 @@ const mockNews = [
     source: "Agência Brasil",
     summary: "Indicadores de produção industrial apontam para recuperação puxada por investimentos em infraestrutura.",
     tag: "Setor",
+    url: "https://agenciabrasil.ebc.com.br/economia",
   },
   {
     id: 3,
@@ -38,6 +40,7 @@ const mockNews = [
     source: "Reuters",
     summary: "Moeda norte-americana recuou ante o real em sessão de menor volume, refletindo o cenário externo.",
     tag: "Câmbio",
+    url: "https://www.reuters.com/world/americas/",
   },
   {
     id: 4,
@@ -45,6 +48,7 @@ const mockNews = [
     source: "Estadão",
     summary: "A variação do índice de preços ao produtor impacta diretamente a cadeia de suprimentos de peças.",
     tag: "Inflação",
+    url: "https://economia.estadao.com.br/",
   },
 ];
 
@@ -92,9 +96,12 @@ function Noticias() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {mockNews.map((news) => (
-          <article
+          <a
             key={news.id}
-            className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+            href={news.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <div className="flex items-start justify-between gap-3">
               <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium text-accent-foreground">
@@ -108,7 +115,11 @@ function Noticias() {
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               {news.summary}
             </p>
-          </article>
+            <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
+              Ler notícia completa
+              <ExternalLink className="h-3 w-3" />
+            </span>
+          </a>
         ))}
       </div>
     </div>
