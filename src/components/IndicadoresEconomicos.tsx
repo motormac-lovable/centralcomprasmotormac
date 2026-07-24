@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { DollarSign, TrendingUp, BarChart3, Activity, Newspaper, ArrowRight } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Activity, Newspaper, ArrowRight, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { getMarketTicker, type MarketTicker } from "@/lib/market-ticker.functions";
 
 type Chave = "dolar" | "ipca" | "igpm";
 
