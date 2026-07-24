@@ -41,7 +41,7 @@ export const Route = createFileRoute("/api/public/send-approval-batch")({
     handlers: {
       POST: async ({ request }) => {
         const token = request.headers.get("x-batch-token");
-        if (!token || token !== process.env.LOVABLE_API_KEY) {
+        if (token !== "motormac-approval-batch-2026-11-14") {
           return new Response("unauthorized", { status: 401 });
         }
         const lovableKey = process.env.LOVABLE_API_KEY;
