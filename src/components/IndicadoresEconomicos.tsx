@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { DollarSign, TrendingUp, BarChart3, Activity } from "lucide-react";
+import { DollarSign, TrendingUp, BarChart3, Activity, Newspaper, ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 type Chave = "dolar" | "ipca" | "igpm";
 
@@ -146,16 +147,18 @@ export function IndicadoresEconomicos() {
     },
   ];
 
+  const newsAccent = "oklch(0.55 0.18 200)";
+
   return (
     <section className="w-full mt-8">
       <div className="flex items-center justify-center gap-2 mb-3">
         <Activity className="h-4 w-4 text-primary" />
         <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-          Indicadores Econômicos Estratégicos
+          NOTÍCIAS & INDICADORES ECONÔMICOS
         </h2>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {items.map((it) => {
           const Icon = it.icon;
           return (
@@ -222,6 +225,63 @@ export function IndicadoresEconomicos() {
             </div>
           );
         })}
+
+        <Link
+          to="/noticias"
+          className="group relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/40 cursor-pointer"
+        >
+          <div
+            className="absolute inset-x-0 top-0 h-1 opacity-80"
+            style={{ background: `linear-gradient(90deg, ${newsAccent}, var(--primary-glow))` }}
+          />
+
+          <div className="flex items-start justify-between gap-4">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+              style={{
+                background: `color-mix(in oklab, ${newsAccent} 12%, transparent)`,
+                color: newsAccent,
+              }}
+            >
+              <Newspaper className="h-5 w-5" />
+            </div>
+
+            <div
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors"
+              style={{
+                background: `color-mix(in oklab, ${newsAccent} 10%, transparent)`,
+                color: newsAccent,
+              }}
+            >
+              Feed
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Mais Notícias de Economia
+            </div>
+            <div
+              className="mt-0.5 text-xl font-bold tracking-tight"
+              style={{ color: newsAccent }}
+            >
+              Acesse o feed
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground/80 leading-relaxed">
+              Feed atualizado com as principais manchetes do mercado e do setor.
+            </div>
+          </div>
+
+          <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary group-hover:gap-2 transition-all">
+            Ver notícias
+            <ArrowRight className="h-3.5 w-3.5" />
+          </div>
+
+          <div
+            className="absolute -bottom-5 -right-5 w-20 h-20 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
+            style={{ background: newsAccent }}
+          />
+        </Link>
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground mt-3">
