@@ -282,7 +282,7 @@ function RegisteredUsers({
     setRows((profiles ?? []).map((p: any) => ({ ...p, roles: byUser.get(p.id) ?? [] })));
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [refreshTick]);
 
   const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
   const roleStyle: Record<string, string> = {
