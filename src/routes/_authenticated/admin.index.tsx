@@ -88,17 +88,22 @@ function AdminPage() {
   type AppRole = Database["public"]["Enums"]["app_role"];
   const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
   const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"];
-  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole | "">>({});
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [usersRefreshTick, setUsersRefreshTick] = useState(0);
 
 
   const approveFn = useServerFn(approveBuyerApplication);
   const rejectFn = useServerFn(rejectBuyerApplication);
 
   const approve = async (app: App) => {
-    const fallback: AppRole = app.checklist_types.includes("aprovador") ? "aprovador" : app.checklist_types.includes("solicitante") ? "solicitante" : "buyer";
-    const role = selectedRole[app.id] ?? fallback;
+    const role = selectedRole[app.id];
+    if (!role) {
+      return toast.error("Selecione um perfil antes de aprovar o cadastro.");
+    }
     if (role === "owner") return toast.error("Papel Proprietário não pode ser atribuído via aprovação.");
     if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
+    setApprovingId(app.id);
     try {
       const res = await approveFn({ data: { application_id: app.id, role: role as Exclude<AppRole, "owner"> } });
       // Se aprovador, materializa alçadas solicitadas.
@@ -113,12 +118,15 @@ function AdminPage() {
           );
         if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
       }
-      toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
-        description: `Usuário criado e notificação simulada enviada para ${app.email}.`,
+      toast.success(`Usuário aprovado com sucesso com o perfil de ${roleLabel[role]}!`, {
+        description: `Notificação simulada enviada para ${app.email}.`,
       });
-      reload();
+      await reload();
+      setUsersRefreshTick((n) => n + 1);
     } catch (err) {
       toast.error(translateError(err, "Não foi possível aprovar o cadastro."));
+    } finally {
+      setApprovingId(null);
     }
   };
 
