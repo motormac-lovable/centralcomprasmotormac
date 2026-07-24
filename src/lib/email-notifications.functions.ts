@@ -345,3 +345,72 @@ export const notifyRequestRejected = createServerFn({ method: "POST" })
 
     return { ok: sent > 0, sent, total: recipients.size, errors };
   });
+
+// ---------------------------------------------------------------------------
+// Notificação de aprovação de cadastro: envia e-mail ao usuário recém-aprovado.
+// ---------------------------------------------------------------------------
+function buildApprovedHtml(params: { nome: string; perfil: string }) {
+  const n = escapeHtml(params.nome);
+  const p = escapeHtml(params.perfil);
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:36px 36px 40px;border:1px solid #eceff3;">
+          <tr><td align="center" style="padding:12px 0 28px;">
+            <img src="${LOGO_URL}" alt="Motormac" width="110" height="110" style="display:block;border:0;width:110px;height:auto;max-width:45%;">
+          </td></tr>
+          <tr><td align="center" style="font-size:22px;font-weight:700;color:#0f6b3f;padding-bottom:20px;">
+            Olá, ${n}
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:14px;">
+            Seu cadastro no sistema <strong>Central de Compras Motormac</strong> foi <strong>deferido</strong>.
+          </td></tr>
+          <tr><td style="font-size:15px;line-height:1.65;color:#333;padding-bottom:22px;">
+            Seu perfil aprovado é: <strong>${p}</strong>
+          </td></tr>
+          <tr><td style="font-size:14px;line-height:1.6;color:#555;padding-bottom:22px;">
+            Acesse a plataforma para começar:
+          </td></tr>
+          <tr><td align="center" style="padding-bottom:8px;">
+            <a href="${APP_URL}" target="_blank" style="display:inline-block;background:#0f6b3f;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 28px;border-radius:8px;">Acessar Central de Compras</a>
+          </td></tr>
+          <tr><td align="center" style="font-size:12px;color:#777;padding-top:14px;">
+            <a href="${APP_URL}" target="_blank" style="color:#0f6b3f;text-decoration:underline;">${APP_URL}</a>
+          </td></tr>
+          <tr><td align="center" style="font-size:11px;color:#9aa0a6;padding-top:32px;">
+            Mensagem automática — favor não responder.
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+const approvedSchema = z.object({
+  email: z.string().email(),
+  nome: z.string().min(1),
+  perfil: z.string().min(1),
+});
+
+export const notifyUserApproved = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => approvedSchema.parse(d))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    if (!lovableKey || !gmailKey) {
+      console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
+      return { ok: false, reason: "missing_credentials" as const };
+    }
+    try {
+      const html = buildApprovedHtml({ nome: data.nome, perfil: data.perfil });
+      await sendGmail(data.email, "Cadastro Aprovado - Central de Compras Motormac", html, lovableKey, gmailKey);
+      return { ok: true };
+    } catch (e) {
+      console.error("[email] Falha ao enviar aprovação:", data.email, e);
+      return { ok: false, error: (e as Error).message };
+    }
+  });

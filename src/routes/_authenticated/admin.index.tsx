@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
 import { deleteUserCompletely, updateUserRole, setUserActiveState, updateUserEmail } from "@/lib/admin-users.functions";
 import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
+import { notifyUserApproved } from "@/lib/email-notifications.functions";
 import { DEPARTAMENTOS_APOLLO } from "@/lib/apollo-data";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
@@ -97,6 +98,7 @@ function AdminPage() {
 
   const approveFn = useServerFn(approveBuyerApplication);
   const rejectFn = useServerFn(rejectBuyerApplication);
+  const notifyApprovedFn = useServerFn(notifyUserApproved);
 
   const approve = async (app: App) => {
     const role = selectedRole[app.id];
@@ -120,8 +122,18 @@ function AdminPage() {
           );
         if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
       }
+      // Fire-and-forget: envia o e-mail de aprovação sem travar a navegação.
+      if (app.email) {
+        void notifyApprovedFn({
+          data: {
+            email: app.email,
+            nome: app.full_name || "Usuário",
+            perfil: roleLabel[role] ?? String(role),
+          },
+        }).catch((e) => console.error("[email] notifyUserApproved falhou:", e));
+      }
       toast.success(`Usuário aprovado com sucesso com o perfil de ${roleLabel[role]}!`, {
-        description: `Notificação simulada enviada para ${app.email}.`,
+        description: `E-mail de confirmação enviado para ${app.email}.`,
       });
       await reload();
       setUsersRefreshTick((n) => n + 1);
