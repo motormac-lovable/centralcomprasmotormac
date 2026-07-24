@@ -398,8 +398,16 @@ function RegisteredUsers({
         />
       </div>
       <div className="overflow-x-auto">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por Nome, Perfil, CPF ou Telefone..."
+          className="rounded-md border bg-background px-3 py-1.5 text-sm w-full sm:w-80"
+        />
+      </div>
+      <div className="overflow-auto scrollbar-thin max-h-[500px]">
         <table className="w-full min-w-[820px] text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-10">
             <tr>
               <th className="text-left p-4">Nome</th>
               <th className="text-left p-4">Contato</th>
@@ -407,6 +415,7 @@ function RegisteredUsers({
               <th className="text-left p-4">Cadastro</th>
               <th className="text-right p-4">Ações</th>
             </tr>
+
           </thead>
           <tbody>
             {filtered.length === 0 && (
