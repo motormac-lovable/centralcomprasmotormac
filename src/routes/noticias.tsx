@@ -1,15 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Newspaper, ArrowLeft, TrendingUp, AlertCircle, ExternalLink } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { Newspaper, ArrowLeft, TrendingUp, ExternalLink, Circle, Loader2 } from "lucide-react";
+import { getMarketTicker, type MarketTicker } from "@/lib/market-ticker.functions";
 
 export const Route = createFileRoute("/noticias")({
   head: () => ({
     meta: [
       { title: "Notícias de Economia — Motormac" },
-      { name: "description", content: "Feed de notícias e indicadores econômicos do mercado e do setor." },
+      { name: "description", content: "Feed de notícias econômicas em tempo real, atualizado a cada 18 minutos via Marketaux." },
       { property: "og:title", content: "Notícias de Economia — Motormac" },
       { name: "twitter:title", content: "Notícias de Economia — Motormac" },
-      { property: "og:description", content: "Feed de notícias e indicadores econômicos do mercado e do setor." },
-      { name: "twitter:description", content: "Feed de notícias e indicadores econômicos do mercado e do setor." },
+      { property: "og:description", content: "Feed de notícias econômicas em tempo real, atualizado a cada 18 minutos." },
+      { name: "twitter:description", content: "Feed de notícias econômicas em tempo real, atualizado a cada 18 minutos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -17,42 +20,26 @@ export const Route = createFileRoute("/noticias")({
   component: Noticias,
 });
 
-const mockNews = [
-  {
-    id: 1,
-    title: "Banco Central mantém sinalização cautelosa para os próximos meses",
-    source: "Valor Econômico",
-    summary: "A ata do Copom reforçou a postura de vigilância frente às incertezas fiscais e à inflação acima da meta.",
-    tag: "Política Monetária",
-    url: "https://valor.globo.com/financas/",
-  },
-  {
-    id: 2,
-    title: "Setor de máquinas e equipamentos projeta alta na demanda no segundo semestre",
-    source: "Agência Brasil",
-    summary: "Indicadores de produção industrial apontam para recuperação puxada por investimentos em infraestrutura.",
-    tag: "Setor",
-    url: "https://agenciabrasil.ebc.com.br/economia",
-  },
-  {
-    id: 3,
-    title: "Dólar fecha em leve queda com fluxo de comércio exterior",
-    source: "Reuters",
-    summary: "Moeda norte-americana recuou ante o real em sessão de menor volume, refletindo o cenário externo.",
-    tag: "Câmbio",
-    url: "https://www.reuters.com/world/americas/",
-  },
-  {
-    id: 4,
-    title: "IGP-M acelera e pressiona custos de reposição de estoque",
-    source: "Estadão",
-    summary: "A variação do índice de preços ao produtor impacta diretamente a cadeia de suprimentos de peças.",
-    tag: "Inflação",
-    url: "https://economia.estadao.com.br/",
-  },
-];
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return iso; }
+}
 
 function Noticias() {
+  const fetchTicker = useServerFn(getMarketTicker);
+  const { data, isLoading, isError } = useQuery<MarketTicker>({
+    queryKey: ["market-ticker"],
+    queryFn: () => fetchTicker(),
+    staleTime: 60 * 1000,
+    refetchInterval: 18 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const news = data?.news ?? [];
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
       <div className="mb-6">
@@ -69,52 +56,74 @@ function Noticias() {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
             <Newspaper className="h-3.5 w-3.5" />
-            Feed Econômico
+            Feed Econômico — Marketaux
           </div>
           <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
             Notícias & Indicadores
           </h1>
           <p className="mt-2 text-muted-foreground text-sm sm:text-base max-w-2xl">
-            Acompanhe as principais manchetes do mercado financeiro e do setor de máquinas e equipamentos.
+            Principais manchetes do mercado financeiro e do setor, atualizadas automaticamente a cada 18 minutos.
           </p>
+          {data?.fetched_at && (
+            <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Circle className="h-2 w-2 fill-emerald-500 text-emerald-500 animate-pulse" />
+              Em tempo real • Última atualização: {formatDate(data.fetched_at)}
+            </div>
+          )}
         </div>
         <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <TrendingUp className="h-6 w-6" />
         </div>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-6 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+      {isLoading && (
+        <div className="mt-12 flex items-center justify-center text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Carregando notícias...
         </div>
-        <h2 className="mt-4 text-lg font-semibold">Integração Marketaux em configuração</h2>
-        <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
-          Em breve este feed será alimentado automaticamente com notícias em tempo real via Marketaux.
-          Enquanto isso, confira abaixo os destaques selecionados para o dia.
-        </p>
-      </div>
+      )}
+
+      {isError && (
+        <div className="mt-8 rounded-2xl border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+          Não foi possível carregar as notícias no momento. Tente novamente em alguns instantes.
+        </div>
+      )}
+
+      {!isLoading && !isError && news.length === 0 && (
+        <div className="mt-8 rounded-2xl border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+          Nenhuma manchete disponível no momento. As notícias voltarão na próxima atualização automática.
+        </div>
+      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {mockNews.map((news) => (
+        {news.map((n) => (
           <a
-            key={news.id}
-            href={news.url}
+            key={n.uuid}
+            href={n.url}
             target="_blank"
             rel="noopener noreferrer"
             className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <div className="flex items-start justify-between gap-3">
-              <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium text-accent-foreground">
-                {news.tag}
+              {n.tag && (
+                <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+                  {n.tag}
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground text-right">
+                {n.source}
+                <br />
+                {formatDate(n.published_at)}
               </span>
-              <span className="text-[10px] text-muted-foreground">{news.source}</span>
             </div>
             <h3 className="mt-3 text-base font-semibold leading-snug group-hover:text-primary transition-colors">
-              {news.title}
+              {n.title}
             </h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              {news.summary}
-            </p>
+            {n.description && (
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                {n.description}
+              </p>
+            )}
             <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
               Ler notícia completa
               <ExternalLink className="h-3 w-3" />
