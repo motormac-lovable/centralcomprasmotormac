@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
+import { MarketTickerBar } from "./MarketTickerBar";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { markVisit, type VisitKey } from "@/lib/last-visits";
 
