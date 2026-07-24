@@ -892,6 +892,16 @@ function OwnerAdminManager() {
   const adminIds = new Set(admins.map((a) => a.user_id));
   const buyersOnly = approvedBuyers.filter((b) => !adminIds.has(b.user_id));
 
+  const [adminQ, setAdminQ] = useState("");
+  const [buyerQ, setBuyerQ] = useState("");
+  const matches = (row: RoleRow & { profile?: ProfileRow }, q: string) => {
+    const s = q.trim().toLowerCase();
+    if (!s) return true;
+    return [row.profile?.full_name, row.profile?.email].some((v) => (v ?? "").toString().toLowerCase().includes(s));
+  };
+  const filteredAdmins = admins.filter((a) => matches(a, adminQ));
+  const filteredBuyers = buyersOnly.filter((b) => matches(b, buyerQ));
+
   return (
     <div className="mt-10 rounded-2xl border bg-card shadow-sm overflow-hidden">
       <div className="p-5 border-b flex items-center gap-3 bg-gradient-to-r from-amber-50 to-transparent">
@@ -907,52 +917,80 @@ function OwnerAdminManager() {
       </div>
 
       <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
-        <div className="p-5">
+        <div className="p-5 flex flex-col">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-primary" /> Administradores atuais</h3>
-          {admins.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum administrador além do Proprietário.</p>
-          ) : (
-            <ul className="space-y-2">
-              {admins.map((a) => (
-                <li key={a.user_id} className="flex items-center justify-between rounded-md border p-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{a.profile?.full_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground truncate">{a.profile?.email}</div>
-                  </div>
-                  <button
-                    onClick={() => demote(a.user_id)}
-                    className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90"
-                  >
-                    <UserMinus className="h-3.5 w-3.5" /> Revogar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <input
+            value={adminQ}
+            onChange={(e) => setAdminQ(e.target.value)}
+            placeholder="Buscar por Nome, Perfil, CPF ou Telefone..."
+            className="mb-3 rounded-md border bg-background px-3 py-1.5 text-sm"
+          />
+          <div className="overflow-auto scrollbar-thin max-h-[450px]">
+            {admins.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum administrador além do Proprietário.</p>
+            ) : filteredAdmins.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum usuário encontrado para esta busca.</p>
+            ) : (
+              <ul className="space-y-2">
+                {filteredAdmins.map((a) => (
+                  <li key={a.user_id} className="flex items-center justify-between rounded-md border p-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{a.profile?.full_name || "—"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{a.profile?.email}</div>
+                    </div>
+                    <button
+                      onClick={() => demote(a.user_id)}
+                      className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+                    >
+                      <UserMinus className="h-3.5 w-3.5" /> Revogar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="mt-3 pt-2 border-t text-xs text-muted-foreground">
+            Exibindo {filteredAdmins.length} de {admins.length} {admins.length === 1 ? "administrador" : "administradores"}
+          </div>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 flex flex-col">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Compradores elegíveis</h3>
-          {buyersOnly.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum comprador disponível para promoção.</p>
-          ) : (
-            <ul className="space-y-2">
-              {buyersOnly.map((b) => (
-                <li key={b.user_id} className="flex items-center justify-between rounded-md border p-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{b.profile?.full_name || "—"}</div>
-                    <div className="text-xs text-muted-foreground truncate">{b.profile?.email}</div>
-                  </div>
-                  <button
-                    onClick={() => promote(b.user_id)}
-                    className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" /> Promover
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <input
+            value={buyerQ}
+            onChange={(e) => setBuyerQ(e.target.value)}
+            placeholder="Buscar por Nome, Perfil, CPF ou Telefone..."
+            className="mb-3 rounded-md border bg-background px-3 py-1.5 text-sm"
+          />
+          <div className="overflow-auto scrollbar-thin max-h-[450px]">
+            {buyersOnly.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum comprador disponível para promoção.</p>
+            ) : filteredBuyers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nenhum usuário encontrado para esta busca.</p>
+            ) : (
+              <ul className="space-y-2">
+                {filteredBuyers.map((b) => (
+                  <li key={b.user_id} className="flex items-center justify-between rounded-md border p-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{b.profile?.full_name || "—"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{b.profile?.email}</div>
+                    </div>
+                    <button
+                      onClick={() => promote(b.user_id)}
+                      className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" /> Promover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="mt-3 pt-2 border-t text-xs text-muted-foreground">
+            Exibindo {filteredBuyers.length} de {buyersOnly.length} {buyersOnly.length === 1 ? "comprador" : "compradores"}
+          </div>
+        </div>
+
         </div>
       </div>
     </div>
