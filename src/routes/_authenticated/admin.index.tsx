@@ -990,10 +990,9 @@ function OwnerAdminManager() {
             Exibindo {filteredBuyers.length} de {buyersOnly.length} {buyersOnly.length === 1 ? "comprador" : "compradores"}
           </div>
         </div>
-
-        </div>
       </div>
     </div>
+
   );
 }
 
