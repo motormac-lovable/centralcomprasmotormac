@@ -91,6 +91,8 @@ function AdminPage() {
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole | "">>({});
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [usersRefreshTick, setUsersRefreshTick] = useState(0);
+  const [pendingQ, setPendingQ] = useState("");
+
 
 
   const approveFn = useServerFn(approveBuyerApplication);
