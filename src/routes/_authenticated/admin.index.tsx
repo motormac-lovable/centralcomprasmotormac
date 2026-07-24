@@ -411,8 +411,11 @@ function RegisteredUsers({
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">
+                {rows.length === 0 ? "Nenhum usuário encontrado." : "Nenhum usuário encontrado para esta busca."}
+              </td></tr>
             )}
+
             {(() => {
               const renderRow = (u: Row) => {
                 const owner = isOwnerRow(u);
