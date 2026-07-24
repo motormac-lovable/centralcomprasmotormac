@@ -92,3 +92,20 @@
   }
   h1, h2, h3 { letter-spacing: -0.02em; }
 }
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-foreground) 25%, transparent) transparent;
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--color-foreground) 20%, transparent);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--color-foreground) 40%, transparent);
+    background-clip: padding-box;
+  }
+}
