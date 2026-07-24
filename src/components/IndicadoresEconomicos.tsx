@@ -239,10 +239,7 @@ export function IndicadoresEconomicos() {
           );
         })}
 
-        <Link
-          to="/noticias"
-          className="group relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/40 cursor-pointer"
-        >
+        <div className="group relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-all hover:shadow-lg hover:border-primary/40 flex flex-col">
           <div
             className="absolute inset-x-0 top-0 h-1 opacity-80"
             style={{ background: `linear-gradient(90deg, ${newsAccent}, var(--primary-glow))` }}
@@ -250,7 +247,7 @@ export function IndicadoresEconomicos() {
 
           <div className="flex items-start justify-between gap-4">
             <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
               style={{
                 background: `color-mix(in oklab, ${newsAccent} 12%, transparent)`,
                 color: newsAccent,
@@ -260,7 +257,7 @@ export function IndicadoresEconomicos() {
             </div>
 
             <div
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors"
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
               style={{
                 background: `color-mix(in oklab, ${newsAccent} 10%, transparent)`,
                 color: newsAccent,
@@ -270,31 +267,54 @@ export function IndicadoresEconomicos() {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
               Mais Notícias de Economia
             </div>
-            <div
-              className="mt-0.5 text-xl font-bold tracking-tight"
-              style={{ color: newsAccent }}
-            >
+            <div className="mt-0.5 text-sm font-bold tracking-tight" style={{ color: newsAccent }}>
               Acesse o feed
             </div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground/80 leading-relaxed">
+          </div>
+
+          {headlines.length > 0 ? (
+            <ul className="mt-2 space-y-1.5 flex-1">
+              {headlines.map((n) => (
+                <li key={n.uuid}>
+                  <a
+                    href={n.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/link flex items-start gap-1.5 text-[11px] leading-snug text-foreground/85 hover:text-primary transition-colors"
+                    title={n.title}
+                  >
+                    <ExternalLink className="h-3 w-3 mt-0.5 shrink-0 opacity-60 group-hover/link:opacity-100" />
+                    <span className="line-clamp-2">
+                      <span className="font-medium text-muted-foreground mr-1">{n.source}:</span>
+                      {n.title}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-2 text-[11px] text-muted-foreground/80 leading-relaxed flex-1">
               Feed atualizado com as principais manchetes do mercado e do setor.
             </div>
-          </div>
+          )}
 
-          <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary group-hover:gap-2 transition-all">
-            Ver notícias
+          <Link
+            to="/noticias"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:gap-2 transition-all self-start"
+          >
+            Ver todas as notícias
             <ArrowRight className="h-3.5 w-3.5" />
-          </div>
+          </Link>
 
           <div
-            className="absolute -bottom-5 -right-5 w-20 h-20 rounded-full opacity-5 group-hover:opacity-10 transition-opacity"
+            className="absolute -bottom-5 -right-5 w-20 h-20 rounded-full opacity-5 pointer-events-none"
             style={{ background: newsAccent }}
           />
-        </Link>
+        </div>
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground mt-3">
