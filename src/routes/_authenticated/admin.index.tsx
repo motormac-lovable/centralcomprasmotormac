@@ -88,17 +88,22 @@ function AdminPage() {
   type AppRole = Database["public"]["Enums"]["app_role"];
   const roleLabel: Record<AppRole, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
   const allowedRoles: AppRole[] = isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"];
-  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole | "">>({});
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [usersRefreshTick, setUsersRefreshTick] = useState(0);
 
 
   const approveFn = useServerFn(approveBuyerApplication);
   const rejectFn = useServerFn(rejectBuyerApplication);
 
   const approve = async (app: App) => {
-    const fallback: AppRole = app.checklist_types.includes("aprovador") ? "aprovador" : app.checklist_types.includes("solicitante") ? "solicitante" : "buyer";
-    const role = selectedRole[app.id] ?? fallback;
+    const role = selectedRole[app.id];
+    if (!role) {
+      return toast.error("Selecione um perfil antes de aprovar o cadastro.");
+    }
     if (role === "owner") return toast.error("Papel Proprietário não pode ser atribuído via aprovação.");
     if (!allowedRoles.includes(role)) return toast.error("Você não pode atribuir este nível.");
+    setApprovingId(app.id);
     try {
       const res = await approveFn({ data: { application_id: app.id, role: role as Exclude<AppRole, "owner"> } });
       // Se aprovador, materializa alçadas solicitadas.
@@ -113,12 +118,15 @@ function AdminPage() {
           );
         if (cfgErr) toast.warning("Aprovado, mas falhou ao salvar alçada: " + cfgErr.message);
       }
-      toast.success(`Cadastro aprovado como ${roleLabel[role]}!`, {
-        description: `Usuário criado e notificação simulada enviada para ${app.email}.`,
+      toast.success(`Usuário aprovado com sucesso com o perfil de ${roleLabel[role]}!`, {
+        description: `Notificação simulada enviada para ${app.email}.`,
       });
-      reload();
+      await reload();
+      setUsersRefreshTick((n) => n + 1);
     } catch (err) {
       toast.error(translateError(err, "Não foi possível aprovar o cadastro."));
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -193,18 +201,24 @@ function AdminPage() {
                   {a.status === "pending" ? (
                     <div className="inline-flex items-center gap-2">
                       <select
-                        value={selectedRole[a.id] ?? (a.checklist_types.includes("aprovador") ? "aprovador" : a.checklist_types.includes("solicitante") ? "solicitante" : "buyer")}
-                        onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole }))}
-                        className="rounded-md border bg-background px-2 py-1.5 text-xs"
-                        title="Nível a ser atribuído na aprovação"
+                        value={selectedRole[a.id] ?? ""}
+                        onChange={(e) => setSelectedRole((s) => ({ ...s, [a.id]: e.target.value as AppRole | "" }))}
+                        className={`rounded-md border bg-background px-2 py-1.5 text-xs ${!selectedRole[a.id] ? "border-amber-400 ring-1 ring-amber-300" : ""}`}
+                        title="Selecione o perfil a ser atribuído (obrigatório)"
+                        required
                       >
+                        <option value="">Selecione o perfil…</option>
                         {allowedRoles.map((r) => (
                           <option key={r} value={r}>{roleLabel[r]}</option>
                         ))}
                       </select>
-                      <button onClick={() => approve(a)}
-                        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700">
-                        <Check className="h-3.5 w-3.5" /> Aprovar
+                      <button
+                        onClick={() => approve(a)}
+                        disabled={!selectedRole[a.id] || approvingId === a.id}
+                        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={!selectedRole[a.id] ? "Selecione o perfil antes de aprovar" : "Aprovar cadastro"}
+                      >
+                        <Check className="h-3.5 w-3.5" /> {approvingId === a.id ? "Aprovando…" : "Aprovar"}
                       </button>
                       <button onClick={() => reject(a)}
                         className="inline-flex items-center gap-1 rounded-md bg-destructive text-destructive-foreground px-3 py-1.5 text-xs font-semibold hover:opacity-90">
@@ -224,7 +238,7 @@ function AdminPage() {
         </div>
       </div>
 
-      <RegisteredUsers />
+      <RegisteredUsers refreshTick={usersRefreshTick} />
 
       {isOwner && <OwnerAdminManager />}
     </div>
@@ -235,10 +249,12 @@ function RegisteredUsers({
   restrictedTo,
   mode = "admin",
   groupByCategory = false,
+  refreshTick = 0,
 }: {
   restrictedTo?: "solicitante";
   mode?: "admin" | "buyer" | "auditor";
   groupByCategory?: boolean;
+  refreshTick?: number;
 } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
@@ -266,7 +282,7 @@ function RegisteredUsers({
     setRows((profiles ?? []).map((p: any) => ({ ...p, roles: byUser.get(p.id) ?? [] })));
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [refreshTick]);
 
   const roleLabel: Record<string, string> = { owner: "Proprietário", admin: "Administrador", buyer: "Comprador", solicitante: "Solicitante", aprovador: "Aprovador", auditor: "Auditor" };
   const roleStyle: Record<string, string> = {
