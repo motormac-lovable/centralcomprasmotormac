@@ -249,10 +249,12 @@ function RegisteredUsers({
   restrictedTo,
   mode = "admin",
   groupByCategory = false,
+  refreshTick = 0,
 }: {
   restrictedTo?: "solicitante";
   mode?: "admin" | "buyer" | "auditor";
   groupByCategory?: boolean;
+  refreshTick?: number;
 } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
