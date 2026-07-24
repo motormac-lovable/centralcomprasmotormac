@@ -29,6 +29,7 @@ import { Route as AuthenticatedAprovacoesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiSolicitacoesCodigo_unicoRouteImport } from './routes/api/solicitacoes.$codigo_unico'
+import { Route as ApiPublicSendApprovalBatchRouteImport } from './routes/api/public/send-approval-batch'
 import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin.relatorios'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -132,6 +133,12 @@ const ApiSolicitacoesCodigo_unicoRoute =
     path: '/api/solicitacoes/$codigo_unico',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSendApprovalBatchRoute =
+  ApiPublicSendApprovalBatchRouteImport.update({
+    id: '/api/public/send-approval-batch',
+    path: '/api/public/send-approval-batch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminRelatoriosRoute =
   AuthenticatedAdminRelatoriosRouteImport.update({
     id: '/relatorios',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/api/public/send-approval-batch': typeof ApiPublicSendApprovalBatchRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/api/public/send-approval-batch': typeof ApiPublicSendApprovalBatchRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -203,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
   '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/api/public/send-approval-batch': typeof ApiPublicSendApprovalBatchRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/minhas-solicitacoes'
     | '/admin/relatorios'
+    | '/api/public/send-approval-batch'
     | '/api/solicitacoes/$codigo_unico'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/minhas-solicitacoes'
     | '/admin/relatorios'
+    | '/api/public/send-approval-batch'
     | '/api/solicitacoes/$codigo_unico'
     | '/admin'
   id:
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kanban'
     | '/_authenticated/minhas-solicitacoes'
     | '/_authenticated/admin/relatorios'
+    | '/api/public/send-approval-batch'
     | '/api/solicitacoes/$codigo_unico'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -287,6 +300,7 @@ export interface RootRouteChildren {
   NoticiasRoute: typeof NoticiasRoute
   PendingRoute: typeof PendingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicSendApprovalBatchRoute: typeof ApiPublicSendApprovalBatchRoute
   ApiSolicitacoesCodigo_unicoRoute: typeof ApiSolicitacoesCodigo_unicoRoute
 }
 
@@ -432,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSolicitacoesCodigo_unicoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/send-approval-batch': {
+      id: '/api/public/send-approval-batch'
+      path: '/api/public/send-approval-batch'
+      fullPath: '/api/public/send-approval-batch'
+      preLoaderRoute: typeof ApiPublicSendApprovalBatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/relatorios': {
       id: '/_authenticated/admin/relatorios'
       path: '/relatorios'
@@ -490,8 +511,19 @@ const rootRouteChildren: RootRouteChildren = {
   NoticiasRoute: NoticiasRoute,
   PendingRoute: PendingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicSendApprovalBatchRoute: ApiPublicSendApprovalBatchRoute,
   ApiSolicitacoesCodigo_unicoRoute: ApiSolicitacoesCodigo_unicoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
