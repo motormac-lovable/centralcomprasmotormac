@@ -324,6 +324,7 @@ function RegisteredUsers({
     auditor: "bg-slate-200 text-slate-800",
   };
 
+  const cleanNum = (v: string) => v.replace(/\D/g, "");
   const filtered = rows.filter((r) => {
     // Auditor nunca enxerga Proprietários.
     if (auditorOnly && (r.roles.includes("owner") || isOwnerEmail(r.email))) return false;
@@ -334,8 +335,16 @@ function RegisteredUsers({
     }
     const s = q.trim().toLowerCase();
     if (!s) return true;
-    return [r.full_name, r.email, r.cpf, r.phone].some((v) => (v ?? "").toString().toLowerCase().includes(s));
+    const sNum = cleanNum(s);
+    const roleNames = r.roles.map((x) => (roleLabel[x] ?? x)).join(" ");
+    const bag = [r.full_name, r.email, r.phone, roleNames]
+      .map((v) => (v ?? "").toString().toLowerCase())
+      .join(" ");
+    if (bag.includes(s)) return true;
+    if (sNum && (cleanNum(r.cpf ?? "").includes(sNum) || cleanNum(r.phone ?? "").includes(sNum))) return true;
+    return false;
   });
+
 
 
   const isOwnerRow = (u: Row) => u.roles.includes("owner") || isOwnerEmail(u.email);
