@@ -393,14 +393,6 @@ function RegisteredUsers({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por nome, e-mail, CPF…"
-          className="rounded-md border bg-background px-3 py-1.5 text-sm w-full sm:w-72"
-        />
-      </div>
-      <div className="overflow-x-auto">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por Nome, Perfil, CPF ou Telefone..."
           className="rounded-md border bg-background px-3 py-1.5 text-sm w-full sm:w-80"
         />
