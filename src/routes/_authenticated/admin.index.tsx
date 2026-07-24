@@ -152,10 +152,30 @@ function AdminPage() {
         <RelatoriosLink />
       </div>
 
+      {(() => {
+        const cleanNum = (v: string) => v.replace(/\D/g, "");
+        const s = pendingQ.trim().toLowerCase();
+        const sNum = cleanNum(s);
+        const filteredApps = apps.filter((a) => {
+          if (!s) return true;
+          const text = [a.full_name, a.email, a.phone, a.cpf].map((v) => (v ?? "").toString().toLowerCase()).join(" ");
+          if (text.includes(s)) return true;
+          if (sNum && (cleanNum(a.cpf ?? "").includes(sNum) || cleanNum(a.phone ?? "").includes(sNum))) return true;
+          return false;
+        });
+        return (
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="p-4 border-b">
+          <input
+            value={pendingQ}
+            onChange={(e) => setPendingQ(e.target.value)}
+            placeholder="Buscar por Nome, Perfil, CPF ou Telefone..."
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="overflow-auto scrollbar-thin max-h-[500px]">
         <table className="w-full min-w-[720px] text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-10">
             <tr>
               <th className="text-left p-4">Nome</th>
               <th className="text-left p-4">Contato</th>
@@ -165,10 +185,12 @@ function AdminPage() {
             </tr>
           </thead>
           <tbody>
-            {apps.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhuma solicitação registrada.</td></tr>
+            {filteredApps.length === 0 && (
+              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">
+                {apps.length === 0 ? "Nenhuma solicitação registrada." : "Nenhum usuário encontrado para esta busca."}
+              </td></tr>
             )}
-            {apps.map((a) => (
+            {filteredApps.map((a) => (
               <tr key={a.id} className="border-t">
                 <td className="p-4">
                   <div className="font-medium">{a.full_name}</div>
@@ -238,7 +260,13 @@ function AdminPage() {
           </tbody>
         </table>
         </div>
+        <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground">
+          Exibindo {filteredApps.length} de {apps.length} {apps.length === 1 ? "solicitação" : "solicitações"}
+        </div>
       </div>
+        );
+      })()}
+
 
       <RegisteredUsers refreshTick={usersRefreshTick} />
 
