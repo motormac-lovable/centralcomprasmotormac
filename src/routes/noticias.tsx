@@ -46,11 +46,13 @@ function Noticias() {
   const { data: agro, isLoading: agroLoading } = useQuery<AgroNewsPayload>({
     queryKey: ["agro-news"],
     queryFn: () => fetchAgroNews(),
-    staleTime: 60 * 60 * 1000,
-    refetchInterval: 6 * 60 * 60 * 1000,
+    staleTime: 60 * 1000,
+    refetchInterval: 18 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  const agroItems = (agro?.items ?? []).slice(0, 6);
+  const agroItems = [...(agro?.items ?? [])]
+    .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .slice(0, 8);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
@@ -111,19 +113,19 @@ function Noticias() {
             Nenhuma notícia relacionada aos indicadores no momento.
           </div>
         ) : (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
             {agroItems.map((n) => (
               <a
                 key={n.id}
                 href={n.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex flex-col rounded-xl border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="group flex h-full min-h-[190px] flex-col rounded-xl border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <span className="inline-flex w-fit items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium text-accent-foreground">
                   {n.topic}
                 </span>
-                <h3 className="mt-2 text-sm font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-3">
+                <h3 className="mt-2 min-h-[3.75rem] text-sm font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-3">
                   {n.title}
                 </h3>
                 <span className="mt-auto pt-3 text-[10px] text-muted-foreground">
