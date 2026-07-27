@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Newspaper, ArrowLeft, TrendingUp, ExternalLink, Circle, Loader2 } from "lucide-react";
 import { getMarketTicker, type MarketTicker } from "@/lib/market-ticker.functions";
 import { AgroIndicadoresStrip } from "@/components/AgroIndicadoresStrip";
+import { getAgroNews, type AgroNewsPayload } from "@/lib/agro-news.functions";
 
 export const Route = createFileRoute("/noticias")({
   head: () => ({
@@ -40,6 +41,16 @@ function Noticias() {
   });
 
   const news = (data?.news ?? []).slice(0, 8);
+
+  const fetchAgroNews = useServerFn(getAgroNews);
+  const { data: agro, isLoading: agroLoading } = useQuery<AgroNewsPayload>({
+    queryKey: ["agro-news"],
+    queryFn: () => fetchAgroNews(),
+    staleTime: 60 * 60 * 1000,
+    refetchInterval: 6 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  const agroItems = (agro?.items ?? []).slice(0, 6);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
@@ -78,6 +89,55 @@ function Noticias() {
       </div>
 
       <AgroIndicadoresStrip />
+
+      <section className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Notícias dos indicadores acima
+          </h2>
+          {agro?.fetched_at && (
+            <span className="text-xs text-muted-foreground">
+              Atualizado em {formatDate(agro.fetched_at)}
+            </span>
+          )}
+        </div>
+        {agroLoading ? (
+          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Buscando notícias dos indicadores...
+          </div>
+        ) : agroItems.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-dashed bg-card p-5 text-center text-sm text-muted-foreground">
+            Nenhuma notícia relacionada aos indicadores no momento.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {agroItems.map((n) => (
+              <a
+                key={n.id}
+                href={n.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col rounded-xl border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <span className="inline-flex w-fit items-center rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+                  {n.topic}
+                </span>
+                <h3 className="mt-2 text-sm font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-3">
+                  {n.title}
+                </h3>
+                <span className="mt-auto pt-3 text-[10px] text-muted-foreground">
+                  {n.source} • {formatDate(n.published_at)}
+                </span>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  Ler notícia completa
+                  <ExternalLink className="h-3 w-3" />
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
 
       {isLoading && (
         <div className="mt-12 flex items-center justify-center text-muted-foreground gap-2">
