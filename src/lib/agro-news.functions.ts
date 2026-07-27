@@ -103,7 +103,7 @@ export const getAgroNews = createServerFn({ method: "GET" }).handler(
       await supabaseAdmin
         .from("market_cache")
         .upsert(
-          { key: CACHE_KEY, payload: fresh as unknown as Record<string, unknown>, fetched_at: fresh.fetched_at },
+          { key: CACHE_KEY, payload: fresh as unknown as never, fetched_at: fresh.fetched_at },
           { onConflict: "key" },
         );
       return fresh;
