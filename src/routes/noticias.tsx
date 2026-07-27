@@ -68,7 +68,7 @@ function Noticias() {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
             <Newspaper className="h-3.5 w-3.5" />
-            Feed Econômico — Marketaux
+            Feed Econômico
           </div>
           <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
             Notícias & Indicadores
