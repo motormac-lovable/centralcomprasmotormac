@@ -281,7 +281,7 @@ export function IndicadoresEconomicos() {
             </p>
           </div>
 
-          <div className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all group-hover:bg-primary/90 group-hover:gap-3 self-stretch text-center">
+          <div className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm transition-all group-hover:bg-muted group-hover:gap-3 self-stretch text-center">
             Acessar notícias
             <ArrowRight className="h-3.5 w-3.5" />
           </div>
