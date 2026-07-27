@@ -34,13 +34,14 @@ export type MarketTicker = {
 
 // ============ Fontes externas ============
 
-async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
+async function fetchMarketauxPage(apiKey: string, page: number): Promise<NewsItem[]> {
   const url = new URL("https://api.marketaux.com/v1/news/all");
   url.searchParams.set("api_token", apiKey);
   url.searchParams.set("language", "pt");
   url.searchParams.set("countries", "br");
   url.searchParams.set("filter_entities", "true");
-  url.searchParams.set("limit", "12");
+  url.searchParams.set("limit", "3");
+  url.searchParams.set("page", String(page));
   const resp = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
   if (!resp.ok) throw new Error(`Marketaux HTTP ${resp.status}`);
   const json = (await resp.json()) as { data?: Array<Record<string, unknown>> };
@@ -54,6 +55,23 @@ async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
     published_at: String(raw.published_at ?? new Date().toISOString()),
     tag: (raw.entities as Array<{ name?: string }>)?.[0]?.name ?? "Economia",
   }));
+}
+
+async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
+  // O plano gratuito devolve 3 artigos por requisicao — pagina para chegar a 8+
+  const pages = await Promise.allSettled([1, 2, 3].map((p) => fetchMarketauxPage(apiKey, p)));
+  const seen = new Set<string>();
+  const out: NewsItem[] = [];
+  for (const r of pages) {
+    if (r.status !== "fulfilled") continue;
+    for (const item of r.value) {
+      if (seen.has(item.uuid)) continue;
+      seen.add(item.uuid);
+      out.push(item);
+    }
+  }
+  if (out.length === 0) throw new Error("Marketaux sem resultados");
+  return out.slice(0, 12);
 }
 
 async function fetchBCBQuote(code: number, label: string, symbol: string): Promise<Quote | null> {
