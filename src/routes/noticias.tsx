@@ -76,7 +76,7 @@ function Noticias() {
             Notícias & Indicadores
           </h1>
           <p className="mt-2 text-muted-foreground text-sm sm:text-base max-w-2xl">
-            Principais manchetes do mercado financeiro e do setor, atualizadas automaticamente a cada 18 minutos.
+            Principais manchetes do mercado financeiro e do setor, atualizadas automaticamente.
           </p>
           {data?.fetched_at && (
             <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
