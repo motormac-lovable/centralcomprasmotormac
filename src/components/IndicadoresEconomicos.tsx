@@ -3,7 +3,7 @@ import { DollarSign, TrendingUp, BarChart3, Activity, Newspaper, ArrowRight } fr
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { getMarketTicker } from "@/lib/market-ticker.functions";
+import { getMarketTicker, type MarketTicker } from "@/lib/market-ticker.functions";
 
 type Chave = "dolar" | "ipca" | "igpm";
 
@@ -59,7 +59,6 @@ export function IndicadoresEconomicos() {
     refetchInterval: 18 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  const headlines = (ticker?.news ?? []).slice(0, 6);
 
   const [state, setState] = useState<Record<Chave, { value: string; sub: string; loading: boolean }>>(() => {
     if (typeof window !== "undefined") {
