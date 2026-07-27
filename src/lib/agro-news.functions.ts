@@ -37,6 +37,25 @@ const TOPICS: Array<{ topic: string; query: string }> = [
 
 const PER_TOPIC = 3;
 
+function decodeEntities(s: string) {
+  return s
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+}
+
+function pick(tag: string, xml: string) {
+  const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
+  return m ? decodeEntities(m[1]) : "";
+}
+
 function parseItems(xml: string, topic: string): AgroNewsItem[] {
   const chunks = xml.split("<item>").slice(1);
   const out: AgroNewsItem[] = [];
