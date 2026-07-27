@@ -59,7 +59,7 @@ export function IndicadoresEconomicos() {
     refetchInterval: 18 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
-  const headlines = (ticker?.news ?? []).slice(0, 4);
+  const headlines = (ticker?.news ?? []).slice(0, 6);
 
   const [state, setState] = useState<Record<Chave, { value: string; sub: string; loading: boolean }>>(() => {
     if (typeof window !== "undefined") {
