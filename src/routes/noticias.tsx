@@ -93,7 +93,7 @@ function Noticias() {
       <section className="mt-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">
-            Notícias dos indicadores acima
+            Notícias
           </h2>
           {agro?.fetched_at && (
             <span className="text-xs text-muted-foreground">
