@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Newspaper, ArrowLeft, TrendingUp, ExternalLink, Circle, Loader2 } from "lucide-react";
 import { getMarketTicker, type MarketTicker } from "@/lib/market-ticker.functions";
+import { AgroIndicadoresStrip } from "@/components/AgroIndicadoresStrip";
 
 export const Route = createFileRoute("/noticias")({
   head: () => ({
@@ -38,7 +39,7 @@ function Noticias() {
     refetchOnWindowFocus: false,
   });
 
-  const news = data?.news ?? [];
+  const news = (data?.news ?? []).slice(0, 8);
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
@@ -75,6 +76,8 @@ function Noticias() {
           <TrendingUp className="h-6 w-6" />
         </div>
       </div>
+
+      <AgroIndicadoresStrip />
 
       {isLoading && (
         <div className="mt-12 flex items-center justify-center text-muted-foreground gap-2">
