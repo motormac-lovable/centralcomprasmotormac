@@ -1,4 +1,5 @@
 import { Field, inputCls } from "./FormShell";
+import { SearchableSelect } from "./SearchableSelect";
 import { useDepartments } from "@/hooks/useDepartments";
 
 type Props = {
@@ -58,20 +59,14 @@ export function DepartamentoPicker({
         />
       </Field>
       <Field label="Departamento" required={required} error={error} hint={loadHint}>
-        <select
-          className={inputCls}
+        <SearchableSelect
           required={required}
-          value={nome}
-          onChange={(e) => handleNome(e.target.value)}
           disabled={isLoading || !!loadErr}
-        >
-          <option value="">Selecione...</option>
-          {deps.map((d) => (
-            <option key={d.code} value={d.name}>
-              {d.code} — {d.name}
-            </option>
-          ))}
-        </select>
+          value={nome}
+          onChange={handleNome}
+          placeholder="Digite para buscar..."
+          options={deps.map((d) => ({ value: d.name, label: `${d.code} — ${d.name}` }))}
+        />
       </Field>
     </div>
   );

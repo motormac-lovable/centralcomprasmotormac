@@ -1,4 +1,5 @@
 import { Field, inputCls } from "./FormShell";
+import { SearchableSelect } from "./SearchableSelect";
 import { useOrigins } from "@/hooks/useOrigins";
 
 type Props = {
@@ -66,20 +67,14 @@ export function OrigemPicker({
         />
       </Field>
       <Field label="Origem" required={required} error={error} hint={loadHint}>
-        <select
-          className={inputCls}
+        <SearchableSelect
           required={required}
-          value={nome}
-          onChange={(e) => handleNome(e.target.value)}
           disabled={isLoading || !!loadErr}
-        >
-          <option value="">Selecione...</option>
-          {origins.map((o) => (
-            <option key={o.code} value={o.name}>
-              {o.code} — {o.name}
-            </option>
-          ))}
-        </select>
+          value={nome}
+          onChange={handleNome}
+          placeholder="Digite para buscar..."
+          options={origins.map((o) => ({ value: o.name, label: `${o.code} — ${o.name}` }))}
+        />
       </Field>
     </div>
   );
