@@ -52,12 +52,20 @@ const BASE: Card[] = [
     accent: "oklch(0.5 0.12 60)",
   },
   {
-    key: "graos",
-    label: "Soja e Milho (bolsa e físico)",
-    value: "Soja R$ 132 / Milho R$ 63",
+    key: "soja",
+    label: "Soja (bolsa e físico)",
+    value: "R$ 132,00 / saca",
     sub: "Saca 60kg — indicador de mercado",
     icon: Wheat,
     accent: "oklch(0.65 0.15 90)",
+  },
+  {
+    key: "milho",
+    label: "Milho (bolsa e físico)",
+    value: "R$ 63,00 / saca",
+    sub: "Saca 60kg — indicador de mercado",
+    icon: Wheat,
+    accent: "oklch(0.7 0.16 75)",
   },
 ];
 
