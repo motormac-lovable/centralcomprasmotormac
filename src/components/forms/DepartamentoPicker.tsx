@@ -1,4 +1,5 @@
 import { Field, inputCls } from "./FormShell";
+import { SearchableSelect } from "./SearchableSelect";
 import { useDepartments } from "@/hooks/useDepartments";
 
 type Props = {
