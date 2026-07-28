@@ -37,7 +37,9 @@ export const Route = createFileRoute("/_authenticated/kanban")({
 const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, materiais: Package } as const;
 
 function KanbanPage() {
-  const { isBuyer, isAuditor, loading } = useAuth();
+  const { isBuyer, isAuditor, isApprover, isOwner, isAdmin, loading } = useAuth();
+  // Aprovador é somente-leitura no Kanban: suas ações ficam na tela de Aprovações.
+  const canMoveCards = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
   const notifyApprovers = useServerFn(notifyApproversPending);
   const notifyRejected = useServerFn(notifyRequestRejected);
   const [cards, setCards] = useState<Card[]>([]);
@@ -101,12 +103,12 @@ function KanbanPage() {
   
 
   const onStart = (e: DragStartEvent) => {
-    if (isAuditor) return;
+    if (!canMoveCards) return;
     setActiveId(String(e.active.id));
   };
   const onEnd = async (e: DragEndEvent) => {
     setActiveId(null);
-    if (isAuditor) return;
+    if (!canMoveCards) return;
     if (!e.over) return;
     const cardId = String(e.active.id);
     const newStatus = String(e.over.id) as Status;
@@ -116,8 +118,12 @@ function KanbanPage() {
   };
 
   const moveCard = async (card: Card, requestedStatus: Status) => {
-    if (isAuditor) {
-      toast.error("Auditor: leitura apenas — movimentação de cards está bloqueada.");
+    if (!canMoveCards) {
+      toast.error(
+        isApprover && !isAuditor
+          ? "Aprovador: as decisões são registradas exclusivamente na tela Aprovações."
+          : "Auditor: leitura apenas — movimentação de cards está bloqueada.",
+      );
       return;
     }
     // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
@@ -486,17 +492,18 @@ function Column({
 }
 
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
-  const { isAuditor } = useAuth();
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: isAuditor });
+  const { isAuditor, isApprover, isBuyer, isAdmin, isOwner } = useAuth();
+  const canDrag = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: !canDrag });
   const [historyOpen, setHistoryOpen] = useState(false);
   const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
-  const dragProps = isAuditor ? {} : { ...attributes, ...listeners };
+  const dragProps = canDrag ? { ...attributes, ...listeners } : {};
   return (
     <>
       <div
         ref={setNodeRef} {...dragProps}
         onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
-        className={`${isDragging ? "opacity-30" : ""} ${isAuditor ? "cursor-pointer" : ""}`}
+        className={`${isDragging ? "opacity-30" : ""} ${canDrag ? "" : "cursor-pointer"}`}
       >
         <CardView
           card={card}
@@ -1803,7 +1810,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {card.status === "pedidos_gerados" && (
             <InvoiceDocumentsSection
               card={{ id: card.id, data: rawData, observations }}
-              editable={!isAuditor && (isBuyer || isAdmin || isOwner)}
+              editable={canWriteKanban}
               author={fullName || user?.email || "Comprador"}
               onChanged={(fat) => {
                 const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
