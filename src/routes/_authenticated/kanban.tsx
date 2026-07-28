@@ -991,8 +991,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const readOnly = !canWriteKanban || isLocked;
   const canEditItens = canWriteKanban && !isLocked && card.status === "em_cotacao";
   const canQuickReject =
-    !isAuditor &&
-    (isBuyer || isAdmin || isOwner) &&
+    canWriteKanban &&
     (card.status === "solicitacoes_abertas" || card.status === "em_cotacao");
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
