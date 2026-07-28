@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Approvers can decide cards awaiting approval" ON public.kanban_cards;
