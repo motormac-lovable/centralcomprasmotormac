@@ -13,6 +13,18 @@ import { markVisit, type VisitKey } from "@/lib/last-visits";
 // Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
 const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
 
+// Rotas permitidas ao perfil Aprovador (sem acumular Comprador/Admin/Auditor).
+const APPROVER_PATHS: string[] = [
+  "/",
+  "/materiais",
+  "/compras",
+  "/contratos",
+  "/frete",
+  "/noticias",
+  "/minhas-solicitacoes",
+  "/aprovacoes",
+];
+
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
@@ -43,6 +55,20 @@ export function Layout({ children }: { children: ReactNode }) {
     if (PUBLIC_PATHS.has(pathname)) return;
     navigate({ to: "/auth" });
   }, [user, loading, pathname, navigate]);
+
+  // Governança: o Aprovador "puro" só acessa Nova Solicitação (formulários),
+  // Minhas Solicitações, Aprovações e o próprio perfil. Qualquer outra rota
+  // (Kanban, Dashboard, Histórico completo, Início, Admin, Dev) é bloqueada
+  // também por digitação direta da URL.
+  const approverOnly = isApprover && !isBuyer && !isAdmin && !isOwner && !isAuditor;
+  useEffect(() => {
+    if (loading || !user || !approverOnly) return;
+    if (PUBLIC_PATHS.has(pathname)) return;
+    const allowed = APPROVER_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    );
+    if (!allowed) navigate({ to: "/aprovacoes", replace: true });
+  }, [approverOnly, loading, user, pathname, navigate]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
