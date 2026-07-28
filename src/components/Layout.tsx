@@ -13,6 +13,18 @@ import { markVisit, type VisitKey } from "@/lib/last-visits";
 // Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
 const PUBLIC_PATHS = new Set<string>(["/auth", "/pending", "/reset-password"]);
 
+// Rotas permitidas ao perfil Aprovador (sem acumular Comprador/Admin/Auditor).
+const APPROVER_PATHS: string[] = [
+  "/",
+  "/materiais",
+  "/compras",
+  "/contratos",
+  "/frete",
+  "/noticias",
+  "/minhas-solicitacoes",
+  "/aprovacoes",
+];
+
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
