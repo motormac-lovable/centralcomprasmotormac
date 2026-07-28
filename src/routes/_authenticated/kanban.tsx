@@ -980,13 +980,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
-  const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
+  // Governança de perfis: o Aprovador NÃO decide nem escreve pelo Kanban.
+  // Suas ações (justificativa + aprovar/rejeitar) são exclusivas da tela de Aprovações.
+  const canWriteKanban = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
+  const canDecide = (isOwner || isAdmin) && !isAuditor;
   // Lock de governança: após avançar para Aprovação, o card fica somente-leitura
   // até que seja movido de volta para "Solicitações abertas" ou "Em cotação".
   const EDITABLE_STATUSES: Status[] = ["solicitacoes_abertas", "em_cotacao"];
   const isLocked = !EDITABLE_STATUSES.includes(card.status);
-  const readOnly = isAuditor || isLocked;
-  const canEditItens = !isAuditor && !isLocked && (isBuyer || isAdmin || isOwner) && card.status === "em_cotacao";
+  const readOnly = !canWriteKanban || isLocked;
+  const canEditItens = canWriteKanban && !isLocked && card.status === "em_cotacao";
   const canQuickReject =
     !isAuditor &&
     (isBuyer || isAdmin || isOwner) &&
