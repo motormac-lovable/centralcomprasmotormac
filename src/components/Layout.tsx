@@ -44,6 +44,20 @@ export function Layout({ children }: { children: ReactNode }) {
     navigate({ to: "/auth" });
   }, [user, loading, pathname, navigate]);
 
+  // Governança: o Aprovador "puro" só acessa Nova Solicitação (formulários),
+  // Minhas Solicitações, Aprovações e o próprio perfil. Qualquer outra rota
+  // (Kanban, Dashboard, Histórico completo, Início, Admin, Dev) é bloqueada
+  // também por digitação direta da URL.
+  const approverOnly = isApprover && !isBuyer && !isAdmin && !isOwner && !isAuditor;
+  useEffect(() => {
+    if (loading || !user || !approverOnly) return;
+    if (PUBLIC_PATHS.has(pathname)) return;
+    const allowed = APPROVER_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    );
+    if (!allowed) navigate({ to: "/aprovacoes", replace: true });
+  }, [approverOnly, loading, user, pathname, navigate]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
