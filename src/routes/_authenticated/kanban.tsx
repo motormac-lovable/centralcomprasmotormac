@@ -37,7 +37,9 @@ export const Route = createFileRoute("/_authenticated/kanban")({
 const iconFor = { compras: Package, contratos: FileSignature, frete: Truck, materiais: Package } as const;
 
 function KanbanPage() {
-  const { isBuyer, isAuditor, loading } = useAuth();
+  const { isBuyer, isAuditor, isApprover, isOwner, isAdmin, loading } = useAuth();
+  // Aprovador é somente-leitura no Kanban: suas ações ficam na tela de Aprovações.
+  const canMoveCards = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
   const notifyApprovers = useServerFn(notifyApproversPending);
   const notifyRejected = useServerFn(notifyRequestRejected);
   const [cards, setCards] = useState<Card[]>([]);
@@ -101,12 +103,12 @@ function KanbanPage() {
   
 
   const onStart = (e: DragStartEvent) => {
-    if (isAuditor) return;
+    if (!canMoveCards) return;
     setActiveId(String(e.active.id));
   };
   const onEnd = async (e: DragEndEvent) => {
     setActiveId(null);
-    if (isAuditor) return;
+    if (!canMoveCards) return;
     if (!e.over) return;
     const cardId = String(e.active.id);
     const newStatus = String(e.over.id) as Status;
@@ -116,8 +118,12 @@ function KanbanPage() {
   };
 
   const moveCard = async (card: Card, requestedStatus: Status) => {
-    if (isAuditor) {
-      toast.error("Auditor: leitura apenas — movimentação de cards está bloqueada.");
+    if (!canMoveCards) {
+      toast.error(
+        isApprover && !isAuditor
+          ? "Aprovador: as decisões são registradas exclusivamente na tela Aprovações."
+          : "Auditor: leitura apenas — movimentação de cards está bloqueada.",
+      );
       return;
     }
     // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
@@ -486,17 +492,18 @@ function Column({
 }
 
 function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
-  const { isAuditor } = useAuth();
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: isAuditor });
+  const { isAuditor, isApprover, isBuyer, isAdmin, isOwner } = useAuth();
+  const canDrag = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: !canDrag });
   const [historyOpen, setHistoryOpen] = useState(false);
   const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
-  const dragProps = isAuditor ? {} : { ...attributes, ...listeners };
+  const dragProps = canDrag ? { ...attributes, ...listeners } : {};
   return (
     <>
       <div
         ref={setNodeRef} {...dragProps}
         onClick={(e) => { if (!isDragging) { e.stopPropagation(); onOpen(); } }}
-        className={`${isDragging ? "opacity-30" : ""} ${isAuditor ? "cursor-pointer" : ""}`}
+        className={`${isDragging ? "opacity-30" : ""} ${canDrag ? "" : "cursor-pointer"}`}
       >
         <CardView
           card={card}
@@ -980,16 +987,18 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
-  const canDecide = (isApprover || isOwner || isAdmin) && !isAuditor;
+  // Governança de perfis: o Aprovador NÃO decide nem escreve pelo Kanban.
+  // Suas ações (justificativa + aprovar/rejeitar) são exclusivas da tela de Aprovações.
+  const canWriteKanban = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
+  const canDecide = (isOwner || isAdmin) && !isAuditor;
   // Lock de governança: após avançar para Aprovação, o card fica somente-leitura
   // até que seja movido de volta para "Solicitações abertas" ou "Em cotação".
   const EDITABLE_STATUSES: Status[] = ["solicitacoes_abertas", "em_cotacao"];
   const isLocked = !EDITABLE_STATUSES.includes(card.status);
-  const readOnly = isAuditor || isLocked;
-  const canEditItens = !isAuditor && !isLocked && (isBuyer || isAdmin || isOwner) && card.status === "em_cotacao";
+  const readOnly = !canWriteKanban || isLocked;
+  const canEditItens = canWriteKanban && !isLocked && card.status === "em_cotacao";
   const canQuickReject =
-    !isAuditor &&
-    (isBuyer || isAdmin || isOwner) &&
+    canWriteKanban &&
     (card.status === "solicitacoes_abertas" || card.status === "em_cotacao");
   const statuses = useUserStatuses();
   const requesterLabel = decorateUserName(card.requester_name, card.requester_email, statuses);
@@ -1386,7 +1395,9 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   </button>
                 </div>
                 <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">
-                  ⚠️ Módulo restrito para perfis com alçada de aprovação. Você pode visualizar o mapa comparativo, anexos e histórico, mas não decidir esta cotação.
+                  {isApprover
+                    ? "⚠️ Decisões e justificativas do Aprovador são registradas exclusivamente na tela Aprovações. Aqui a visualização é somente leitura."
+                    : "⚠️ Módulo restrito para perfis com alçada de aprovação. Você pode visualizar o mapa comparativo, anexos e histórico, mas não decidir esta cotação."}
                 </p>
               </section>
             )
@@ -1799,7 +1810,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           {card.status === "pedidos_gerados" && (
             <InvoiceDocumentsSection
               card={{ id: card.id, data: rawData, observations }}
-              editable={!isAuditor && (isBuyer || isAdmin || isOwner)}
+              editable={canWriteKanban}
               author={fullName || user?.email || "Comprador"}
               onChanged={(fat) => {
                 const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
