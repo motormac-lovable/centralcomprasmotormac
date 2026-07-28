@@ -1389,7 +1389,9 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   </button>
                 </div>
                 <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">
-                  ⚠️ Módulo restrito para perfis com alçada de aprovação. Você pode visualizar o mapa comparativo, anexos e histórico, mas não decidir esta cotação.
+                  {isApprover
+                    ? "⚠️ Decisões e justificativas do Aprovador são registradas exclusivamente na tela Aprovações. Aqui a visualização é somente leitura."
+                    : "⚠️ Módulo restrito para perfis com alçada de aprovação. Você pode visualizar o mapa comparativo, anexos e histórico, mas não decidir esta cotação."}
                 </p>
               </section>
             )
