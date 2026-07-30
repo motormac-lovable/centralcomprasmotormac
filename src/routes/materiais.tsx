@@ -77,6 +77,7 @@ function MateriaisPage() {
   const [itens, setItens] = useState<ItemMaterial[]>([{ ...ITEM_VAZIO }]);
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const set = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -134,6 +135,7 @@ function MateriaisPage() {
     ultimoItem.codigo.trim() !== "";
 
   const submit = async (e: React.FormEvent) => {
+    if (submitting) return;
     e.preventDefault();
     const blocoEr = validateBlocoInicial(bloco);
     const er: Record<string, string> = { ...blocoEr };
@@ -163,11 +165,13 @@ function MateriaisPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
+    setSubmitting(true);
     let uploaded;
     try {
       uploaded = await uploadRequesterFiles("materiais", files);
     } catch (err) {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      setSubmitting(false);
       return;
     }
     const payload = {
@@ -197,6 +201,7 @@ function MateriaisPage() {
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
+      setSubmitting(false);
       return;
     }
     addHistory({
@@ -394,9 +399,10 @@ function MateriaisPage() {
         <div className="flex justify-stretch md:justify-end pt-2">
           <button
             type="submit"
+            disabled={submitting}
             className="inline-flex w-full md:w-auto items-center justify-center rounded-md bg-primary px-6 py-2.5 md:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
           >
-            Enviar solicitação
+            {submitting ? "Enviando…" : "Enviar solicitação"}
           </button>
         </div>
 

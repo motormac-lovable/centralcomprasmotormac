@@ -36,6 +36,7 @@ function FretePage() {
     dataColetaPrevista: "", dataEntregaPrevista: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const REQUIRED_FREIGHT_LABELS: Record<string, string> = {
@@ -57,6 +58,7 @@ function FretePage() {
   };
 
   const submit = async (e: React.FormEvent) => {
+    if (submitting) return;
     e.preventDefault();
     const blocoEr = validateBlocoInicial(bloco);
     const freightEr: Record<string, string> = {};
@@ -71,6 +73,7 @@ function FretePage() {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
+    setSubmitting(true);
     const payload = { ...bloco, ...f };
     try {
       await createCard({
@@ -86,6 +89,7 @@ function FretePage() {
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
+      setSubmitting(false);
       return;
     }
     addHistory({ kind: "frete", title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`, summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`, data: payload });
@@ -178,9 +182,10 @@ function FretePage() {
         <div className="flex justify-stretch md:justify-end pt-2">
           <button
             type="submit"
+            disabled={submitting}
             className="inline-flex w-full md:w-auto items-center justify-center rounded-md bg-primary px-6 py-2.5 md:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
           >
-            Enviar solicitação
+            {submitting ? "Enviando…" : "Enviar solicitação"}
           </button>
         </div>
       </form>

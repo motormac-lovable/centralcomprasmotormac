@@ -107,8 +107,9 @@ export async function createCard(input: {
   // Sempre grava o requester_id (auth.uid) para que o Histórico do Solicitante
   // funcione mesmo quando o e-mail digitado no formulário difere do e-mail
   // de autenticação (comum em envios via mobile).
-  const { data: authData } = await supabase.auth.getUser();
-  const requester_id = authData?.user?.id ?? null;
+  // getSession() lê a sessão local (sem round-trip de rede) — envio mais rápido.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const requester_id = sessionData?.session?.user?.id ?? null;
 
   const insertPayload: Record<string, unknown> = {
     ...input,
