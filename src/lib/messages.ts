@@ -42,9 +42,18 @@ export async function sendCardMessage(input: {
   body: string;
   sender: { id: string; name: string; email: string; phone: string; role: string };
 }) {
-  // Sempre resolve o comprador diretamente do Kanban no momento do envio,
-  // evitando divergência com o valor exibido na tela.
-  const buyerNow = await fetchCardBuyer(input.card.id);
+  // Regra de associação: quando um COMPRADOR envia mensagem a partir de um card,
+  // ele passa a ser o comprador vinculado àquela solicitação.
+  let buyerNow = await fetchCardBuyer(input.card.id);
+  const senderName = input.sender.name?.trim();
+  if (input.sender.role === "comprador" && senderName && buyerNow !== senderName) {
+    const { error: assignError } = await supabase
+      .from("kanban_cards")
+      .update({ buyer_name: senderName, buyer_assigned_at: new Date().toISOString() })
+      .eq("id", input.card.id);
+    if (!assignError) buyerNow = senderName;
+  }
+
   const { error } = await supabase.from("card_messages").insert({
     card_id: input.card.id,
     sender_id: input.sender.id,
@@ -57,6 +66,7 @@ export async function sendCardMessage(input: {
   });
   if (error) throw error;
 }
+
 
 /** Marca como lidas todas as mensagens de uma conversa que não foram enviadas pelo usuário. */
 export async function markConversationRead(cardId: string, userId: string) {
