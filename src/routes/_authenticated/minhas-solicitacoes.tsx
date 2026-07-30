@@ -532,6 +532,8 @@ function MinhasSolicitacoesPage() {
           </ul>
         </>
       )}
+
+      {detail && <RequestDetailsModal card={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
