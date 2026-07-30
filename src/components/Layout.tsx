@@ -103,7 +103,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </span>
             </div>
           </Link>
-          <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto">
+          <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto lg:overflow-x-visible overflow-y-visible py-2">
             {/* Nova Solicitação — Solicitante, Aprovador, Comprador, Auditor e Admin */}
             {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
