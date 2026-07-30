@@ -103,7 +103,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </span>
             </div>
           </Link>
-          <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto">
+          <nav className="flex items-center gap-1 flex-nowrap overflow-x-auto lg:overflow-x-visible overflow-y-visible py-2">
             {/* Nova Solicitação — Solicitante, Aprovador, Comprador, Auditor e Admin */}
             {canRequest && (
               <NavLink to="/" active={pathname === "/"} icon={<LayoutGrid className="h-4 w-4" />}>Nova Solicitação</NavLink>
@@ -219,7 +219,7 @@ function NavLink({ to, active, icon, children, badge }: { to: string; active: bo
       {icon}
       <span className="hidden sm:inline">{children}</span>
       {badge && badge > 0 ? (
-        <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center animate-pulse shadow">
+        <span className="pointer-events-none absolute top-0 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[10px] leading-none font-bold rounded-full inline-flex items-center justify-center ring-2 ring-background shadow">
           {badge > 99 ? "99+" : badge}
         </span>
       ) : null}
