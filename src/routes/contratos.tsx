@@ -42,10 +42,12 @@ function ContratosPage() {
   const [contrato, setContrato] = useState<PickedFile[]>([]);
   const [financeiro, setFinanceiro] = useState<PickedFile[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
+    if (submitting) return;
     e.preventDefault();
     const blocoEr = validateBlocoInicial(bloco);
     const er: Record<string, string> = { ...blocoEr };
@@ -74,6 +76,7 @@ function ContratosPage() {
       uploadedFinanceiro = await uploadRequesterFiles("contratos", financeiro, "Validação financeira");
     } catch (err) {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      setSubmitting(false);
       return;
     }
     const payload = { ...bloco, ...f, files: [...uploadedContrato, ...uploadedFinanceiro] };
@@ -90,6 +93,7 @@ function ContratosPage() {
       });
     } catch (err) {
       toast.error("Falha ao enviar: " + (err as Error).message);
+      setSubmitting(false);
       return;
     }
     addHistory({ kind: "contratos", title: `${f.tipo} — ${f.razaoSocial}`, summary: `${bloco.empresa} · ${bloco.unidade}`, data: payload });
@@ -228,9 +232,10 @@ function ContratosPage() {
         <div className="flex justify-stretch md:justify-end pt-2">
           <button
             type="submit"
+            disabled={submitting}
             className="inline-flex w-full md:w-auto items-center justify-center rounded-md bg-primary px-6 py-2.5 md:py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
           >
-            Enviar solicitação
+            {submitting ? "Enviando…" : "Enviar solicitação"}
           </button>
         </div>
       </form>
