@@ -1,0 +1,273 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Inbox, Loader2, MessagesSquare, Search, Send } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import {
+  buyerLabel,
+  formatMessageDate,
+  markConversationRead,
+  sendCardMessage,
+  type CardMessage,
+} from "@/lib/messages";
+
+export const Route = createFileRoute("/_authenticated/mensagens")({
+  head: () => ({
+    meta: [
+      { title: "Minhas Mensagens — Motormac" },
+      { name: "description", content: "Converse com o comprador responsável pelas suas solicitações de compra." },
+      { property: "og:title", content: "Minhas Mensagens — Motormac" },
+      { property: "og:description", content: "Canal de comunicação entre solicitantes e compradores da Central de Compras." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: MensagensPage,
+});
+
+type Row = CardMessage & {
+  kanban_cards: { codigo_unico: string | null; title: string | null; buyer_name: string | null } | null;
+};
+
+type Conversation = {
+  cardId: string;
+  codigo: string | null;
+  title: string | null;
+  buyer: string | null;
+  messages: Row[];
+  unread: number;
+  lastAt: string;
+};
+
+function MensagensPage() {
+  const { user, fullName, isBuyer, isAdmin, isOwner } = useAuth();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const [phone, setPhone] = useState("");
+
+  const buyerOnly = isBuyer && !isAdmin && !isOwner;
+
+  const load = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("card_messages")
+      .select("*, kanban_cards(codigo_unico, title, buyer_name)")
+      .order("created_at", { ascending: true });
+    setRows((data ?? []) as Row[]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+    supabase
+      .from("profiles")
+      .select("phone")
+      .eq("id", user?.id ?? "")
+      .maybeSingle()
+      .then(({ data }) => setPhone((data as { phone?: string } | null)?.phone ?? ""));
+    const ch = supabase
+      .channel("card-messages-page")
+      .on("postgres_changes", { event: "*", schema: "public", table: "card_messages" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const conversations = useMemo<Conversation[]>(() => {
+    const scoped = rows.filter((r) => {
+      if (!buyerOnly) return true;
+      const buyer = r.buyer_name ?? r.kanban_cards?.buyer_name ?? null;
+      // Comprador: conversas das solicitações sob sua responsabilidade + fila geral.
+      return !buyer || (fullName && buyer.toLowerCase() === fullName.toLowerCase()) || r.sender_id === user?.id;
+    });
+    const map = new Map<string, Conversation>();
+    for (const r of scoped) {
+      const c = map.get(r.card_id) ?? {
+        cardId: r.card_id,
+        codigo: r.kanban_cards?.codigo_unico ?? null,
+        title: r.kanban_cards?.title ?? null,
+        buyer: r.buyer_name ?? r.kanban_cards?.buyer_name ?? null,
+        messages: [],
+        unread: 0,
+        lastAt: r.created_at,
+      };
+      c.messages.push(r);
+      if (!r.read_at && r.sender_id !== user?.id) c.unread += 1;
+      if (r.created_at > c.lastAt) c.lastAt = r.created_at;
+      map.set(r.card_id, c);
+    }
+    const list = [...map.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (c) =>
+        (c.codigo ?? "").toLowerCase().includes(q) ||
+        (c.title ?? "").toLowerCase().includes(q) ||
+        (c.buyer ?? "").toLowerCase().includes(q) ||
+        c.messages.some((m) => m.body.toLowerCase().includes(q) || m.sender_name.toLowerCase().includes(q)),
+    );
+  }, [rows, query, buyerOnly, fullName, user?.id]);
+
+  const active = conversations.find((c) => c.cardId === activeId) ?? conversations[0] ?? null;
+
+  useEffect(() => {
+    if (!active || !user?.id || active.unread === 0) return;
+    markConversationRead(active.cardId, user.id).then(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.cardId, active?.unread, user?.id]);
+
+  const submitReply = async () => {
+    if (!active || !user?.id || !reply.trim()) return;
+    setSending(true);
+    try {
+      await sendCardMessage({
+        card: { id: active.cardId, codigo_unico: active.codigo, buyer_name: active.buyer },
+        body: reply,
+        sender: {
+          id: user.id,
+          name: fullName || user.email || "",
+          email: user.email || "",
+          phone,
+          role: isOwner || isAdmin || isBuyer ? "comprador" : "solicitante",
+        },
+      });
+      setReply("");
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message || "Não foi possível enviar a mensagem.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+      <div className="mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
+          <MessagesSquare className="h-3 w-3" />{" "}
+          {isOwner || isAdmin ? "Visão de gestão — todas as conversas" : isBuyer ? "Visão do Comprador" : "Visão do Solicitante"}
+        </div>
+        <h1 className="text-3xl font-semibold tracking-tight">Minhas Mensagens</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Comunicação vinculada a cada solicitação, entre solicitantes e o comprador responsável.
+        </p>
+      </div>
+
+      <div className="mb-4 relative">
+        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por código, título, comprador ou conteúdo…"
+          className="w-full rounded-md border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </div>
+
+      {loading ? (
+        <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
+      ) : conversations.length === 0 ? (
+        <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
+          <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
+          <h2 className="mt-4 text-lg font-medium">Nenhuma mensagem por aqui</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            As conversas iniciadas em “Minhas Solicitações” aparecerão nesta tela.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-[300px_1fr]">
+          <ul className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+            {conversations.map((c) => (
+              <li key={c.cardId}>
+                <button
+                  onClick={() => setActiveId(c.cardId)}
+                  className={`w-full text-left rounded-xl border p-3 transition ${
+                    active?.cardId === c.cardId ? "bg-muted border-primary/40" : "bg-card hover:bg-muted/60"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs">{c.codigo ? `#${c.codigo}` : "—"}</span>
+                    {c.unread > 0 && (
+                      <span className="bg-red-600 text-white text-[10px] font-bold h-5 min-w-5 px-1 rounded-full flex items-center justify-center">
+                        {c.unread > 99 ? "99+" : c.unread}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-medium truncate mt-0.5">{c.title ?? "Solicitação"}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{buyerLabel(c.buyer)}</div>
+                  <div className="text-[11px] text-muted-foreground mt-1 truncate">
+                    {c.messages[c.messages.length - 1]?.body}
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {active && (
+            <div className="rounded-2xl border bg-card shadow-sm flex flex-col max-h-[70vh]">
+              <div className="border-b p-4">
+                <div className="text-sm font-semibold">
+                  {active.codigo ? `#${active.codigo} · ` : ""}
+                  {active.title ?? "Solicitação"}
+                </div>
+                <div className="text-xs text-muted-foreground">{buyerLabel(active.buyer)}</div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {active.messages.map((m) => {
+                  const mine = m.sender_id === user?.id;
+                  return (
+                    <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                          mine ? "bg-primary text-primary-foreground" : "bg-muted"
+                        }`}
+                      >
+                        <div className="text-[11px] font-medium opacity-80">
+                          {m.sender_name || m.sender_email}
+                          {m.sender_role === "comprador" ? " · Comprador" : " · Solicitante"}
+                        </div>
+                        <p className="whitespace-pre-wrap mt-0.5">{m.body}</p>
+                        <div className="text-[10px] opacity-70 mt-1">{formatMessageDate(m.created_at)}</div>
+                        {!mine && (m.sender_phone || m.sender_email) && (
+                          <div className="text-[10px] opacity-70">
+                            {m.sender_email}
+                            {m.sender_phone ? ` · ${m.sender_phone}` : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="border-t p-3 flex items-end gap-2">
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={2}
+                  placeholder="Escreva sua resposta…"
+                  className="flex-1 rounded-md border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <button
+                  onClick={submitReply}
+                  disabled={sending || !reply.trim()}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Enviar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
