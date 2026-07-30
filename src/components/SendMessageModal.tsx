@@ -3,7 +3,7 @@ import { Loader2, MessageSquare, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { buyerLabel, sendCardMessage, type MessageCardRef } from "@/lib/messages";
+import { buyerLabel, fetchCardBuyer, sendCardMessage, type MessageCardRef } from "@/lib/messages";
 
 function Frozen({ label, value }: { label: string; value: string }) {
   return (
@@ -24,6 +24,7 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
   const [phone, setPhone] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [buyer, setBuyer] = useState<string | null>(card.buyer_name ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +41,18 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
       cancelled = true;
     };
   }, [user?.id]);
+
+  // Comprador sempre lido do Kanban (fonte da verdade), não do estado da lista.
+  useEffect(() => {
+    let cancelled = false;
+    fetchCardBuyer(card.id).then((b) => {
+      if (!cancelled) setBuyer(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [card.id]);
+
 
   const submit = async () => {
     if (!user?.id) return;
@@ -89,7 +102,7 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
 
         <div className="p-5 space-y-4">
           <Frozen label="Solicitação de referência" value={card.codigo_unico ? `#${card.codigo_unico}` : card.id} />
-          <Frozen label="Comprador Responsável" value={buyerLabel(card.buyer_name)} />
+          <Frozen label="Comprador Responsável" value={buyerLabel(buyer)} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Frozen label="Nome completo" value={fullName || "—"} />
             <Frozen label="E-mail" value={user?.email || "—"} />
