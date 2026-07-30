@@ -39,8 +39,8 @@ function ViewButton({ onClick }: { onClick: () => void }) {
       aria-label="Visualizar detalhes da solicitação"
       className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
     >
-      <Eye className="h-3.5 w-3.5" />
-      Visualizar
+      <Eye className="h-3.5 w-3.5 shrink-0" />
+      <span className="hidden xl:inline">Visualizar</span>
     </button>
   );
 }
@@ -278,7 +278,7 @@ function MinhasSolicitacoesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
@@ -348,20 +348,20 @@ function MinhasSolicitacoesPage() {
         <>
           {/* Desktop: tabela */}
           <div className="hidden md:block rounded-2xl border bg-card shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="w-full overflow-x-auto xl:overflow-x-visible">
+              <table className="w-full table-fixed text-sm">
+                <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="text-left p-4">Código</th>
-                    <th className="text-left p-4">Tipo</th>
-                    <th className="text-left p-4">Título / Resumo</th>
-                    {(approverScope || ownerScope) && <th className="text-left p-4">Solicitante</th>}
-                    <th className="text-left p-4">Comprador</th>
-                    <th className="text-left p-4">Última movimentação</th>
-                    <th className="text-left p-4">Status atual</th>
-                    <th className="text-left p-4">Pedido ERP</th>
-                    <th className="text-left p-4">Anexar</th>
-                    <th className="text-left p-4">Detalhes</th>
+                    <th className="text-left px-3 py-3 w-[86px]">Código</th>
+                    <th className="text-left px-3 py-3 w-[104px]">Tipo</th>
+                    <th className="text-left px-3 py-3">Título / Resumo</th>
+                    {(approverScope || ownerScope) && <th className="text-left px-3 py-3 w-[150px]">Solicitante</th>}
+                    <th className="text-left px-3 py-3 w-[130px]">Comprador</th>
+                    <th className="text-left px-3 py-3 w-[110px]">Última mov.</th>
+                    <th className="text-left px-3 py-3 w-[110px]">Status</th>
+                    <th className="text-left px-3 py-3 w-[92px]">Pedido ERP</th>
+                    <th className="text-left px-3 py-3 w-[74px]">Anexar</th>
+                    <th className="text-left px-3 py-3 w-[80px] xl:w-[130px]">Detalhes</th>
 
                   </tr>
                 </thead>
@@ -379,16 +379,16 @@ function MinhasSolicitacoesPage() {
                     const totalCols = 9 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
                       <FragmentRow key={it.id}>
-                      <tr className="border-t">
-                        <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
-                        <td className="p-4">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <tr className="border-t align-top">
+                        <td className="px-3 py-3 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
+                        <td className="px-3 py-3">
+                          <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
                             {KIND_LABEL[it.kind]}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="font-medium">{it.title}</div>
-                          {it.summary && <div className="text-xs text-muted-foreground truncate max-w-md">{it.summary}</div>}
+                        <td className="px-3 py-3 min-w-0">
+                          <div className="font-medium truncate">{it.title}</div>
+                          {it.summary && <div className="text-xs text-muted-foreground truncate">{it.summary}</div>}
                           {(approverScope || ownerScope) && dept && (
                             <div className="mt-1">
                               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
@@ -398,36 +398,36 @@ function MinhasSolicitacoesPage() {
                           )}
                         </td>
                         {(approverScope || ownerScope) && (
-                          <td className="p-4 text-xs text-muted-foreground truncate max-w-[200px]">
+                          <td className="px-3 py-3 text-xs text-muted-foreground truncate">
                             {it.requester_email ?? "—"}
                           </td>
                         )}
-                        <td className="p-4 text-xs">
+                        <td className="px-3 py-3 text-xs">
                           {it.buyer_name ? (
                             <span className="font-medium">{it.buyer_name}</span>
                           ) : (
                             <span className="italic text-muted-foreground">Aguardando atribuição</span>
                           )}
                         </td>
-                        <td className="p-4 text-xs text-muted-foreground">
+                        <td className="px-3 py-3 text-xs text-muted-foreground">
                           {formatBR(it.status_changed_at || it.created_at)}
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-3">
                           <span
-                            className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                            className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold leading-tight text-white"
                             style={{ background: meta?.tone ?? "var(--primary)" }}
                           >
                             {meta?.label ?? it.status}
                           </span>
                         </td>
-                        <td className="p-4 font-mono text-xs">
+                        <td className="px-3 py-3 font-mono text-xs">
                           {it.numero_pedido_linx ? (
                             <span className="text-emerald-700 font-semibold">#{it.numero_pedido_linx}</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-3">
                           {att.show ? (
                             <ComplementaryUploadButton
                               card={{ id: it.id }}
@@ -440,8 +440,8 @@ function MinhasSolicitacoesPage() {
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1.5">
                             <ViewButton onClick={() => setDetail(it as DetailCard)} />
                             <MessageButton
                               onClick={() =>
