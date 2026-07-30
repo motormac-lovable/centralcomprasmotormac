@@ -52,7 +52,7 @@ export async function sendCardMessage(input: {
     sender_email: input.sender.email,
     sender_phone: input.sender.phone,
     sender_role: input.sender.role,
-    buyer_name: input.card.buyer_name ?? null,
+    buyer_name: buyerNow,
     body: input.body.trim(),
   });
   if (error) throw error;
