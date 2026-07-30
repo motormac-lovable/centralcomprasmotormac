@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment as FragmentRow, useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2, Eye } from "lucide-react";
+import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2, Eye, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,23 @@ import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles 
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { getFaturamento } from "@/lib/invoice-documents";
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
+import { SendMessageModal } from "@/components/SendMessageModal";
+import type { MessageCardRef } from "@/lib/messages";
+
+function MessageButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Enviar mensagem ao comprador responsável"
+      aria-label="Enviar mensagem ao comprador responsável"
+      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
+    >
+      <MessageSquare className="h-3.5 w-3.5" />
+      Mensagem
+    </button>
+  );
+}
 
 function ViewButton({ onClick }: { onClick: () => void }) {
   return (
@@ -184,6 +201,7 @@ function MinhasSolicitacoesPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<DetailCard | null>(null);
+  const [msgCard, setMsgCard] = useState<MessageCardRef | null>(null);
 
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
@@ -423,7 +441,14 @@ function MinhasSolicitacoesPage() {
                           )}
                         </td>
                         <td className="p-4">
-                          <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                          <div className="flex items-center gap-2">
+                            <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                            <MessageButton
+                              onClick={() =>
+                                setMsgCard({ id: it.id, codigo_unico: it.codigo_unico, title: it.title, buyer_name: it.buyer_name })
+                              }
+                            />
+                          </div>
                         </td>
 
                       </tr>
@@ -523,8 +548,13 @@ function MinhasSolicitacoesPage() {
                       </div>
                     );
                   })()}
-                  <div className="mt-3">
+                  <div className="mt-3 flex items-center gap-2">
                     <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                    <MessageButton
+                      onClick={() =>
+                        setMsgCard({ id: it.id, codigo_unico: it.codigo_unico, title: it.title, buyer_name: it.buyer_name })
+                      }
+                    />
                   </div>
                 </li>
               );
@@ -534,6 +564,7 @@ function MinhasSolicitacoesPage() {
       )}
 
       {detail && <RequestDetailsModal card={detail} onClose={() => setDetail(null)} />}
+      {msgCard && <SendMessageModal card={msgCard} onClose={() => setMsgCard(null)} />}
     </div>
   );
 }
