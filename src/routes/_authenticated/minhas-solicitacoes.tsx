@@ -183,6 +183,8 @@ function MinhasSolicitacoesPage() {
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [detail, setDetail] = useState<DetailCard | null>(null);
+
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
   const ownerScope = isOwner;
@@ -341,6 +343,8 @@ function MinhasSolicitacoesPage() {
                     <th className="text-left p-4">Status atual</th>
                     <th className="text-left p-4">Pedido ERP</th>
                     <th className="text-left p-4">Anexar</th>
+                    <th className="text-left p-4">Detalhes</th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -418,6 +422,10 @@ function MinhasSolicitacoesPage() {
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
+                        <td className="p-4">
+                          <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                        </td>
+
                       </tr>
                       {hasFaturamento && (
                         <tr className="border-t bg-emerald-50/30 dark:bg-emerald-950/10">
