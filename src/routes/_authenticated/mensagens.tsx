@@ -140,9 +140,9 @@ function MensagensPage() {
     if (solicitacaoId && !map.has(solicitacaoId)) {
       map.set(solicitacaoId, {
         cardId: solicitacaoId,
-        codigo: lockedCard.codigo_unico,
-        title: lockedCard.title,
-        buyer: lockedCard.buyer_name,
+        codigo: lockedCard?.codigo_unico ?? null,
+        title: lockedCard?.title ?? null,
+        buyer: lockedCard?.buyer_name ?? null,
         messages: [],
         unread: 0,
         lastAt: new Date().toISOString(),
