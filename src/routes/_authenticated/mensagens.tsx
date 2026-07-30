@@ -57,22 +57,31 @@ function MensagensPage() {
 
   const buyerOnly = isBuyer && !isAdmin && !isOwner;
 
+  // Busca apenas o necessário: com contexto travado, só as mensagens daquele card.
   const load = async () => {
     if (!user?.id) return;
-    const { data } = await supabase
+    let q = supabase
       .from("card_messages")
       .select("*, kanban_cards(codigo_unico, title, buyer_name)")
       .order("created_at", { ascending: true });
+    if (solicitacaoId) q = q.eq("card_id", solicitacaoId);
+    const { data } = await q;
     setRows((data ?? []) as Row[]);
     setLoading(false);
   };
 
   useEffect(() => {
+    setLoading(true);
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, solicitacaoId]);
+
+  useEffect(() => {
+    if (!user?.id) return;
     supabase
       .from("profiles")
       .select("phone")
-      .eq("id", user?.id ?? "")
+      .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => setPhone((data as { phone?: string } | null)?.phone ?? ""));
     const ch = supabase
