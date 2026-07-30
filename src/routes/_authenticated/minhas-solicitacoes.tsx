@@ -379,16 +379,16 @@ function MinhasSolicitacoesPage() {
                     const totalCols = 9 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
                       <FragmentRow key={it.id}>
-                      <tr className="border-t">
-                        <td className="p-4 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
-                        <td className="p-4">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <tr className="border-t align-top">
+                        <td className="px-3 py-3 font-mono text-xs">{it.codigo_unico ?? "—"}</td>
+                        <td className="px-3 py-3">
+                          <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
                             {KIND_LABEL[it.kind]}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="font-medium">{it.title}</div>
-                          {it.summary && <div className="text-xs text-muted-foreground truncate max-w-md">{it.summary}</div>}
+                        <td className="px-3 py-3 min-w-0">
+                          <div className="font-medium truncate">{it.title}</div>
+                          {it.summary && <div className="text-xs text-muted-foreground truncate">{it.summary}</div>}
                           {(approverScope || ownerScope) && dept && (
                             <div className="mt-1">
                               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
@@ -398,36 +398,36 @@ function MinhasSolicitacoesPage() {
                           )}
                         </td>
                         {(approverScope || ownerScope) && (
-                          <td className="p-4 text-xs text-muted-foreground truncate max-w-[200px]">
+                          <td className="px-3 py-3 text-xs text-muted-foreground truncate">
                             {it.requester_email ?? "—"}
                           </td>
                         )}
-                        <td className="p-4 text-xs">
+                        <td className="px-3 py-3 text-xs">
                           {it.buyer_name ? (
                             <span className="font-medium">{it.buyer_name}</span>
                           ) : (
                             <span className="italic text-muted-foreground">Aguardando atribuição</span>
                           )}
                         </td>
-                        <td className="p-4 text-xs text-muted-foreground">
+                        <td className="px-3 py-3 text-xs text-muted-foreground">
                           {formatBR(it.status_changed_at || it.created_at)}
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-3">
                           <span
-                            className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                            className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold leading-tight text-white"
                             style={{ background: meta?.tone ?? "var(--primary)" }}
                           >
                             {meta?.label ?? it.status}
                           </span>
                         </td>
-                        <td className="p-4 font-mono text-xs">
+                        <td className="px-3 py-3 font-mono text-xs">
                           {it.numero_pedido_linx ? (
                             <span className="text-emerald-700 font-semibold">#{it.numero_pedido_linx}</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-3">
                           {att.show ? (
                             <ComplementaryUploadButton
                               card={{ id: it.id }}
@@ -440,8 +440,8 @@ function MinhasSolicitacoesPage() {
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1.5">
                             <ViewButton onClick={() => setDetail(it as DetailCard)} />
                             <MessageButton
                               onClick={() =>
