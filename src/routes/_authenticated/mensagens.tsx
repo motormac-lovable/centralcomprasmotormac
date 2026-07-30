@@ -137,7 +137,7 @@ function MensagensPage() {
       if (r.created_at > c.lastAt) c.lastAt = r.created_at;
       map.set(r.card_id, c);
     }
-    if (solicitacaoId && !map.has(solicitacaoId) && lockedCard) {
+    if (solicitacaoId && !map.has(solicitacaoId)) {
       map.set(solicitacaoId, {
         cardId: solicitacaoId,
         codigo: lockedCard.codigo_unico,
