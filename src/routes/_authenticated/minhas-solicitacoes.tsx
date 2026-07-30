@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment as FragmentRow, useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2 } from "lucide-react";
+import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +11,23 @@ import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { getFaturamento } from "@/lib/invoice-documents";
+import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
+
+function ViewButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Visualizar detalhes"
+      aria-label="Visualizar detalhes da solicitação"
+      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
+    >
+      <Eye className="h-3.5 w-3.5" />
+      Visualizar
+    </button>
+  );
+}
+
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
@@ -166,6 +183,8 @@ function MinhasSolicitacoesPage() {
   const [items, setItems] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [detail, setDetail] = useState<DetailCard | null>(null);
+
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
   const ownerScope = isOwner;
@@ -324,6 +343,8 @@ function MinhasSolicitacoesPage() {
                     <th className="text-left p-4">Status atual</th>
                     <th className="text-left p-4">Pedido ERP</th>
                     <th className="text-left p-4">Anexar</th>
+                    <th className="text-left p-4">Detalhes</th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -337,7 +358,7 @@ function MinhasSolicitacoesPage() {
                       ((fat.notas_fiscais?.length ?? 0) > 0 ||
                         (fat.boletos?.length ?? 0) > 0 ||
                         !!(fat.xml && fat.xml.trim()));
-                    const totalCols = 8 + ((approverScope || ownerScope) ? 1 : 0);
+                    const totalCols = 9 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
                       <FragmentRow key={it.id}>
                       <tr className="border-t">
@@ -401,6 +422,10 @@ function MinhasSolicitacoesPage() {
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
+                        <td className="p-4">
+                          <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                        </td>
+
                       </tr>
                       {hasFaturamento && (
                         <tr className="border-t bg-emerald-50/30 dark:bg-emerald-950/10">
@@ -498,12 +523,17 @@ function MinhasSolicitacoesPage() {
                       </div>
                     );
                   })()}
+                  <div className="mt-3">
+                    <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                  </div>
                 </li>
               );
             })}
           </ul>
         </>
       )}
+
+      {detail && <RequestDetailsModal card={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
