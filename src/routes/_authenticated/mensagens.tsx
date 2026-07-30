@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Inbox, Loader2, MessagesSquare, Search, Send } from "lucide-react";
+import { Inbox, Loader2, Lock, MessagesSquare, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -13,6 +13,9 @@ import {
 } from "@/lib/messages";
 
 export const Route = createFileRoute("/_authenticated/mensagens")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    solicitacaoId: typeof search.solicitacaoId === "string" && search.solicitacaoId ? search.solicitacaoId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Minhas Mensagens — Motormac" },
@@ -41,7 +44,9 @@ type Conversation = {
 };
 
 function MensagensPage() {
+  const { solicitacaoId } = Route.useSearch();
   const { user, fullName, isBuyer, isAdmin, isOwner } = useAuth();
+  const [lockedCard, setLockedCard] = useState<{ id: string; codigo_unico: string | null; title: string | null; buyer_name: string | null } | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -80,8 +85,28 @@ function MensagensPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!solicitacaoId) {
+      setLockedCard(null);
+      return;
+    }
+    supabase
+      .from("kanban_cards")
+      .select("id, codigo_unico, title, buyer_name")
+      .eq("id", solicitacaoId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setLockedCard((data as typeof lockedCard) ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [solicitacaoId]);
+
   const conversations = useMemo<Conversation[]>(() => {
     const scoped = rows.filter((r) => {
+      if (solicitacaoId && r.card_id !== solicitacaoId) return false;
       if (!buyerOnly) return true;
       const buyer = r.buyer_name ?? r.kanban_cards?.buyer_name ?? null;
       // Comprador: conversas das solicitações sob sua responsabilidade + fila geral.
@@ -103,7 +128,19 @@ function MensagensPage() {
       if (r.created_at > c.lastAt) c.lastAt = r.created_at;
       map.set(r.card_id, c);
     }
+    if (solicitacaoId && !map.has(solicitacaoId) && lockedCard) {
+      map.set(solicitacaoId, {
+        cardId: solicitacaoId,
+        codigo: lockedCard.codigo_unico,
+        title: lockedCard.title,
+        buyer: lockedCard.buyer_name,
+        messages: [],
+        unread: 0,
+        lastAt: new Date().toISOString(),
+      });
+    }
     const list = [...map.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+    if (solicitacaoId) return list;
     const q = query.trim().toLowerCase();
     if (!q) return list;
     return list.filter(
@@ -113,9 +150,11 @@ function MensagensPage() {
         (c.buyer ?? "").toLowerCase().includes(q) ||
         c.messages.some((m) => m.body.toLowerCase().includes(q) || m.sender_name.toLowerCase().includes(q)),
     );
-  }, [rows, query, buyerOnly, fullName, user?.id]);
+  }, [rows, query, buyerOnly, fullName, user?.id, solicitacaoId, lockedCard]);
 
-  const active = conversations.find((c) => c.cardId === activeId) ?? conversations[0] ?? null;
+  const active = solicitacaoId
+    ? conversations.find((c) => c.cardId === solicitacaoId) ?? null
+    : conversations.find((c) => c.cardId === activeId) ?? conversations[0] ?? null;
 
   useEffect(() => {
     if (!active || !user?.id || active.unread === 0) return;
@@ -160,6 +199,32 @@ function MensagensPage() {
         </p>
       </div>
 
+      {solicitacaoId ? (
+        <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                <Lock className="h-3.5 w-3.5" /> Contexto travado nesta solicitação
+              </div>
+              <p className="text-sm font-semibold mt-1">
+                Conversa referente à Solicitação nº{" "}
+                {active?.codigo ?? lockedCard?.codigo_unico ?? solicitacaoId} —{" "}
+                {active?.title ?? lockedCard?.title ?? "Solicitação"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Todas as mensagens enviadas aqui ficam vinculadas exclusivamente a esta solicitação.
+              </p>
+            </div>
+            <Link
+              to="/mensagens"
+              search={{ solicitacaoId: undefined }}
+              className="shrink-0 rounded-md border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              Ver todas as conversas
+            </Link>
+          </div>
+        </div>
+      ) : (
       <div className="mb-4 relative">
         <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -169,6 +234,7 @@ function MensagensPage() {
           className="w-full rounded-md border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
+      )
 
       {loading ? (
         <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
@@ -181,7 +247,8 @@ function MensagensPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-[300px_1fr]">
+        <div className={`grid gap-4 ${solicitacaoId ? "" : "md:grid-cols-[300px_1fr]"}`}>
+          {!solicitacaoId && (
           <ul className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
             {conversations.map((c) => (
               <li key={c.cardId}>
@@ -208,6 +275,7 @@ function MensagensPage() {
               </li>
             ))}
           </ul>
+          )}
 
           {active && (
             <div className="rounded-2xl border bg-card shadow-sm flex flex-col max-h-[70vh]">
