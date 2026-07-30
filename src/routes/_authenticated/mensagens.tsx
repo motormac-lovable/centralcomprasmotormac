@@ -167,28 +167,56 @@ function MensagensPage() {
 
   useEffect(() => {
     if (!active || !user?.id || active.unread === 0) return;
-    markConversationRead(active.cardId, user.id).then(load);
+    const cardId = active.cardId;
+    const uid = user.id;
+    // Marca como lido de forma otimista (sem recarregar a lista inteira).
+    const now = new Date().toISOString();
+    setRows((prev) =>
+      prev.map((r) => (r.card_id === cardId && r.sender_id !== uid && !r.read_at ? { ...r, read_at: now } : r)),
+    );
+    void markConversationRead(cardId, uid);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.cardId, active?.unread, user?.id]);
 
   const submitReply = async () => {
-    if (!active || !user?.id || !reply.trim()) return;
+    if (!active || !user?.id || !reply.trim() || sending) return;
+    const body = reply;
+    const senderRole = isOwner || isAdmin || isBuyer ? "comprador" : "solicitante";
+    const senderName = fullName || user.email || "";
+    const optimistic: Row = {
+      id: `tmp-${Date.now()}`,
+      card_id: active.cardId,
+      sender_id: user.id,
+      sender_name: senderName,
+      sender_email: user.email || "",
+      sender_phone: phone,
+      sender_role: senderRole,
+      buyer_name: active.buyer,
+      body,
+      read_at: null,
+      created_at: new Date().toISOString(),
+      kanban_cards: { codigo_unico: active.codigo, title: active.title, buyer_name: active.buyer },
+    };
+    // Feedback instantâneo: mensagem aparece na thread antes da confirmação do servidor.
+    setReply("");
+    setRows((prev) => [...prev, optimistic]);
     setSending(true);
     try {
       await sendCardMessage({
         card: { id: active.cardId, codigo_unico: active.codigo, buyer_name: active.buyer },
-        body: reply,
+        body,
         sender: {
           id: user.id,
-          name: fullName || user.email || "",
+          name: senderName,
           email: user.email || "",
           phone,
-          role: isOwner || isAdmin || isBuyer ? "comprador" : "solicitante",
+          role: senderRole,
         },
       });
-      setReply("");
-      await load();
+      void load();
     } catch (err) {
+      setRows((prev) => prev.filter((r) => r.id !== optimistic.id));
+      setReply(body);
       toast.error((err as Error).message || "Não foi possível enviar a mensagem.");
     } finally {
       setSending(false);
