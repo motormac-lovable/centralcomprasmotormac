@@ -39,8 +39,8 @@ function ViewButton({ onClick }: { onClick: () => void }) {
       aria-label="Visualizar detalhes da solicitação"
       className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
     >
-      <Eye className="h-3.5 w-3.5" />
-      Visualizar
+      <Eye className="h-3.5 w-3.5 shrink-0" />
+      <span className="hidden xl:inline">Visualizar</span>
     </button>
   );
 }
