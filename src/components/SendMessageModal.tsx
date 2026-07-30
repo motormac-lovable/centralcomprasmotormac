@@ -24,6 +24,7 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
   const [phone, setPhone] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [buyer, setBuyer] = useState<string | null>(card.buyer_name ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +41,18 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
       cancelled = true;
     };
   }, [user?.id]);
+
+  // Comprador sempre lido do Kanban (fonte da verdade), não do estado da lista.
+  useEffect(() => {
+    let cancelled = false;
+    fetchCardBuyer(card.id).then((b) => {
+      if (!cancelled) setBuyer(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [card.id]);
+
 
   const submit = async () => {
     if (!user?.id) return;
