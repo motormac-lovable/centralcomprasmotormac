@@ -278,7 +278,7 @@ function MinhasSolicitacoesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
@@ -348,20 +348,20 @@ function MinhasSolicitacoesPage() {
         <>
           {/* Desktop: tabela */}
           <div className="hidden md:block rounded-2xl border bg-card shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="w-full overflow-x-auto xl:overflow-x-visible">
+              <table className="w-full table-fixed text-sm">
+                <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="text-left p-4">Código</th>
-                    <th className="text-left p-4">Tipo</th>
-                    <th className="text-left p-4">Título / Resumo</th>
-                    {(approverScope || ownerScope) && <th className="text-left p-4">Solicitante</th>}
-                    <th className="text-left p-4">Comprador</th>
-                    <th className="text-left p-4">Última movimentação</th>
-                    <th className="text-left p-4">Status atual</th>
-                    <th className="text-left p-4">Pedido ERP</th>
-                    <th className="text-left p-4">Anexar</th>
-                    <th className="text-left p-4">Detalhes</th>
+                    <th className="text-left px-3 py-3 w-[86px]">Código</th>
+                    <th className="text-left px-3 py-3 w-[104px]">Tipo</th>
+                    <th className="text-left px-3 py-3">Título / Resumo</th>
+                    {(approverScope || ownerScope) && <th className="text-left px-3 py-3 w-[150px]">Solicitante</th>}
+                    <th className="text-left px-3 py-3 w-[130px]">Comprador</th>
+                    <th className="text-left px-3 py-3 w-[110px]">Última mov.</th>
+                    <th className="text-left px-3 py-3 w-[110px]">Status</th>
+                    <th className="text-left px-3 py-3 w-[92px]">Pedido ERP</th>
+                    <th className="text-left px-3 py-3 w-[74px]">Anexar</th>
+                    <th className="text-left px-3 py-3 w-[104px]">Detalhes</th>
 
                   </tr>
                 </thead>
