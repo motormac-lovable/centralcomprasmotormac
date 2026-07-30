@@ -70,10 +70,14 @@ function ContratosPage() {
       toast.error("Verifique os campos obrigatórios.");
       return;
     }
+    setSubmitting(true);
     let uploadedContrato, uploadedFinanceiro;
     try {
-      uploadedContrato = await uploadRequesterFiles("contratos", contrato, "Contrato assinado");
-      uploadedFinanceiro = await uploadRequesterFiles("contratos", financeiro, "Validação financeira");
+      // Uploads em paralelo: envio mais rápido.
+      [uploadedContrato, uploadedFinanceiro] = await Promise.all([
+        uploadRequesterFiles("contratos", contrato, "Contrato assinado"),
+        uploadRequesterFiles("contratos", financeiro, "Validação financeira"),
+      ]);
     } catch (err) {
       toast.error("Falha ao enviar anexos: " + (err as Error).message);
       setSubmitting(false);
