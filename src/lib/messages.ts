@@ -27,11 +27,24 @@ export function buyerLabel(buyer: string | null | undefined) {
   return buyer && buyer.trim() ? buyer : `Comprador: ${FILA_GERAL_LABEL}`;
 }
 
+/** Lê o comprador atualmente vinculado ao card no Kanban. */
+export async function fetchCardBuyer(cardId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("kanban_cards")
+    .select("buyer_name")
+    .eq("id", cardId)
+    .maybeSingle();
+  return (data as { buyer_name?: string | null } | null)?.buyer_name ?? null;
+}
+
 export async function sendCardMessage(input: {
   card: MessageCardRef;
   body: string;
   sender: { id: string; name: string; email: string; phone: string; role: string };
 }) {
+  // Sempre resolve o comprador diretamente do Kanban no momento do envio,
+  // evitando divergência com o valor exibido na tela.
+  const buyerNow = await fetchCardBuyer(input.card.id);
   const { error } = await supabase.from("card_messages").insert({
     card_id: input.card.id,
     sender_id: input.sender.id,
