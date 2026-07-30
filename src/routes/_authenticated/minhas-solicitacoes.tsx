@@ -12,21 +12,19 @@ import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles 
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { getFaturamento } from "@/lib/invoice-documents";
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
-import { SendMessageModal } from "@/components/SendMessageModal";
-import type { MessageCardRef } from "@/lib/messages";
 
-function MessageButton({ onClick }: { onClick: () => void }) {
+function MessageButton({ cardId }: { cardId: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      to="/mensagens"
+      search={{ solicitacaoId: cardId }}
       title="Enviar mensagem ao comprador responsável"
       aria-label="Enviar mensagem ao comprador responsável"
       className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
     >
       <MessageSquare className="h-3.5 w-3.5" />
       Mensagem
-    </button>
+    </Link>
   );
 }
 
@@ -201,7 +199,6 @@ function MinhasSolicitacoesPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<DetailCard | null>(null);
-  const [msgCard, setMsgCard] = useState<MessageCardRef | null>(null);
 
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
@@ -442,11 +439,7 @@ function MinhasSolicitacoesPage() {
                         <td className="px-2 py-3">
                           <div className="flex items-center gap-1.5">
                             <ViewButton onClick={() => setDetail(it as DetailCard)} />
-                            <MessageButton
-                              onClick={() =>
-                                setMsgCard({ id: it.id, codigo_unico: it.codigo_unico, title: it.title, buyer_name: it.buyer_name })
-                              }
-                            />
+                            <MessageButton cardId={it.id} />
                           </div>
                         </td>
                       </tr>
@@ -548,11 +541,7 @@ function MinhasSolicitacoesPage() {
                   })()}
                   <div className="mt-3 flex items-center gap-2">
                     <ViewButton onClick={() => setDetail(it as DetailCard)} />
-                    <MessageButton
-                      onClick={() =>
-                        setMsgCard({ id: it.id, codigo_unico: it.codigo_unico, title: it.title, buyer_name: it.buyer_name })
-                      }
-                    />
+                    <MessageButton cardId={it.id} />
                   </div>
                 </li>
               );
@@ -562,7 +551,6 @@ function MinhasSolicitacoesPage() {
       )}
 
       {detail && <RequestDetailsModal card={detail} onClose={() => setDetail(null)} />}
-      {msgCard && <SendMessageModal card={msgCard} onClose={() => setMsgCard(null)} />}
     </div>
   );
 }
