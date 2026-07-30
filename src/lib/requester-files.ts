@@ -18,8 +18,8 @@ export async function uploadRequesterFiles(
   category?: string,
 ): Promise<RequesterFile[]> {
   if (files.length === 0) return [];
-  const { data: u } = await supabase.auth.getUser();
-  const uid = u.user?.id;
+  const { data: u } = await supabase.auth.getSession();
+  const uid = u.session?.user?.id;
   if (!uid) throw new Error("Sessão expirada. Faça login novamente.");
 
   const results = await Promise.all(
