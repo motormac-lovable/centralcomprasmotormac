@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList, CheckSquare } from "lucide-react";
+import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList, CheckSquare, MessagesSquare } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
@@ -23,13 +23,14 @@ const APPROVER_PATHS: string[] = [
   "/noticias",
   "/minhas-solicitacoes",
   "/aprovacoes",
+  "/mensagens",
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
-  const { minhasCount, aprovacoesCount, adminCount, historicoCount } = useNavBadges();
+  const { minhasCount, aprovacoesCount, adminCount, historicoCount, mensagensCount } = useNavBadges();
 
   // Marca visita para limpar o badge assim que a tela é aberta.
   useEffect(() => {
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
       ["/historico", "historico"],
       ["/aprovacoes", "aprovacoes"],
       ["/admin", "admin"],
+      ["/mensagens", "mensagens"],
     ];
     for (const [prefix, key] of map) {
       if (pathname.startsWith(prefix)) {
@@ -153,6 +155,18 @@ export function Layout({ children }: { children: ReactNode }) {
 
 
 
+
+            {/* Minhas Mensagens — visível para todos os perfis autenticados */}
+            {user && (
+              <NavLink
+                to="/mensagens"
+                active={pathname.startsWith("/mensagens")}
+                icon={<MessagesSquare className="h-4 w-4" />}
+                badge={mensagensCount}
+              >
+                Minhas Mensagens
+              </NavLink>
+            )}
 
             {user && <ProfileMenu />}
             {user ? (

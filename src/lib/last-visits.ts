@@ -2,7 +2,7 @@
 // Persistência local por usuário (chave inclui user.id).
 // Emite evento para recomputar badges imediatamente após marcar visita.
 
-export type VisitKey = "minhas" | "historico" | "aprovacoes" | "admin";
+export type VisitKey = "minhas" | "historico" | "aprovacoes" | "admin" | "mensagens";
 
 const STORAGE_PREFIX = "motormac.lastVisit.v1";
 const EVENT = "motormac:lastVisitChanged";

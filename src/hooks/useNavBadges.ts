@@ -13,6 +13,7 @@ export function useNavBadges() {
   const [aprovacoesCount, setAprovacoesCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
   const [historicoCount, setHistoricoCount] = useState(0);
+  const [mensagensCount, setMensagensCount] = useState(0);
 
   const showMinhas = (isSolicitante || isApprover) && !isBuyer && !isAdmin && !isAuditor;
   const showAprovacoes = isApprover || isOwner || isAuditor;
@@ -40,6 +41,7 @@ export function useNavBadges() {
       if (pathname.startsWith("/historico")) return "historico";
       if (pathname.startsWith("/aprovacoes")) return "aprovacoes";
       if (pathname.startsWith("/admin")) return "admin";
+      if (pathname.startsWith("/mensagens")) return "mensagens";
       return null;
     };
 
@@ -127,6 +129,21 @@ export function useNavBadges() {
       } else if (!cancelled) {
         setHistoricoCount(0);
       }
+      // Mensagens — não lidas destinadas ao usuário (RLS já restringe o escopo)
+      if (uid) {
+        if (currentKey === "mensagens") {
+          if (!cancelled) setMensagensCount(0);
+        } else {
+          const { count } = await supabase
+            .from("card_messages")
+            .select("id", { count: "exact", head: true })
+            .is("read_at", null)
+            .neq("sender_id", uid);
+          if (!cancelled) setMensagensCount(count ?? 0);
+        }
+      } else if (!cancelled) {
+        setMensagensCount(0);
+      }
     };
 
 
@@ -136,6 +153,7 @@ export function useNavBadges() {
       .channel("nav-badges")
       .on("postgres_changes", { event: "*", schema: "public", table: "kanban_cards" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "buyer_applications" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "card_messages" }, () => load())
       .subscribe();
 
     return () => {
@@ -145,5 +163,5 @@ export function useNavBadges() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.email, showMinhas, showAprovacoes, showAdmin, showHistorico, approverScope, isApprover, isOwner, approverDepartments.join("|"), pathname]);
 
-  return { minhasCount, aprovacoesCount, adminCount, historicoCount };
+  return { minhasCount, aprovacoesCount, adminCount, historicoCount, mensagensCount };
 }

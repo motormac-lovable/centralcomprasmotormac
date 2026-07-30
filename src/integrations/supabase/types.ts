@@ -86,6 +86,59 @@ export type Database = {
         }
         Relationships: []
       }
+      card_messages: {
+        Row: {
+          body: string
+          buyer_name: string | null
+          card_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_email: string
+          sender_id: string
+          sender_name: string
+          sender_phone: string
+          sender_role: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          buyer_name?: string | null
+          card_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_email?: string
+          sender_id: string
+          sender_name?: string
+          sender_phone?: string
+          sender_role?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          buyer_name?: string | null
+          card_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_email?: string
+          sender_id?: string
+          sender_name?: string
+          sender_phone?: string
+          sender_role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_messages_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_buyer_rotation: {
         Row: {
           counter: number
@@ -506,6 +559,7 @@ export type Database = {
         }
       }
       assign_contract_buyer: { Args: { _buyers: string[] }; Returns: string }
+      can_access_card_messages: { Args: { _card_id: string }; Returns: boolean }
       gerar_codigo_unico: { Args: never; Returns: string }
       get_profile_pii: {
         Args: { _user_id: string }
