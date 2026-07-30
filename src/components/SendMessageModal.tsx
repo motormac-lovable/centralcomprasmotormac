@@ -3,7 +3,7 @@ import { Loader2, MessageSquare, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { buyerLabel, sendCardMessage, type MessageCardRef } from "@/lib/messages";
+import { buyerLabel, fetchCardBuyer, sendCardMessage, type MessageCardRef } from "@/lib/messages";
 
 function Frozen({ label, value }: { label: string; value: string }) {
   return (
