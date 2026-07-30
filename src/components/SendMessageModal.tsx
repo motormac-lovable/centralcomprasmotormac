@@ -102,7 +102,7 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
 
         <div className="p-5 space-y-4">
           <Frozen label="Solicitação de referência" value={card.codigo_unico ? `#${card.codigo_unico}` : card.id} />
-          <Frozen label="Comprador Responsável" value={buyerLabel(card.buyer_name)} />
+          <Frozen label="Comprador Responsável" value={buyerLabel(buyer)} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Frozen label="Nome completo" value={fullName || "—"} />
             <Frozen label="E-mail" value={user?.email || "—"} />
