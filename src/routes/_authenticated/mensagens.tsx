@@ -234,7 +234,8 @@ function MensagensPage() {
           className="w-full rounded-md border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
-      )
+      )}
+
 
       {loading ? (
         <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
