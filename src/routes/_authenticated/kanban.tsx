@@ -621,20 +621,7 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
         <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
           #{card.codigo_unico ?? "—"}
         </span>
-        <div className="flex items-center gap-1.5">
-          <StatusTag card={card} />
-          <Link
-            to="/mensagens"
-            search={{ solicitacaoId: card.id }}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            title="Abrir conversa desta solicitação"
-            aria-label="Abrir conversa desta solicitação"
-            className="rounded-md border border-input bg-card p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        <StatusTag card={card} />
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
         <Icon className="h-3.5 w-3.5" />
@@ -1332,9 +1319,21 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             <h2 className="text-xl font-semibold">{card.title}</h2>
             {card.summary && <p className="text-sm text-muted-foreground mt-1">{card.summary}</p>}
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to="/mensagens"
+              search={{ solicitacaoId: card.id }}
+              title="Abrir conversa desta solicitação"
+              aria-label="Abrir conversa desta solicitação"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Mensagem</span>
+            </Link>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 overflow-y-auto space-y-6">
