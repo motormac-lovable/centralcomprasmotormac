@@ -73,6 +73,7 @@ function FretePage() {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
+    setSubmitting(true);
     const payload = { ...bloco, ...f };
     try {
       await createCard({
