@@ -274,7 +274,7 @@ function MensagensPage() {
       )}
 
 
-      {loading ? (
+      {loading && !solicitacaoId ? (
         <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Carregando…</div>
       ) : conversations.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card/50 p-12 text-center">
