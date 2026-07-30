@@ -361,7 +361,7 @@ function MinhasSolicitacoesPage() {
                     <th className="text-left px-3 py-3 w-[110px]">Status</th>
                     <th className="text-left px-3 py-3 w-[92px]">Pedido ERP</th>
                     <th className="text-left px-3 py-3 w-[74px]">Anexar</th>
-                    <th className="text-left px-3 py-3 w-[104px]">Detalhes</th>
+                    <th className="text-left px-3 py-3 w-[80px] xl:w-[130px]">Detalhes</th>
 
                   </tr>
                 </thead>
