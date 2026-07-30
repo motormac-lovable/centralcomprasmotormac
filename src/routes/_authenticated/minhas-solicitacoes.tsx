@@ -358,7 +358,7 @@ function MinhasSolicitacoesPage() {
                       ((fat.notas_fiscais?.length ?? 0) > 0 ||
                         (fat.boletos?.length ?? 0) > 0 ||
                         !!(fat.xml && fat.xml.trim()));
-                    const totalCols = 8 + ((approverScope || ownerScope) ? 1 : 0);
+                    const totalCols = 9 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
                       <FragmentRow key={it.id}>
                       <tr className="border-t">
@@ -523,6 +523,9 @@ function MinhasSolicitacoesPage() {
                       </div>
                     );
                   })()}
+                  <div className="mt-3">
+                    <ViewButton onClick={() => setDetail(it as DetailCard)} />
+                  </div>
                 </li>
               );
             })}
