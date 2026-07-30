@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment as FragmentRow, useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2 } from "lucide-react";
+import { ClipboardList, Inbox, RefreshCw, Search, Paperclip, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +11,23 @@ import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { getFaturamento } from "@/lib/invoice-documents";
+import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
+
+function ViewButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Visualizar detalhes"
+      aria-label="Visualizar detalhes da solicitação"
+      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition"
+    >
+      <Eye className="h-3.5 w-3.5" />
+      Visualizar
+    </button>
+  );
+}
+
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
