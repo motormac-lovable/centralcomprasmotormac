@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -621,7 +621,20 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
         <span className="font-mono text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
           #{card.codigo_unico ?? "—"}
         </span>
-        <StatusTag card={card} />
+        <div className="flex items-center gap-1.5">
+          <StatusTag card={card} />
+          <Link
+            to="/mensagens"
+            search={{ solicitacaoId: card.id }}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            title="Abrir conversa desta solicitação"
+            aria-label="Abrir conversa desta solicitação"
+            className="rounded-md border border-input bg-card p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
         <Icon className="h-3.5 w-3.5" />
