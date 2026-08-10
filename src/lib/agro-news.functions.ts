@@ -77,21 +77,38 @@ function parseItems(xml: string, topic: string): AgroNewsItem[] {
   return out;
 }
 
-async function fetchTopic(topic: string, query: string): Promise<AgroNewsItem[]> {
+async function fetchRss(url: string, topic: string): Promise<AgroNewsItem[]> {
   try {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(
-      `${query} when:2d`,
-    )}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
     const resp = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; MotormacBot/1.0)" },
-      signal: AbortSignal.timeout(10000),
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        accept: "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+      },
+      signal: AbortSignal.timeout(9000),
     });
-    if (!resp.ok) return [];
+    if (!resp.ok) {
+      console.error(`[agro-news] ${topic}: HTTP ${resp.status} em ${new URL(url).host}`);
+      return [];
+    }
     return parseItems(await resp.text(), topic);
-  } catch {
+  } catch (err) {
+    console.error(`[agro-news] ${topic}: falha em ${url.slice(0, 60)}`, err);
     return [];
   }
 }
+
+async function fetchTopic(topic: string, query: string): Promise<AgroNewsItem[]> {
+  const q = encodeURIComponent(`${query} when:2d`);
+  const google = `https://news.google.com/rss/search?q=${q}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+  const primary = await fetchRss(google, topic);
+  if (primary.length > 0) return primary;
+
+  // Fallback: Bing News RSS (caso o Google bloqueie o IP do servidor)
+  const bing = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=RSS&setmkt=pt-BR&cc=BR`;
+  return fetchRss(bing, topic);
+}
+
 
 export const getAgroNews = createServerFn({ method: "GET" }).handler(
   async (): Promise<AgroNewsPayload> => {
