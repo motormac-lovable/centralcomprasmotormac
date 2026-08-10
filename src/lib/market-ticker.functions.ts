@@ -75,7 +75,9 @@ async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
     }
   }
   if (out.length === 0) throw new Error("Marketaux sem resultados");
+  out.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
   return out.slice(0, 12);
+
 }
 
 async function fetchBCBQuote(code: number, label: string, symbol: string): Promise<Quote | null> {
