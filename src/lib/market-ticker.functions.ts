@@ -35,16 +35,20 @@ export type MarketTicker = {
 // ============ Fontes externas ============
 
 async function fetchMarketauxPage(apiKey: string, page: number): Promise<NewsItem[]> {
+  const publishedAfter = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
   const url = new URL("https://api.marketaux.com/v1/news/all");
   url.searchParams.set("api_token", apiKey);
   url.searchParams.set("language", "pt");
-  url.searchParams.set("countries", "br");
-  url.searchParams.set("filter_entities", "true");
+  url.searchParams.set("sort", "published_on");
+  url.searchParams.set("published_after", publishedAfter);
   url.searchParams.set("limit", "3");
   url.searchParams.set("page", String(page));
   const resp = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
   if (!resp.ok) throw new Error(`Marketaux HTTP ${resp.status}`);
   const json = (await resp.json()) as { data?: Array<Record<string, unknown>> };
+
   return (json.data ?? []).map((raw) => ({
     uuid: String(raw.uuid ?? crypto.randomUUID()),
     title: String(raw.title ?? ""),
@@ -71,7 +75,9 @@ async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
     }
   }
   if (out.length === 0) throw new Error("Marketaux sem resultados");
+  out.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
   return out.slice(0, 12);
+
 }
 
 async function fetchBCBQuote(code: number, label: string, symbol: string): Promise<Quote | null> {
