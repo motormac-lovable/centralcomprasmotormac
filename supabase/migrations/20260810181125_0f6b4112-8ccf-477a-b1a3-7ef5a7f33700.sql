@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.can_access_card_messages(uuid) TO authenticated;
