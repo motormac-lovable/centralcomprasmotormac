@@ -1,0 +1,1 @@
+DELETE FROM public.market_cache WHERE key IN ('agro_news_v1','agro_news_v2','ticker_v1');
