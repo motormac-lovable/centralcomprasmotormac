@@ -127,14 +127,25 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
   };
 
   const openQuotation = async (a: Attachment, download: boolean) => {
+    const previewWindow = download ? null : window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = "Abrindo orçamento...";
+      previewWindow.document.body.textContent = "Abrindo orçamento...";
+    }
     setBusy(a.path + String(download));
     try {
       const { data, error } = await supabase.storage
         .from("orcamentos")
         .createSignedUrl(a.path, 120, download ? { download: a.name } : undefined);
       if (error || !data) throw new Error(error?.message || "Não foi possível gerar o link do orçamento.");
-      openUrl(data.signedUrl, download ? a.name : undefined);
+      if (previewWindow) {
+        previewWindow.location.replace(data.signedUrl);
+      } else {
+        openUrl(data.signedUrl, download ? a.name : undefined);
+      }
     } catch (err) {
+      previewWindow?.close();
       toast.error((err as Error).message || "Falha ao abrir o orçamento");
     } finally {
       setBusy(null);
