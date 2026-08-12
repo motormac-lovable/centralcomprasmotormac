@@ -96,6 +96,7 @@ function extractFiles(data: unknown): FileRow[] {
 
 export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClose: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [quotationPreview, setQuotationPreview] = useState<{ name: string; url: string } | null>(null);
   const meta = STATUS_META[card.status];
   const items = extractItems(card.data);
   const files = extractFiles(card.data);
@@ -127,25 +128,18 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
   };
 
   const openQuotation = async (a: Attachment, download: boolean) => {
-    const previewWindow = download ? null : window.open("", "_blank");
-    if (previewWindow) {
-      previewWindow.opener = null;
-      previewWindow.document.title = "Abrindo orçamento...";
-      previewWindow.document.body.textContent = "Abrindo orçamento...";
-    }
     setBusy(a.path + String(download));
     try {
       const { data, error } = await supabase.storage
         .from("orcamentos")
         .createSignedUrl(a.path, 120, download ? { download: a.name } : undefined);
       if (error || !data) throw new Error(error?.message || "Não foi possível gerar o link do orçamento.");
-      if (previewWindow) {
-        previewWindow.location.replace(data.signedUrl);
+      if (download) {
+        openUrl(data.signedUrl, a.name);
       } else {
-        openUrl(data.signedUrl, download ? a.name : undefined);
+        setQuotationPreview({ name: a.name, url: data.signedUrl });
       }
     } catch (err) {
-      previewWindow?.close();
       toast.error((err as Error).message || "Falha ao abrir o orçamento");
     } finally {
       setBusy(null);
@@ -167,6 +161,7 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
 
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-foreground/40 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto"
       role="dialog"
@@ -450,5 +445,40 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
         </div>
       </div>
     </div>
+    {quotationPreview && (
+      <div
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/60 p-3 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Visualização de ${quotationPreview.name}`}
+        onClick={() => setQuotationPreview(null)}
+      >
+        <div
+          className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg border bg-card shadow-xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Visualização do orçamento</p>
+              <h3 className="truncate text-sm font-semibold">{quotationPreview.name}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setQuotationPreview(null)}
+              aria-label="Fechar visualização"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-card hover:bg-muted"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <iframe
+            src={quotationPreview.url}
+            title={`Orçamento ${quotationPreview.name}`}
+            className="min-h-0 flex-1 bg-card"
+          />
+        </div>
+      </div>
+    )}
+    </>
   );
 }
