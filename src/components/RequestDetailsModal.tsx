@@ -175,6 +175,14 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
             <h3 className="text-sm font-semibold mb-3">Descrição da Compra</h3>
             <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
               <p className="text-sm">{card.summary || card.title}</p>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  Descrição informada pelo solicitante
+                </div>
+                <p className="text-sm whitespace-pre-wrap">
+                  {descricaoSolicitante || "Nenhuma descrição foi preenchida na abertura desta solicitação."}
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-muted-foreground">Protocolo / ID: </span>
