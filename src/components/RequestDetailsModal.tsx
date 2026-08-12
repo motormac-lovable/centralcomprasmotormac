@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Eye, Download, FileText, Loader2, X } from "lucide-react";
+import { Eye, Download, FileText, Loader2, X, Paperclip, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { signRequesterFile } from "@/lib/requester-files";
+import { supabase } from "@/integrations/supabase/client";
+import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -17,7 +19,29 @@ export type DetailCard = {
   codigo_unico: string | null;
   numero_pedido_linx: string | null;
   data: unknown;
+  attachments?: unknown;
+  suppliers?: unknown;
 };
+
+type Supplier = {
+  id: string;
+  fornecedor?: string;
+  cnpj?: string;
+  email?: string;
+  telefone?: string;
+  valor?: string;
+  prazo?: string;
+  condicao?: string;
+  observacao?: string;
+  chosen?: boolean;
+};
+
+type Attachment = { name: string; path: string; size?: number };
+
+function asArray<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
 
 const STATUS_META: Record<Status, { label: string; tone: string }> = STATUS_COLUMNS.reduce(
   (acc, c) => {
