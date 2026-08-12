@@ -115,14 +115,28 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
 
   useEffect(() => {
     let active = true;
+    const objectUrls: string[] = [];
 
     const preparePreviewUrls = async () => {
       const entries = await Promise.all(
         quotations.map(async (attachment) => {
           const { data, error } = await supabase.storage
             .from("orcamentos")
-            .createSignedUrl(attachment.path, 600);
-          return error || !data?.signedUrl ? null : ([attachment.path, data.signedUrl] as const);
+            .download(attachment.path);
+          if (error || !data) return null;
+
+          const extension = attachment.name.split(".").pop()?.toLowerCase();
+          const contentType = extension === "pdf"
+            ? "application/pdf"
+            : extension === "png"
+              ? "image/png"
+              : extension === "jpg" || extension === "jpeg"
+                ? "image/jpeg"
+                : data.type || "application/octet-stream";
+          const previewBlob = new Blob([data], { type: contentType });
+          const objectUrl = URL.createObjectURL(previewBlob);
+          objectUrls.push(objectUrl);
+          return [attachment.path, objectUrl] as const;
         }),
       );
 
@@ -134,6 +148,7 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
     if (quotations.length > 0) void preparePreviewUrls();
     return () => {
       active = false;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [card.id]);
 
