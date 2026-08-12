@@ -112,14 +112,28 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
   const observacao =
     (raw.observacoes as string) || (raw.observacao as string) || (raw.justificativa as string) || "";
 
+  const openUrl = (url: string, filename?: string) => {
+    if (filename) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const openQuotation = async (a: Attachment, download: boolean) => {
     setBusy(a.path + String(download));
     try {
       const { data, error } = await supabase.storage
         .from("orcamentos")
         .createSignedUrl(a.path, 120, download ? { download: a.name } : undefined);
-      if (error || !data) throw new Error("Não foi possível gerar o link do orçamento.");
-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      if (error || !data) throw new Error(error?.message || "Não foi possível gerar o link do orçamento.");
+      openUrl(data.signedUrl, download ? a.name : undefined);
     } catch (err) {
       toast.error((err as Error).message || "Falha ao abrir o orçamento");
     } finally {
@@ -132,13 +146,14 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
     try {
       const url = await signRequesterFile(f.path, 120, download ? f.name : false);
       if (!url) throw new Error("Não foi possível gerar o link do arquivo.");
-      window.open(url, "_blank", "noopener,noreferrer");
+      openUrl(url, download ? f.name : undefined);
     } catch (err) {
       toast.error((err as Error).message || "Falha ao abrir o arquivo");
     } finally {
       setBusy(null);
     }
   };
+
 
   return (
     <div
