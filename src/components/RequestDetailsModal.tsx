@@ -103,6 +103,12 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
   const suppliers = asArray<Supplier>(card.suppliers);
   const raw = (card.data ?? {}) as Record<string, unknown>;
   const departamento = (raw.departamento as string) || "";
+  const descricaoSolicitante =
+    (raw.descricao as string) ||
+    (raw.objeto as string) ||
+    (raw.descricaoServico as string) ||
+    (raw.detalhes as string) ||
+    "";
   const observacao =
     (raw.observacoes as string) || (raw.observacao as string) || (raw.justificativa as string) || "";
 
