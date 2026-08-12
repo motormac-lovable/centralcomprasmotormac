@@ -249,21 +249,27 @@ function MinhasSolicitacoesPage() {
   }, [user?.id, user?.email, approverScope, ownerScope, approverDepartments.join("|")]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const norm = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const q = norm(query);
     if (!q) return items;
     return items.filter((it) => {
       const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
+      const statusLabel = STATUS_META[it.status]?.label ?? it.status;
       return (
-        it.title?.toLowerCase().includes(q) ||
-        it.summary?.toLowerCase().includes(q) ||
-        it.codigo_unico?.toLowerCase().includes(q) ||
-        it.numero_pedido_linx?.toLowerCase().includes(q) ||
-        it.requester_email?.toLowerCase().includes(q) ||
-        it.buyer_name?.toLowerCase().includes(q) ||
-        dept.toLowerCase().includes(q)
+        norm(it.title ?? "").includes(q) ||
+        norm(it.summary ?? "").includes(q) ||
+        norm(it.codigo_unico ?? "").includes(q) ||
+        norm(it.numero_pedido_linx ?? "").includes(q) ||
+        norm(it.requester_email ?? "").includes(q) ||
+        norm(it.buyer_name ?? "").includes(q) ||
+        norm(dept).includes(q) ||
+        norm(statusLabel).includes(q) ||
+        norm(it.status ?? "").replace(/_/g, " ").includes(q)
       );
     });
   }, [items, query]);
+
 
   const canAttach = (it: Card) => {
     if (it.kind !== "materiais" && it.kind !== "compras") return { show: false, enabled: false };
