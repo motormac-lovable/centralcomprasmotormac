@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, Download, FileText, Loader2, X, Paperclip, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { signRequesterFile } from "@/lib/requester-files";
@@ -96,7 +96,7 @@ function extractFiles(data: unknown): FileRow[] {
 
 export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClose: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const [quotationPreview, setQuotationPreview] = useState<{ name: string; url: string } | null>(null);
+  const [quotationPreviewUrls, setQuotationPreviewUrls] = useState<Record<string, string>>({});
   const meta = STATUS_META[card.status];
   const items = extractItems(card.data);
   const files = extractFiles(card.data);
@@ -112,6 +112,30 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
     "";
   const observacao =
     (raw.observacoes as string) || (raw.observacao as string) || (raw.justificativa as string) || "";
+
+  useEffect(() => {
+    let active = true;
+
+    const preparePreviewUrls = async () => {
+      const entries = await Promise.all(
+        quotations.map(async (attachment) => {
+          const { data, error } = await supabase.storage
+            .from("orcamentos")
+            .createSignedUrl(attachment.path, 600);
+          return error || !data?.signedUrl ? null : ([attachment.path, data.signedUrl] as const);
+        }),
+      );
+
+      if (active) {
+        setQuotationPreviewUrls(Object.fromEntries(entries.filter((entry) => entry !== null)));
+      }
+    };
+
+    if (quotations.length > 0) void preparePreviewUrls();
+    return () => {
+      active = false;
+    };
+  }, [card.id]);
 
   const openUrl = (url: string, filename?: string) => {
     if (filename) {
@@ -136,8 +160,6 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
       if (error || !data) throw new Error(error?.message || "Não foi possível gerar o link do orçamento.");
       if (download) {
         openUrl(data.signedUrl, a.name);
-      } else {
-        setQuotationPreview({ name: a.name, url: data.signedUrl });
       }
     } catch (err) {
       toast.error((err as Error).message || "Falha ao abrir o orçamento");
@@ -161,7 +183,6 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
 
 
   return (
-    <>
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-foreground/40 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto"
       role="dialog"
@@ -347,15 +368,19 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
                       <div className="text-sm truncate">{a.name}</div>
                       <div className="text-[11px] text-muted-foreground">{formatSize(a.size)}</div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openQuotation(a, false)}
-                      disabled={busy === a.path + "false"}
-                      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+                    <a
+                      href={quotationPreviewUrls[a.path]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-disabled={!quotationPreviewUrls[a.path]}
+                      onClick={(event) => {
+                        if (!quotationPreviewUrls[a.path]) event.preventDefault();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted aria-disabled:pointer-events-none aria-disabled:opacity-60"
                     >
-                      {busy === a.path + "false" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                      {quotationPreviewUrls[a.path] ? <Eye className="h-3.5 w-3.5" /> : <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                       Visualizar
-                    </button>
+                    </a>
                     <button
                       type="button"
                       onClick={() => openQuotation(a, true)}
@@ -445,40 +470,5 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
         </div>
       </div>
     </div>
-    {quotationPreview && (
-      <div
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/60 p-3 sm:p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Visualização de ${quotationPreview.name}`}
-        onClick={() => setQuotationPreview(null)}
-      >
-        <div
-          className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg border bg-card shadow-xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Visualização do orçamento</p>
-              <h3 className="truncate text-sm font-semibold">{quotationPreview.name}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => setQuotationPreview(null)}
-              aria-label="Fechar visualização"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-card hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <iframe
-            src={quotationPreview.url}
-            title={`Orçamento ${quotationPreview.name}`}
-            className="min-h-0 flex-1 bg-card"
-          />
-        </div>
-      </div>
-    )}
-    </>
   );
 }
