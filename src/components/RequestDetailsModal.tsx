@@ -99,10 +99,27 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
   const meta = STATUS_META[card.status];
   const items = extractItems(card.data);
   const files = extractFiles(card.data);
+  const quotations = asArray<Attachment>(card.attachments);
+  const suppliers = asArray<Supplier>(card.suppliers);
   const raw = (card.data ?? {}) as Record<string, unknown>;
   const departamento = (raw.departamento as string) || "";
   const observacao =
     (raw.observacoes as string) || (raw.observacao as string) || (raw.justificativa as string) || "";
+
+  const openQuotation = async (a: Attachment, download: boolean) => {
+    setBusy(a.path + String(download));
+    try {
+      const { data, error } = await supabase.storage
+        .from("orcamentos")
+        .createSignedUrl(a.path, 120, download ? { download: a.name } : undefined);
+      if (error || !data) throw new Error("Não foi possível gerar o link do orçamento.");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error((err as Error).message || "Falha ao abrir o orçamento");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const openFile = async (f: FileRow, download: boolean) => {
     setBusy(f.path + String(download));
@@ -276,6 +293,107 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
               </ul>
             )}
           </section>
+
+          {/* 4. Anexos dos Orçamentos */}
+          <section>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Paperclip className="h-4 w-4" /> Anexos dos Orçamentos ({quotations.length})
+            </h3>
+            {quotations.length === 0 ? (
+              <p className="text-xs text-muted-foreground rounded-xl border border-dashed p-4">
+                Nenhum orçamento anexado pelo comprador.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {quotations.map((a) => (
+                  <li key={a.path} className="flex items-center gap-3 rounded-lg border bg-card p-3">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm truncate">{a.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{formatSize(a.size)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openQuotation(a, false)}
+                      disabled={busy === a.path + "false"}
+                      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+                    >
+                      {busy === a.path + "false" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+                      Visualizar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openQuotation(a, true)}
+                      disabled={busy === a.path + "true"}
+                      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60"
+                    >
+                      {busy === a.path + "true" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                      Baixar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* 5. Mapa Comparativo de Fornecedores */}
+          <section>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Table2 className="h-4 w-4" /> Mapa Comparativo de Fornecedores ({suppliers.length})
+            </h3>
+            {suppliers.length === 0 ? (
+              <p className="text-xs text-muted-foreground rounded-xl border border-dashed p-4">
+                Nenhum fornecedor cotado até o momento.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="p-2 text-center w-16">Escolhido</th>
+                      <th className="p-2 text-left">Fornecedor</th>
+                      <th className="p-2 text-left">Valor Total</th>
+                      <th className="p-2 text-left">Prazo</th>
+                      <th className="p-2 text-left">Condição</th>
+                      <th className="p-2 text-left">Observações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppliers.map((s) => (
+                      <tr key={s.id} className={`border-t ${s.chosen ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}>
+                        <td className="p-2 text-center">
+                          {s.chosen ? (
+                            <span className="inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                              Escolhido
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="p-2">
+                          <div className="font-medium">{s.fornecedor || "Sem nome"}</div>
+                          {(s.cnpj || s.email || s.telefone) && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {[s.cnpj, s.email, s.telefone].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2">{s.valor || "—"}</td>
+                        <td className="p-2">{s.prazo || "—"}</td>
+                        <td className="p-2">{s.condicao || "—"}</td>
+                        <td className="p-2 max-w-[220px]">
+                          <span className="line-clamp-2" title={s.observacao || ""}>{s.observacao || "—"}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* 6. Documentos de Faturamento (NF, Boleto, XML) */}
+          <InvoiceDocumentsSection card={{ id: card.id, data: card.data }} editable={false} />
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t p-4">
