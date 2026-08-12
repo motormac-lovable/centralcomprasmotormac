@@ -9,8 +9,6 @@ import type { Database } from "@/integrations/supabase/types";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
-import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
-import { getFaturamento } from "@/lib/invoice-documents";
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
 
 function MessageButton({ cardId }: { cardId: string }) {
@@ -46,7 +44,7 @@ function ViewButton({ onClick }: { onClick: () => void }) {
 
 type Card = Pick<
   Database["public"]["Tables"]["kanban_cards"]["Row"],
-  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "requester_id" | "data" | "buyer_name" | "status_changed_at"
+  "id" | "kind" | "title" | "summary" | "status" | "created_at" | "codigo_unico" | "numero_pedido_linx" | "requester_email" | "requester_id" | "data" | "buyer_name" | "status_changed_at" | "attachments" | "suppliers"
 >;
 
 export const Route = createFileRoute("/_authenticated/minhas-solicitacoes")({
@@ -209,7 +207,7 @@ function MinhasSolicitacoesPage() {
     setLoading(true);
     let q = supabase
       .from("kanban_cards")
-      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, requester_id, data, buyer_name, status_changed_at")
+      .select("id, kind, title, summary, status, created_at, codigo_unico, numero_pedido_linx, requester_email, requester_id, data, buyer_name, status_changed_at, attachments, suppliers")
       .gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
       .order("created_at", { ascending: false });
 
@@ -372,13 +370,6 @@ function MinhasSolicitacoesPage() {
                     const meta = STATUS_META[it.status];
                     const dept = ((it.data as any)?.departamento as string | undefined) ?? "";
                     const att = canAttach(it);
-                    const fat = getFaturamento(it.data);
-                    const hasFaturamento =
-                      it.status === "pedidos_gerados" &&
-                      ((fat.notas_fiscais?.length ?? 0) > 0 ||
-                        (fat.boletos?.length ?? 0) > 0 ||
-                        !!(fat.xml && fat.xml.trim()));
-                    const totalCols = 9 + ((approverScope || ownerScope) ? 1 : 0);
                     return (
                       <FragmentRow key={it.id}>
                       <tr className="border-t align-top">
@@ -449,16 +440,6 @@ function MinhasSolicitacoesPage() {
                           </div>
                         </td>
                       </tr>
-                      {hasFaturamento && (
-                        <tr className="border-t bg-emerald-50/30 dark:bg-emerald-950/10">
-                          <td colSpan={totalCols} className="p-4">
-                            <InvoiceDocumentsSection
-                              card={{ id: it.id, data: it.data }}
-                              editable={false}
-                            />
-                          </td>
-                        </tr>
-                      )}
                       </FragmentRow>
                     );
                   })}
@@ -535,16 +516,6 @@ function MinhasSolicitacoesPage() {
                       </div>
                     )}
                   </div>
-                  {it.status === "pedidos_gerados" && (() => {
-                    const fat = getFaturamento(it.data);
-                    const has = (fat.notas_fiscais?.length ?? 0) > 0 || (fat.boletos?.length ?? 0) > 0 || !!(fat.xml && fat.xml.trim());
-                    if (!has) return null;
-                    return (
-                      <div className="mt-3">
-                        <InvoiceDocumentsSection card={{ id: it.id, data: it.data }} editable={false} />
-                      </div>
-                    );
-                  })()}
                   <div className="mt-3 flex items-center gap-2">
                     <ViewButton onClick={() => setDetail(it as DetailCard)} />
                     <MessageButton cardId={it.id} />
