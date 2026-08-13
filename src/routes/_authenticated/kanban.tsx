@@ -533,7 +533,8 @@ function StatusTag({ card }: { card: Card }) {
     return <Tag label={`${t.label} · ${daysSince(card.created_at)}d`} bg={t.bg} fg={t.fg} />;
   }
   if (card.status === "em_cotacao") {
-    return <Tag label="Em cotação" bg="oklch(0.75 0.16 85)" fg="#1a1a1a" />;
+    const days = daysSince(card.status_changed_at);
+    return <Tag label={`EM COTAÇÃO - ${days} dias`} bg="oklch(0.75 0.16 85)" fg="#1a1a1a" />;
   }
   if (card.status === "aguardando_aprovacao") {
     const t = approvalSlaTag(card.status_changed_at);
