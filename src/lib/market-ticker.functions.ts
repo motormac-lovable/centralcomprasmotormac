@@ -184,7 +184,7 @@ export const getMarketTicker = createServerFn({ method: "GET" }).handler(async (
   const { data: cached } = await supabaseAdmin
     .from("market_cache")
     .select("payload, fetched_at")
-    .eq("key", "ticker_v1")
+    .eq("key", "ticker_v2")
     .maybeSingle();
 
   if (cached?.payload && cached.fetched_at) {
@@ -212,7 +212,7 @@ export const getMarketTicker = createServerFn({ method: "GET" }).handler(async (
       await supabaseAdmin
         .from("market_cache")
         .upsert(
-          { key: "ticker_v1", payload: fresh, fetched_at: fresh.fetched_at },
+          { key: "ticker_v2", payload: fresh, fetched_at: fresh.fetched_at },
           { onConflict: "key" }
         );
       return fresh;
