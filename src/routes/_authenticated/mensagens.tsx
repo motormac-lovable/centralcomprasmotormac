@@ -136,7 +136,7 @@ function MensagensPage() {
         cardId: r.card_id,
         codigo: r.kanban_cards?.codigo_unico ?? null,
         title: r.kanban_cards?.title ?? null,
-        buyer: r.buyer_name ?? r.kanban_cards?.buyer_name ?? null,
+        buyer: r.kanban_cards?.buyer_name ?? r.buyer_name ?? null,
         messages: [],
         unread: 0,
         lastAt: r.created_at,
