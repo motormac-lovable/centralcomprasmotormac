@@ -115,13 +115,21 @@ function MensagensPage() {
   }, [solicitacaoId]);
 
   const conversations = useMemo<Conversation[]>(() => {
+    // O histórico pertence à SOLICITAÇÃO: o vínculo é sempre o comprador ATUAL do card
+    // (kanban_cards.buyer_name). Ao trocar o comprador, o novo responsável passa a
+    // enxergar todo o histórico anterior daquela solicitação.
+    const currentBuyerByCard = new Map<string, string | null>();
+    for (const r of rows) {
+      if (r.kanban_cards) currentBuyerByCard.set(r.card_id, r.kanban_cards.buyer_name ?? null);
+    }
     const scoped = rows.filter((r) => {
       if (solicitacaoId && r.card_id !== solicitacaoId) return false;
       if (!buyerOnly) return true;
-      const buyer = r.buyer_name ?? r.kanban_cards?.buyer_name ?? null;
+      const buyer = currentBuyerByCard.get(r.card_id) ?? r.kanban_cards?.buyer_name ?? null;
       // Comprador: conversas das solicitações sob sua responsabilidade + fila geral.
       return !buyer || (fullName && buyer.toLowerCase() === fullName.toLowerCase()) || r.sender_id === user?.id;
     });
+
     const map = new Map<string, Conversation>();
     for (const r of scoped) {
       const c = map.get(r.card_id) ?? {
