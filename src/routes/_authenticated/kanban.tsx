@@ -26,6 +26,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
 import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notifications.functions";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
+import { BidRequestModal } from "@/components/BidRequestModal";
+
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
