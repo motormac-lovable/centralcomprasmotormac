@@ -517,10 +517,10 @@ function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); setBidOpen(true); }}
-                className="inline-flex items-center gap-1.5 text-[10px] font-semibold rounded-md px-2 py-1 bg-primary text-primary-foreground hover:opacity-90 transition"
+                className="inline-flex items-center gap-1.5 text-[10px] font-medium rounded-md px-2 py-1 border bg-background hover:bg-muted transition"
                 aria-label="Solicitar orçamento aos fornecedores"
               >
-                <Send className="h-3 w-3" /> Solicitar Orçamento
+                <Mail className="h-3 w-3" /> Solicitar Orçamento
               </button>
             ) : showDetails ? (
               <button
