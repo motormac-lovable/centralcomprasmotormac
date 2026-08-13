@@ -82,16 +82,18 @@ async function fetchMarketauxPage(apiKey: string, page: number): Promise<NewsIte
   if (!resp.ok) throw new Error(`Marketaux HTTP ${resp.status}`);
   const json = (await resp.json()) as { data?: Array<Record<string, unknown>> };
 
-  return (json.data ?? []).map((raw) => ({
-    uuid: String(raw.uuid ?? crypto.randomUUID()),
-    title: String(raw.title ?? ""),
-    description: String(raw.description ?? raw.snippet ?? ""),
-    source: String(raw.source ?? "Marketaux"),
-    url: String(raw.url ?? "#"),
-    image_url: (raw.image_url as string) ?? null,
-    published_at: String(raw.published_at ?? new Date().toISOString()),
-    tag: (raw.entities as Array<{ name?: string }>)?.[0]?.name ?? "Economia",
-  }));
+  return (json.data ?? [])
+    .map((raw) => ({
+      uuid: String(raw.uuid ?? crypto.randomUUID()),
+      title: clean(String(raw.title ?? "")),
+      description: clean(String(raw.description ?? raw.snippet ?? "")),
+      source: String(raw.source ?? "Marketaux"),
+      url: String(raw.url ?? "#"),
+      image_url: (raw.image_url as string) ?? null,
+      published_at: String(raw.published_at ?? new Date().toISOString()),
+      tag: (raw.entities as Array<{ name?: string }>)?.[0]?.name ?? "Economia",
+    }))
+    .filter((n) => isAllowedText(n.title));
 }
 
 async function fetchMarketauxNews(apiKey: string): Promise<NewsItem[]> {
