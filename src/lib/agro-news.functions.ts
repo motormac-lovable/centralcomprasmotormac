@@ -101,7 +101,7 @@ function parseItems(xml: string, topic: string): AgroNewsItem[] {
   for (const chunk of chunks.slice(0, PER_TOPIC)) {
     const title = pick("title", chunk);
     const link = pick("link", chunk);
-    if (!title || !link) continue;
+    if (!link || !isAllowedText(title)) continue;
     const d = pick("pubDate", chunk);
     const parsed = d ? new Date(d) : new Date();
     out.push({
