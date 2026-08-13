@@ -1957,6 +1957,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           )}
         </div>
       </div>
+      {bidOpen && <BidRequestModal card={card} onClose={() => setBidOpen(false)} />}
     </div>
   );
 }
