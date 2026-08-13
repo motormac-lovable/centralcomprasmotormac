@@ -73,7 +73,7 @@ async function fetchMarketauxPage(apiKey: string, page: number): Promise<NewsIte
     .slice(0, 16);
   const url = new URL("https://api.marketaux.com/v1/news/all");
   url.searchParams.set("api_token", apiKey);
-  url.searchParams.set("language", "pt");
+  url.searchParams.set("language", "pt,es,en");
   url.searchParams.set("sort", "published_on");
   url.searchParams.set("published_after", publishedAfter);
   url.searchParams.set("limit", "3");
