@@ -496,7 +496,9 @@ function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
   const canDrag = !isAuditor && !isApprover && (isBuyer || isAdmin || isOwner);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id, disabled: !canDrag });
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [bidOpen, setBidOpen] = useState(false);
   const showDetails = card.status === "cotacoes_aprovadas" || card.status === "cotacoes_rejeitadas" || card.status === "pedidos_gerados";
+  const showBid = card.status === "em_cotacao" && canDrag;
   const dragProps = canDrag ? { ...attributes, ...listeners } : {};
   return (
     <>
@@ -508,7 +510,17 @@ function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
         <CardView
           card={card}
           footerSlot={
-            showDetails ? (
+            showBid ? (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); setBidOpen(true); }}
+                className="inline-flex items-center gap-1.5 text-[10px] font-semibold rounded-md px-2 py-1 bg-primary text-primary-foreground hover:opacity-90 transition"
+                aria-label="Disparar pedido de orçamento aos fornecedores"
+              >
+                <Send className="h-3 w-3" /> Disparar Pedido de Orçamento
+              </button>
+            ) : showDetails ? (
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
@@ -523,9 +535,11 @@ function DraggableCard({ card, onOpen }: { card: Card; onOpen: () => void }) {
         />
       </div>
       {historyOpen && <HistoryModal card={card} onClose={() => setHistoryOpen(false)} />}
+      {bidOpen && <BidRequestModal card={card} onClose={() => setBidOpen(false)} />}
     </>
   );
 }
+
 
 function StatusTag({ card }: { card: Card }) {
   if (card.status === "solicitacoes_abertas") {
