@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { X, Send, Paperclip, Mail, Loader2 } from "lucide-react";
 
-import { getBidBuyerEmail, sendBidRequest } from "@/lib/bid-email.functions";
+import { getBidAttachments, getBidBuyerEmail, sendBidRequest } from "@/lib/bid-email.functions";
 
 type CardLike = {
   id: string;
@@ -58,10 +58,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: () => void }) {
   const buyerEmailFn = useServerFn(getBidBuyerEmail);
+  const attachmentsFn = useServerFn(getBidAttachments);
   const sendFn = useServerFn(sendBidRequest);
 
   const raw = useMemo(() => ((card.data as Record<string, unknown>) ?? {}), [card.data]);
-  const anexos = useMemo(() => extrairAnexos(raw), [raw]);
+  const anexosLocais = useMemo(() => extrairAnexos(raw), [raw]);
+  const [anexosServidor, setAnexosServidor] = useState<Anexo[]>([]);
+  const anexos = useMemo(() => {
+    const seen = new Set<string>();
+    return [...anexosServidor, ...anexosLocais].filter((a) =>
+      seen.has(a.path) ? false : (seen.add(a.path), true),
+    );
+  }, [anexosServidor, anexosLocais]);
   const codigo = card.codigo_unico ?? card.id.slice(0, 8);
 
   const [cc, setCc] = useState("");
@@ -107,6 +115,18 @@ export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: ()
       active = false;
     };
   }, [buyerEmailFn, card.id]);
+
+  useEffect(() => {
+    let active = true;
+    attachmentsFn({ data: { cardId: card.id } })
+      .then((r) => {
+        if (active && Array.isArray(r?.attachments)) setAnexosServidor(r.attachments as Anexo[]);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [attachmentsFn, card.id]);
 
   const bcc = parseEmails(bccInput);
   const invalidos = bcc.filter((e) => !EMAIL_RE.test(e));

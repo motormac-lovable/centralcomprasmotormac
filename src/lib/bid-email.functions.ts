@@ -69,7 +69,7 @@ const bidSchema = z.object({
   cc: z.string().email(),
   subject: z.string().min(1),
   body: z.string().min(1),
-  attachments: z.array(z.object({ name: z.string(), path: z.string() })).default([]),
+  attachments: z.array(z.object({ name: z.string(), path: z.string(), type: z.string().optional() })).default([]),
 });
 
 /** Resolve o e-mail do comprador responsável pelo card (CC obrigatório). */
@@ -97,6 +97,44 @@ export const getBidBuyerEmail = createServerFn({ method: "POST" })
     return { email: claims?.email ?? "", buyerName };
   });
 
+type StoredFile = { name: string; path: string; type?: string };
+
+/** Extrai os anexos enviados pelo solicitante a partir do payload do card. */
+function extrairAnexosDoCard(raw: unknown): StoredFile[] {
+  const data = (raw ?? {}) as Record<string, unknown>;
+  const buckets = ["files", "arquivos", "anexos", "requester_files", "complementares"];
+  const out: StoredFile[] = [];
+  for (const key of buckets) {
+    const arr = data[key];
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (!item || typeof item !== "object") continue;
+      const f = item as { name?: string; path?: string; type?: string };
+      if (!f.path) continue;
+      out.push({ name: f.name ?? "anexo", path: f.path, type: f.type });
+    }
+  }
+  // remove duplicados por path
+  const seen = new Set<string>();
+  return out.filter((f) => (seen.has(f.path) ? false : (seen.add(f.path), true)));
+}
+
+/** Lista os anexos do solicitante gravados no card (fonte de verdade no servidor). */
+export const getBidAttachments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cardId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: card } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("data")
+      .eq("id", data.cardId)
+      .maybeSingle();
+    return { attachments: extrairAnexosDoCard(card?.data) };
+  });
+
+
+
 export const sendBidRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => bidSchema.parse(d))
@@ -109,19 +147,40 @@ export const sendBidRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Anexos: sempre buscados do card no servidor (fonte de verdade),
+    // unidos aos informados pelo cliente.
+    const { data: cardRow } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("data")
+      .eq("id", data.cardId)
+      .maybeSingle();
+
+    const seen = new Set<string>();
+    const lista: StoredFile[] = [];
+    for (const a of [...extrairAnexosDoCard(cardRow?.data), ...data.attachments]) {
+      if (!a.path || seen.has(a.path)) continue;
+      seen.add(a.path);
+      lista.push(a as StoredFile);
+    }
+
     // Baixa os anexos do solicitante para embutir no e-mail.
     const parts: string[] = [];
-    for (const a of data.attachments) {
+    for (const a of lista) {
       try {
         const { data: file, error } = await supabaseAdmin.storage.from(BUCKET).download(a.path);
-        if (error || !file) continue;
+        if (error || !file) {
+          console.error("[bid] anexo indisponível", a.path, error?.message);
+          continue;
+        }
         const buf = Buffer.from(await file.arrayBuffer());
         if (buf.byteLength > 18_000_000) continue;
+        const nome = a.name.replace(/"/g, "");
+        const mime = a.type || (file as Blob).type || "application/octet-stream";
         parts.push(
           [
-            `Content-Type: application/octet-stream; name="${a.name.replace(/"/g, "")}"`,
+            `Content-Type: ${mime}; name="${nome}"`,
             "Content-Transfer-Encoding: base64",
-            `Content-Disposition: attachment; filename="${a.name.replace(/"/g, "")}"`,
+            `Content-Disposition: attachment; filename="${nome}"`,
             "",
             chunk76(buf.toString("base64")),
           ].join("\r\n"),
@@ -130,6 +189,7 @@ export const sendBidRequest = createServerFn({ method: "POST" })
         /* anexo indisponível: segue o envio sem ele */
       }
     }
+
 
     const altBoundary = `alt_${Math.random().toString(36).slice(2)}`;
     const mixBoundary = `mix_${Math.random().toString(36).slice(2)}`;
