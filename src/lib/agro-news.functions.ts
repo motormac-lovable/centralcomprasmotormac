@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 // Atualização a cada 18 minutos (alinhado ao ticker de mercado)
 const CACHE_TTL_MS = 18 * 60 * 1000;
-const CACHE_KEY = "agro_news_v2";
+const CACHE_KEY = "agro_news_v3";
 
 export type AgroNewsItem = {
   id: string;
@@ -37,18 +37,57 @@ const TOPICS: Array<{ topic: string; query: string }> = [
 
 const PER_TOPIC = 3;
 
-function decodeEntities(s: string) {
+const NAMED_ENTITIES: Record<string, string> = {
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  amp: "&",
+  hellip: "…",
+  mdash: "—",
+  ndash: "–",
+  laquo: "«",
+  raquo: "»",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+};
+
+function decodeOnce(s: string) {
   return s
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
+    .replace(/&#x([0-9a-f]+);/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_m, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&([a-z]+);/gi, (m, name) => NAMED_ENTITIES[String(name).toLowerCase()] ?? m);
+}
+
+function decodeEntities(s: string) {
+  let out = s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+  // Alguns feeds vêm com dupla codificação (&amp;#233;) — decodifica em passes
+  for (let i = 0; i < 3; i++) {
+    const next = decodeOnce(out);
+    if (next === out) break;
+    out = next;
+  }
+  return out
     .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+// Aceita apenas títulos em pt-BR, espanhol ou inglês:
+// rejeita qualquer texto com caracteres fora do alfabeto latino
+// (CJK, cirílico, árabe, hebraico, grego, tailandês, devanágari etc.)
+const NON_LATIN = /[\u0370-\u03FF\u0400-\u04FF\u0530-\u058F\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0900-\u097F\u0E00-\u0E7F\u1100-\u11FF\u2E80-\u9FFF\uA960-\uA97F\uAC00-\uD7FF\uF900-\uFAFF\uFF00-\uFFEF]/;
+// Sobras de codificação (entidades não resolvidas, mojibake)
+const BROKEN = /&#?\w+;|[\uFFFD]|Ã[\u0080-\u00BF]|â\u0080/;
+
+function isAllowedText(title: string) {
+  if (!title || title.length < 12) return false;
+  if (NON_LATIN.test(title)) return false;
+  if (BROKEN.test(title)) return false;
+  return true;
 }
 
 function pick(tag: string, xml: string) {
@@ -62,7 +101,7 @@ function parseItems(xml: string, topic: string): AgroNewsItem[] {
   for (const chunk of chunks.slice(0, PER_TOPIC)) {
     const title = pick("title", chunk);
     const link = pick("link", chunk);
-    if (!title || !link) continue;
+    if (!link || !isAllowedText(title)) continue;
     const d = pick("pubDate", chunk);
     const parsed = d ? new Date(d) : new Date();
     out.push({
