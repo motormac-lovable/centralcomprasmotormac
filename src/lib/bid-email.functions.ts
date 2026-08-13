@@ -23,12 +23,42 @@ function chunk76(s: string) {
 }
 
 function textToHtml(body: string) {
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((p) => {
+      const lines = p.split("\n").filter((l) => l.trim() !== "");
+      if (lines.length === 0) return "";
+
+      const isList = lines.every((l) => /^\s*[-•*]\s+/.test(l));
+      if (isList) {
+        const items = lines
+          .map((l) => {
+            const text = l.replace(/^\s*[-•*]\s+/, "").trim();
+            return `<li style="margin:0 0 6px 0;padding:0;">${escapeHtml(text)}</li>`;
+          })
+          .join("");
+        return `<ul style="margin:0 0 14px 18px;padding:0;">${items}</ul>`;
+      }
+
+      const inner = lines
+        .map((l) => {
+          const bold = l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+          return escapeHtml(bold).replace(/&lt;strong&gt;(.+?)&lt;\/strong&gt;/g, "<strong>$1</strong>");
+        })
+        .join("<br>");
+      return `<p style="margin:0 0 14px 0;padding:0;line-height:1.65;">${inner}</p>`;
+    })
+    .filter(Boolean)
+    .join("");
+
   return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:24px;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
   <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #eceff3;border-radius:12px;padding:28px;">
-    <div style="font-size:14px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(body)}</div>
-    <div style="font-size:11px;color:#9aa0a6;padding-top:24px;">Central de Compras Motormac</div>
+    ${paragraphs}
+    <div style="font-size:11px;color:#9aa0a6;padding-top:24px;border-top:1px solid #eceff3;margin-top:18px;">
+      Central de Compras Motormac
+    </div>
   </div>
 </body></html>`;
 }
