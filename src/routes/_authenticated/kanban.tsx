@@ -1791,6 +1791,25 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             </section>
           )}
 
+          {/* ── Solicitar Orçamento (Em cotação) ── */}
+          {card.status === "em_cotacao" && canWriteKanban && (
+            <section className="rounded-xl border bg-muted/30 p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Send className="h-3.5 w-3.5" />
+                  Enviar pedido de orçamento aos fornecedores
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBidOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-background transition"
+                >
+                  <Mail className="h-3.5 w-3.5" /> Solicitar Orçamento
+                </button>
+              </div>
+            </section>
+          )}
+
           {/* ── Attachments (all columns) ── */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
