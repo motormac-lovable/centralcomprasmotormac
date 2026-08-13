@@ -69,7 +69,7 @@ const bidSchema = z.object({
   cc: z.string().email(),
   subject: z.string().min(1),
   body: z.string().min(1),
-  attachments: z.array(z.object({ name: z.string(), path: z.string() })).default([]),
+  attachments: z.array(z.object({ name: z.string(), path: z.string(), type: z.string().optional() })).default([]),
 });
 
 /** Resolve o e-mail do comprador responsável pelo card (CC obrigatório). */
