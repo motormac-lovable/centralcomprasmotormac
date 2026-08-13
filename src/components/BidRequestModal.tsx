@@ -174,7 +174,7 @@ export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: ()
             <Mail className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold">Disparar Pedido de Orçamento</h2>
+            <h2 className="text-lg font-semibold">Solicitar Orçamento</h2>
             <p className="text-xs text-muted-foreground">Solicitação #{codigo} · {card.title}</p>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
