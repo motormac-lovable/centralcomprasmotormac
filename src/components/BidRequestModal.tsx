@@ -76,14 +76,20 @@ export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: ()
     return [
       "Olá, Fornecedor.",
       "",
-      "Estamos procurando fornecimento dos itens abaixo. Aguardamos o orçamento conforme a descrição abaixo e material anexo.",
+      "Estamos procurando fornecimento dos itens abaixo.",
+      "Aguardamos o orçamento conforme a descrição e o material anexo.",
       "",
-      `• Descrição da solicitação: ${extrairDescricao(raw, card)}`,
+      "**Descrição da solicitação:**",
+      extrairDescricao(raw, card),
       "",
-      "• Lista de Materiais Solicitação:",
-      ...(itens.length ? itens : ["  - (ver descrição e anexos)"]),
+      "**Lista de Materiais Solicitada:**",
+      ...(itens.length ? itens : ["- (ver descrição e anexos)"]),
       "",
+      "**Instrução importante:**",
       "Manter obrigatoriamente o e-mail do comprador em cópia no envio do orçamento.",
+      "",
+      "Atenciosamente,",
+      "Central de Compras Motormac",
     ].join("\n");
   });
 
