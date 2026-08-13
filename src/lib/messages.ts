@@ -78,6 +78,21 @@ export async function markConversationRead(cardId: string, userId: string) {
     .neq("sender_id", userId);
 }
 
+/**
+ * Marca como lidas todas as mensagens recebidas nas conversas visíveis ao usuário.
+ * Usado ao abrir "Minhas Mensagens": o badge some após a visualização e só volta
+ * a aparecer quando chegar uma nova mensagem de outra pessoa.
+ */
+export async function markConversationsRead(cardIds: string[], userId: string) {
+  if (cardIds.length === 0) return;
+  await supabase
+    .from("card_messages")
+    .update({ read_at: new Date().toISOString() })
+    .in("card_id", cardIds)
+    .is("read_at", null)
+    .neq("sender_id", userId);
+}
+
 export function formatMessageDate(iso: string) {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, "0");
