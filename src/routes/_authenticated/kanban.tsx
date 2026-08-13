@@ -1861,6 +1861,26 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             />
           )}
 
+          {/* ── Disparar Pedido de Orçamento (Em cotação) ── */}
+          {card.status === "em_cotacao" && canWriteKanban && (
+            <section className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                <Send className="h-4 w-4 text-primary" />
+                Disparar Pedido de Orçamento aos Fornecedores
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Envie o e-mail de cotação com a descrição da solicitação, lista de materiais e anexos originais. Os fornecedores vão em cópia oculta (BCC) e o comprador responsável em cópia (CC).
+              </p>
+              <button
+                type="button"
+                onClick={() => setBidOpen(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition"
+              >
+                <Send className="h-4 w-4" /> Disparar Pedido de Orçamento
+              </button>
+            </section>
+          )}
+
           {/* ── Avançar etapa (até "Aguardando Aprovação") ── */}
           {!readOnly &&
             (card.status === "solicitacoes_abertas" ||
