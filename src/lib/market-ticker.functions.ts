@@ -32,6 +32,39 @@ export type MarketTicker = {
   fetched_at: string;
 };
 
+// ============ Higienização de texto ============
+
+const NAMED_ENTITIES: Record<string, string> = {
+  lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", amp: "&",
+  hellip: "…", mdash: "—", ndash: "–", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+};
+
+function decodeOnce(s: string) {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_m, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&([a-z]+);/gi, (m, name) => NAMED_ENTITIES[String(name).toLowerCase()] ?? m);
+}
+
+function clean(s: string) {
+  let out = s;
+  for (let i = 0; i < 3; i++) {
+    const next = decodeOnce(out);
+    if (next === out) break;
+    out = next;
+  }
+  return out.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+// Somente pt-BR, espanhol ou inglês (alfabeto latino, sem sobras de codificação)
+const NON_LATIN = /[\u0370-\u03FF\u0400-\u04FF\u0530-\u058F\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0900-\u097F\u0E00-\u0E7F\u1100-\u11FF\u2E80-\u9FFF\uA960-\uA97F\uAC00-\uD7FF\uF900-\uFAFF\uFF00-\uFFEF]/;
+const BROKEN = /&#?\w+;|[\uFFFD]|Ã[\u0080-\u00BF]|â\u0080/;
+
+function isAllowedText(title: string) {
+  if (!title || title.length < 12) return false;
+  return !NON_LATIN.test(title) && !BROKEN.test(title);
+}
+
 // ============ Fontes externas ============
 
 async function fetchMarketauxPage(apiKey: string, page: number): Promise<NewsItem[]> {
