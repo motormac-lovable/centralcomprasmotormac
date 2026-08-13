@@ -8,6 +8,7 @@ import {
   buyerLabel,
   formatMessageDate,
   markConversationRead,
+  markConversationsRead,
   sendCardMessage,
   type CardMessage,
 } from "@/lib/messages";
