@@ -147,19 +147,40 @@ export const sendBidRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Anexos: sempre buscados do card no servidor (fonte de verdade),
+    // unidos aos informados pelo cliente.
+    const { data: cardRow } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("data")
+      .eq("id", data.cardId)
+      .maybeSingle();
+
+    const seen = new Set<string>();
+    const lista: StoredFile[] = [];
+    for (const a of [...extrairAnexosDoCard(cardRow?.data), ...data.attachments]) {
+      if (!a.path || seen.has(a.path)) continue;
+      seen.add(a.path);
+      lista.push(a as StoredFile);
+    }
+
     // Baixa os anexos do solicitante para embutir no e-mail.
     const parts: string[] = [];
-    for (const a of data.attachments) {
+    for (const a of lista) {
       try {
         const { data: file, error } = await supabaseAdmin.storage.from(BUCKET).download(a.path);
-        if (error || !file) continue;
+        if (error || !file) {
+          console.error("[bid] anexo indisponível", a.path, error?.message);
+          continue;
+        }
         const buf = Buffer.from(await file.arrayBuffer());
         if (buf.byteLength > 18_000_000) continue;
+        const nome = a.name.replace(/"/g, "");
+        const mime = a.type || (file as Blob).type || "application/octet-stream";
         parts.push(
           [
-            `Content-Type: application/octet-stream; name="${a.name.replace(/"/g, "")}"`,
+            `Content-Type: ${mime}; name="${nome}"`,
             "Content-Transfer-Encoding: base64",
-            `Content-Disposition: attachment; filename="${a.name.replace(/"/g, "")}"`,
+            `Content-Disposition: attachment; filename="${nome}"`,
             "",
             chunk76(buf.toString("base64")),
           ].join("\r\n"),
@@ -168,6 +189,7 @@ export const sendBidRequest = createServerFn({ method: "POST" })
         /* anexo indisponível: segue o envio sem ele */
       }
     }
+
 
     const altBoundary = `alt_${Math.random().toString(36).slice(2)}`;
     const mixBoundary = `mix_${Math.random().toString(36).slice(2)}`;
