@@ -97,7 +97,7 @@ function pick(tag: string, xml: string) {
   return m ? decodeEntities(m[1]) : "";
 }
 
-function parseItems(xml: string, topic: string): AgroNewsItem[] {
+function parseItems(xml: string, topic: string, scope: "nacional" | "internacional"): AgroNewsItem[] {
   const chunks = xml.split("<item>").slice(1);
   const out: AgroNewsItem[] = [];
   for (const chunk of chunks.slice(0, PER_TOPIC)) {
@@ -113,12 +113,17 @@ function parseItems(xml: string, topic: string): AgroNewsItem[] {
       source: pick("source", chunk) || "Google Notícias",
       url: link,
       published_at: Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString(),
+      scope,
     });
   }
   return out;
 }
 
-async function fetchRss(url: string, topic: string): Promise<AgroNewsItem[]> {
+async function fetchRss(
+  url: string,
+  topic: string,
+  scope: "nacional" | "internacional",
+): Promise<AgroNewsItem[]> {
   try {
     const resp = await fetch(url, {
       headers: {
@@ -132,23 +137,66 @@ async function fetchRss(url: string, topic: string): Promise<AgroNewsItem[]> {
       console.error(`[agro-news] ${topic}: HTTP ${resp.status} em ${new URL(url).host}`);
       return [];
     }
-    return parseItems(await resp.text(), topic);
+    return parseItems(await resp.text(), topic, scope);
   } catch (err) {
     console.error(`[agro-news] ${topic}: falha em ${url.slice(0, 60)}`, err);
     return [];
   }
 }
 
-async function fetchTopic(topic: string, query: string): Promise<AgroNewsItem[]> {
+async function fetchTopic(
+  topic: string,
+  query: string,
+  scope: "nacional" | "internacional",
+): Promise<AgroNewsItem[]> {
   const q = encodeURIComponent(`${query} when:2d`);
   const google = `https://news.google.com/rss/search?q=${q}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-  const primary = await fetchRss(google, topic);
+  const primary = await fetchRss(google, topic, scope);
   if (primary.length > 0) return primary;
 
   // Fallback: Bing News RSS (caso o Google bloqueie o IP do servidor)
   const bing = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=RSS&setmkt=pt-BR&cc=BR`;
-  return fetchRss(bing, topic);
+  return fetchRss(bing, topic, scope);
 }
+
+// Traduz para pt-BR os títulos que não estejam em português (via Lovable AI Gateway)
+async function translateTitles(titles: string[]): Promise<string[]> {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey || titles.length === 0) return titles;
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Você traduz manchetes de notícias para português do Brasil. Responda APENAS um JSON no formato {\"titles\":[...]} com a mesma quantidade e ordem dos títulos recebidos. Títulos já em português devem ser devolvidos inalterados. Não adicione comentários nem aspas extras.",
+          },
+          { role: "user", content: JSON.stringify({ titles }) },
+        ],
+      }),
+    });
+    if (!resp.ok) {
+      console.error(`[agro-news] tradução: HTTP ${resp.status}`);
+      return titles;
+    }
+    const json = (await resp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const raw = json.choices?.[0]?.message?.content ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return titles;
+    const parsed = JSON.parse(match[0]) as { titles?: unknown };
+    const out = Array.isArray(parsed.titles) ? parsed.titles : [];
+    if (out.length !== titles.length) return titles;
+    return out.map((t, i) => (typeof t === "string" && t.trim().length > 3 ? t.trim() : titles[i]));
+  } catch (err) {
+    console.error("[agro-news] falha ao traduzir títulos", err);
+    return titles;
+  }
+}
+
 
 
 export const getAgroNews = createServerFn({ method: "GET" }).handler(
