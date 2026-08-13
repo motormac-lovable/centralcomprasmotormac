@@ -214,11 +214,11 @@ export const getAgroNews = createServerFn({ method: "GET" }).handler(
       if (age < CACHE_TTL_MS) return cached.payload as unknown as AgroNewsPayload;
     }
 
-    const results = await Promise.all(TOPICS.map((t) => fetchTopic(t.topic, t.query)));
+    const results = await Promise.all(TOPICS.map((t) => fetchTopic(t.topic, t.query, t.scope)));
 
     // Consolida, remove duplicadas e ordena da mais recente para a mais antiga
     const seen = new Set<string>();
-    const items = results
+    const unique = results
       .flat()
       .filter((n) => {
         const key = n.title.toLowerCase().replace(/\s+/g, " ").trim();
@@ -226,8 +226,29 @@ export const getAgroNews = createServerFn({ method: "GET" }).handler(
         seen.add(key);
         return true;
       })
+      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+
+    // Proporção 60% nacionais / 40% internacionais
+    const TOTAL = 8;
+    const MAX_NAC = Math.round(TOTAL * 0.6);
+    const nacionais = unique.filter((n) => n.scope !== "internacional");
+    const internacionais = unique.filter((n) => n.scope === "internacional");
+    const escolhidas = [
+      ...nacionais.slice(0, MAX_NAC),
+      ...internacionais.slice(0, TOTAL - MAX_NAC),
+    ];
+    // Completa caso falte de algum lado
+    for (const n of unique) {
+      if (escolhidas.length >= TOTAL) break;
+      if (!escolhidas.includes(n)) escolhidas.push(n);
+    }
+
+    const traduzidos = await translateTitles(escolhidas.map((n) => n.title));
+    const items = escolhidas
+      .map((n, i) => ({ ...n, title: traduzidos[i] ?? n.title }))
       .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-      .slice(0, 8);
+      .slice(0, TOTAL);
+
 
     if (items.length > 0) {
       const fresh: AgroNewsPayload = { items, fetched_at: new Date().toISOString() };
