@@ -208,7 +208,7 @@ function MensagensPage() {
   const submitReply = async () => {
     if (!active || !user?.id || !reply.trim() || sending) return;
     const body = reply;
-    const senderRole = isOwner || isAdmin || isBuyer ? "comprador" : "solicitante";
+    const senderRole = isOwner || isAdmin || isBuyer ? "comprador" : isApprover ? "aprovador" : "solicitante";
     const senderName = fullName || user.email || "";
     const optimistic: Row = {
       id: `tmp-${Date.now()}`,

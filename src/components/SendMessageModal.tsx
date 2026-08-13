@@ -20,7 +20,7 @@ function Frozen({ label, value }: { label: string; value: string }) {
 }
 
 export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onClose: () => void }) {
-  const { user, fullName, isBuyer, isAdmin, isOwner } = useAuth();
+  const { user, fullName, isBuyer, isAdmin, isOwner, isApprover } = useAuth();
   const [phone, setPhone] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,7 +70,7 @@ export function SendMessageModal({ card, onClose }: { card: MessageCardRef; onCl
           name: fullName || user.email || "",
           email: user.email || "",
           phone,
-          role: isOwner || isAdmin || isBuyer ? "comprador" : "solicitante",
+          role: isOwner || isAdmin || isBuyer ? "comprador" : isApprover ? "aprovador" : "solicitante",
         },
       });
       toast.success("Mensagem enviada ao comprador responsável.");
