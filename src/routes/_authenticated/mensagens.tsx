@@ -46,7 +46,7 @@ type Conversation = {
 
 function MensagensPage() {
   const { solicitacaoId } = Route.useSearch();
-  const { user, fullName, isBuyer, isAdmin, isOwner } = useAuth();
+  const { user, fullName, isBuyer, isAdmin, isOwner, isApprover } = useAuth();
   const [lockedCard, setLockedCard] = useState<{ id: string; codigo_unico: string | null; title: string | null; buyer_name: string | null } | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
