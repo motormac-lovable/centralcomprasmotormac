@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 // Atualização a cada 18 minutos (alinhado ao ticker de mercado)
 const CACHE_TTL_MS = 18 * 60 * 1000;
-const CACHE_KEY = "agro_news_v3";
+const CACHE_KEY = "agro_news_v4";
 
 export type AgroNewsItem = {
   id: string;
@@ -11,6 +11,7 @@ export type AgroNewsItem = {
   source: string;
   url: string;
   published_at: string;
+  scope?: "nacional" | "internacional";
 };
 
 export type AgroNewsPayload = {
@@ -18,22 +19,23 @@ export type AgroNewsPayload = {
   fetched_at: string;
 };
 
-const TOPICS: Array<{ topic: string; query: string }> = [
+const TOPICS: Array<{ topic: string; query: string; scope: "nacional" | "internacional" }> = [
   // Nacionais
-  { topic: "Crédito Rural", query: "inadimplência crédito rural Brasil" },
-  { topic: "Confiança do Agro", query: "índice de confiança do agronegócio CNA Fiesp" },
-  { topic: "Taxa Selic", query: "taxa Selic Copom juros" },
-  { topic: "Financiamento", query: "Finame Moderfrota financiamento máquinas agrícolas" },
-  { topic: "Petróleo Brent", query: "preço do petróleo Brent barril" },
-  { topic: "Soja", query: "preço da soja saca mercado" },
-  { topic: "Milho", query: "preço do milho saca mercado" },
-  { topic: "Economia BR", query: "economia brasileira inflação PIB câmbio dólar" },
+  { topic: "Crédito Rural", query: "inadimplência crédito rural Brasil", scope: "nacional" },
+  { topic: "Confiança do Agro", query: "índice de confiança do agronegócio CNA Fiesp", scope: "nacional" },
+  { topic: "Taxa Selic", query: "taxa Selic Copom juros", scope: "nacional" },
+  { topic: "Financiamento", query: "Finame Moderfrota financiamento máquinas agrícolas", scope: "nacional" },
+  { topic: "Petróleo Brent", query: "preço do petróleo Brent barril", scope: "nacional" },
+  { topic: "Soja", query: "preço da soja saca mercado", scope: "nacional" },
+  { topic: "Milho", query: "preço do milho saca mercado", scope: "nacional" },
+  { topic: "Economia BR", query: "economia brasileira inflação PIB câmbio dólar", scope: "nacional" },
   // Internacionais
-  { topic: "Internacional", query: "global economy inflation interest rates" },
-  { topic: "Commodities", query: "global commodity prices grains soybean corn" },
-  { topic: "Energia", query: "oil prices OPEC crude market" },
-  { topic: "Mercados", query: "Federal Reserve markets outlook economy" },
+  { topic: "Internacional", query: "global economy inflation interest rates", scope: "internacional" },
+  { topic: "Commodities", query: "global commodity prices grains soybean corn", scope: "internacional" },
+  { topic: "Energia", query: "oil prices OPEC crude market", scope: "internacional" },
+  { topic: "Mercados", query: "Federal Reserve markets outlook economy", scope: "internacional" },
 ];
+
 
 const PER_TOPIC = 3;
 
@@ -95,7 +97,7 @@ function pick(tag: string, xml: string) {
   return m ? decodeEntities(m[1]) : "";
 }
 
-function parseItems(xml: string, topic: string): AgroNewsItem[] {
+function parseItems(xml: string, topic: string, scope: "nacional" | "internacional"): AgroNewsItem[] {
   const chunks = xml.split("<item>").slice(1);
   const out: AgroNewsItem[] = [];
   for (const chunk of chunks.slice(0, PER_TOPIC)) {
@@ -111,12 +113,17 @@ function parseItems(xml: string, topic: string): AgroNewsItem[] {
       source: pick("source", chunk) || "Google Notícias",
       url: link,
       published_at: Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString(),
+      scope,
     });
   }
   return out;
 }
 
-async function fetchRss(url: string, topic: string): Promise<AgroNewsItem[]> {
+async function fetchRss(
+  url: string,
+  topic: string,
+  scope: "nacional" | "internacional",
+): Promise<AgroNewsItem[]> {
   try {
     const resp = await fetch(url, {
       headers: {
@@ -130,23 +137,66 @@ async function fetchRss(url: string, topic: string): Promise<AgroNewsItem[]> {
       console.error(`[agro-news] ${topic}: HTTP ${resp.status} em ${new URL(url).host}`);
       return [];
     }
-    return parseItems(await resp.text(), topic);
+    return parseItems(await resp.text(), topic, scope);
   } catch (err) {
     console.error(`[agro-news] ${topic}: falha em ${url.slice(0, 60)}`, err);
     return [];
   }
 }
 
-async function fetchTopic(topic: string, query: string): Promise<AgroNewsItem[]> {
+async function fetchTopic(
+  topic: string,
+  query: string,
+  scope: "nacional" | "internacional",
+): Promise<AgroNewsItem[]> {
   const q = encodeURIComponent(`${query} when:2d`);
   const google = `https://news.google.com/rss/search?q=${q}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-  const primary = await fetchRss(google, topic);
+  const primary = await fetchRss(google, topic, scope);
   if (primary.length > 0) return primary;
 
   // Fallback: Bing News RSS (caso o Google bloqueie o IP do servidor)
   const bing = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=RSS&setmkt=pt-BR&cc=BR`;
-  return fetchRss(bing, topic);
+  return fetchRss(bing, topic, scope);
 }
+
+// Traduz para pt-BR os títulos que não estejam em português (via Lovable AI Gateway)
+async function translateTitles(titles: string[]): Promise<string[]> {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey || titles.length === 0) return titles;
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Você traduz manchetes de notícias para português do Brasil. Responda APENAS um JSON no formato {\"titles\":[...]} com a mesma quantidade e ordem dos títulos recebidos. Títulos já em português devem ser devolvidos inalterados. Não adicione comentários nem aspas extras.",
+          },
+          { role: "user", content: JSON.stringify({ titles }) },
+        ],
+      }),
+    });
+    if (!resp.ok) {
+      console.error(`[agro-news] tradução: HTTP ${resp.status}`);
+      return titles;
+    }
+    const json = (await resp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const raw = json.choices?.[0]?.message?.content ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return titles;
+    const parsed = JSON.parse(match[0]) as { titles?: unknown };
+    const out = Array.isArray(parsed.titles) ? parsed.titles : [];
+    if (out.length !== titles.length) return titles;
+    return out.map((t, i) => (typeof t === "string" && t.trim().length > 3 ? t.trim() : titles[i]));
+  } catch (err) {
+    console.error("[agro-news] falha ao traduzir títulos", err);
+    return titles;
+  }
+}
+
 
 
 export const getAgroNews = createServerFn({ method: "GET" }).handler(
@@ -164,11 +214,11 @@ export const getAgroNews = createServerFn({ method: "GET" }).handler(
       if (age < CACHE_TTL_MS) return cached.payload as unknown as AgroNewsPayload;
     }
 
-    const results = await Promise.all(TOPICS.map((t) => fetchTopic(t.topic, t.query)));
+    const results = await Promise.all(TOPICS.map((t) => fetchTopic(t.topic, t.query, t.scope)));
 
     // Consolida, remove duplicadas e ordena da mais recente para a mais antiga
     const seen = new Set<string>();
-    const items = results
+    const unique = results
       .flat()
       .filter((n) => {
         const key = n.title.toLowerCase().replace(/\s+/g, " ").trim();
@@ -176,8 +226,29 @@ export const getAgroNews = createServerFn({ method: "GET" }).handler(
         seen.add(key);
         return true;
       })
+      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+
+    // Proporção 60% nacionais / 40% internacionais
+    const TOTAL = 8;
+    const MAX_NAC = Math.round(TOTAL * 0.6);
+    const nacionais = unique.filter((n) => n.scope !== "internacional");
+    const internacionais = unique.filter((n) => n.scope === "internacional");
+    const escolhidas = [
+      ...nacionais.slice(0, MAX_NAC),
+      ...internacionais.slice(0, TOTAL - MAX_NAC),
+    ];
+    // Completa caso falte de algum lado
+    for (const n of unique) {
+      if (escolhidas.length >= TOTAL) break;
+      if (!escolhidas.includes(n)) escolhidas.push(n);
+    }
+
+    const traduzidos = await translateTitles(escolhidas.map((n) => n.title));
+    const items = escolhidas
+      .map((n, i) => ({ ...n, title: traduzidos[i] ?? n.title }))
       .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-      .slice(0, 8);
+      .slice(0, TOTAL);
+
 
     if (items.length > 0) {
       const fresh: AgroNewsPayload = { items, fetched_at: new Date().toISOString() };
