@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 // Atualização a cada 18 minutos (alinhado ao ticker de mercado)
 const CACHE_TTL_MS = 18 * 60 * 1000;
-const CACHE_KEY = "agro_news_v3";
+const CACHE_KEY = "agro_news_v4";
 
 export type AgroNewsItem = {
   id: string;
@@ -11,6 +11,7 @@ export type AgroNewsItem = {
   source: string;
   url: string;
   published_at: string;
+  scope?: "nacional" | "internacional";
 };
 
 export type AgroNewsPayload = {
@@ -18,22 +19,23 @@ export type AgroNewsPayload = {
   fetched_at: string;
 };
 
-const TOPICS: Array<{ topic: string; query: string }> = [
+const TOPICS: Array<{ topic: string; query: string; scope: "nacional" | "internacional" }> = [
   // Nacionais
-  { topic: "Crédito Rural", query: "inadimplência crédito rural Brasil" },
-  { topic: "Confiança do Agro", query: "índice de confiança do agronegócio CNA Fiesp" },
-  { topic: "Taxa Selic", query: "taxa Selic Copom juros" },
-  { topic: "Financiamento", query: "Finame Moderfrota financiamento máquinas agrícolas" },
-  { topic: "Petróleo Brent", query: "preço do petróleo Brent barril" },
-  { topic: "Soja", query: "preço da soja saca mercado" },
-  { topic: "Milho", query: "preço do milho saca mercado" },
-  { topic: "Economia BR", query: "economia brasileira inflação PIB câmbio dólar" },
+  { topic: "Crédito Rural", query: "inadimplência crédito rural Brasil", scope: "nacional" },
+  { topic: "Confiança do Agro", query: "índice de confiança do agronegócio CNA Fiesp", scope: "nacional" },
+  { topic: "Taxa Selic", query: "taxa Selic Copom juros", scope: "nacional" },
+  { topic: "Financiamento", query: "Finame Moderfrota financiamento máquinas agrícolas", scope: "nacional" },
+  { topic: "Petróleo Brent", query: "preço do petróleo Brent barril", scope: "nacional" },
+  { topic: "Soja", query: "preço da soja saca mercado", scope: "nacional" },
+  { topic: "Milho", query: "preço do milho saca mercado", scope: "nacional" },
+  { topic: "Economia BR", query: "economia brasileira inflação PIB câmbio dólar", scope: "nacional" },
   // Internacionais
-  { topic: "Internacional", query: "global economy inflation interest rates" },
-  { topic: "Commodities", query: "global commodity prices grains soybean corn" },
-  { topic: "Energia", query: "oil prices OPEC crude market" },
-  { topic: "Mercados", query: "Federal Reserve markets outlook economy" },
+  { topic: "Internacional", query: "global economy inflation interest rates", scope: "internacional" },
+  { topic: "Commodities", query: "global commodity prices grains soybean corn", scope: "internacional" },
+  { topic: "Energia", query: "oil prices OPEC crude market", scope: "internacional" },
+  { topic: "Mercados", query: "Federal Reserve markets outlook economy", scope: "internacional" },
 ];
+
 
 const PER_TOPIC = 3;
 
