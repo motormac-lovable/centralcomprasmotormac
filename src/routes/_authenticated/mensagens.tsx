@@ -8,6 +8,7 @@ import {
   buyerLabel,
   formatMessageDate,
   markConversationRead,
+  markConversationsRead,
   sendCardMessage,
   type CardMessage,
 } from "@/lib/messages";
@@ -165,6 +166,7 @@ function MensagensPage() {
     ? conversations.find((c) => c.cardId === solicitacaoId) ?? null
     : conversations.find((c) => c.cardId === activeId) ?? conversations[0] ?? null;
 
+  // A conversa aberta é marcada como lida imediatamente.
   useEffect(() => {
     if (!active || !user?.id || active.unread === 0) return;
     const cardId = active.cardId;
@@ -177,6 +179,23 @@ function MensagensPage() {
     void markConversationRead(cardId, uid);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.cardId, active?.unread, user?.id]);
+
+  // Visualização da tela: após alguns instantes, todas as conversas listadas são
+  // marcadas como lidas — o badge do menu some e só reaparece com mensagem nova.
+  const unreadCardIds = conversations.filter((c) => c.unread > 0).map((c) => c.cardId).join(",");
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid || !unreadCardIds) return;
+    const ids = unreadCardIds.split(",");
+    const t = setTimeout(() => {
+      const now = new Date().toISOString();
+      setRows((prev) =>
+        prev.map((r) => (ids.includes(r.card_id) && r.sender_id !== uid && !r.read_at ? { ...r, read_at: now } : r)),
+      );
+      void markConversationsRead(ids, uid);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [unreadCardIds, user?.id]);
 
   const submitReply = async () => {
     if (!active || !user?.id || !reply.trim() || sending) return;
