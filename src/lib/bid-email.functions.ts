@@ -97,6 +97,44 @@ export const getBidBuyerEmail = createServerFn({ method: "POST" })
     return { email: claims?.email ?? "", buyerName };
   });
 
+type StoredFile = { name: string; path: string; type?: string };
+
+/** Extrai os anexos enviados pelo solicitante a partir do payload do card. */
+function extrairAnexosDoCard(raw: unknown): StoredFile[] {
+  const data = (raw ?? {}) as Record<string, unknown>;
+  const buckets = ["files", "arquivos", "anexos", "requester_files", "complementares"];
+  const out: StoredFile[] = [];
+  for (const key of buckets) {
+    const arr = data[key];
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (!item || typeof item !== "object") continue;
+      const f = item as { name?: string; path?: string; type?: string };
+      if (!f.path) continue;
+      out.push({ name: f.name ?? "anexo", path: f.path, type: f.type });
+    }
+  }
+  // remove duplicados por path
+  const seen = new Set<string>();
+  return out.filter((f) => (seen.has(f.path) ? false : (seen.add(f.path), true)));
+}
+
+/** Lista os anexos do solicitante gravados no card (fonte de verdade no servidor). */
+export const getBidAttachments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cardId: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: card } = await supabaseAdmin
+      .from("kanban_cards")
+      .select("data")
+      .eq("id", data.cardId)
+      .maybeSingle();
+    return { attachments: extrairAnexosDoCard(card?.data) };
+  });
+
+
+
 export const sendBidRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => bidSchema.parse(d))
