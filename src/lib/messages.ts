@@ -29,12 +29,8 @@ export function buyerLabel(buyer: string | null | undefined) {
 
 /** Lê o comprador atualmente vinculado ao card no Kanban. */
 export async function fetchCardBuyer(cardId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("kanban_cards")
-    .select("buyer_name")
-    .eq("id", cardId)
-    .maybeSingle();
-  return (data as { buyer_name?: string | null } | null)?.buyer_name ?? null;
+  const api = await getDataProvider();
+  return api.solicitacoes.getBuyer(cardId);
 }
 
 export async function sendCardMessage(input: {
@@ -42,19 +38,22 @@ export async function sendCardMessage(input: {
   body: string;
   sender: { id: string; name: string; email: string; phone: string; role: string };
 }) {
+  const api = await getDataProvider();
   // Regra de associação: quando um COMPRADOR envia mensagem a partir de um card,
   // ele passa a ser o comprador vinculado àquela solicitação.
   let buyerNow = await fetchCardBuyer(input.card.id);
   const senderName = input.sender.name?.trim();
   if (input.sender.role === "comprador" && senderName && buyerNow !== senderName) {
-    const { error: assignError } = await supabase
-      .from("kanban_cards")
-      .update({ buyer_name: senderName, buyer_assigned_at: new Date().toISOString() })
-      .eq("id", input.card.id);
-    if (!assignError) buyerNow = senderName;
+    try {
+      await api.solicitacoes.update(input.card.id, {
+        buyer_name: senderName,
+        buyer_assigned_at: new Date().toISOString(),
+      });
+      buyerNow = senderName;
+    } catch { /* mantém o comprador atual se a atualização falhar */ }
   }
 
-  const { error } = await supabase.from("card_messages").insert({
+  await api.mensagens.create({
     card_id: input.card.id,
     sender_id: input.sender.id,
     sender_name: input.sender.name,
@@ -64,18 +63,13 @@ export async function sendCardMessage(input: {
     buyer_name: buyerNow,
     body: input.body.trim(),
   });
-  if (error) throw error;
 }
 
 
 /** Marca como lidas todas as mensagens de uma conversa que não foram enviadas pelo usuário. */
 export async function markConversationRead(cardId: string, userId: string) {
-  await supabase
-    .from("card_messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("card_id", cardId)
-    .is("read_at", null)
-    .neq("sender_id", userId);
+  const api = await getDataProvider();
+  await api.mensagens.markRead([cardId], userId);
 }
 
 /**
@@ -85,13 +79,10 @@ export async function markConversationRead(cardId: string, userId: string) {
  */
 export async function markConversationsRead(cardIds: string[], userId: string) {
   if (cardIds.length === 0) return;
-  await supabase
-    .from("card_messages")
-    .update({ read_at: new Date().toISOString() })
-    .in("card_id", cardIds)
-    .is("read_at", null)
-    .neq("sender_id", userId);
+  const api = await getDataProvider();
+  await api.mensagens.markRead(cardIds, userId);
 }
+
 
 export function formatMessageDate(iso: string) {
   const d = new Date(iso);
