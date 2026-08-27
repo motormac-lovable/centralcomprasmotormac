@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getDataProvider } from "@/services/data/provider";
 
 export const FILA_GERAL_LABEL = "Fila de Atendimento (Aguardando Atribuição)";
 
