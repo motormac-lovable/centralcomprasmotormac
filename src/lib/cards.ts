@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getDataProvider } from "@/services/data/provider";
+import type { SolicitacaoCreateDTO } from "@/services/data/types";
 import { getCompradoraByCodigo, MATERIAL_BUYERS } from "@/lib/apollo-buyers";
+
 
 
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -122,10 +125,9 @@ export async function createCard(input: {
   };
   if (initialObs.length) insertPayload.observations = initialObs as never;
 
-  const { error } = await supabase
-    .from("kanban_cards")
-    .insert(insertPayload as never);
-  if (error) throw error;
+  const api = await getDataProvider();
+  await api.solicitacoes.create(insertPayload as unknown as SolicitacaoCreateDTO);
   return { ok: true as const, buyer_name };
 }
+
 
