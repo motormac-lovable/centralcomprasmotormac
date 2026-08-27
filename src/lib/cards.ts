@@ -83,13 +83,15 @@ export async function createCard(input: {
     }
   } else if (input.kind === "contratos") {
     try {
-      const { data: assigned } = await supabase.rpc("assign_contract_buyer", { _buyers: MATERIAL_BUYERS });
-      if (assigned && typeof assigned === "string") {
+      const api = await getDataProvider();
+      const assigned = await api.solicitacoes.assignRotationBuyer(MATERIAL_BUYERS);
+      if (assigned) {
         buyer_name = assigned;
         buyer_source = "rodizio_contratos";
       }
     } catch { /* fallback silencioso: card sem comprador */ }
   }
+
   // "compras" (peças) e "frete" iniciam sem comprador.
 
   const initialObs: Array<{ at: string; author: string; text: string }> = [];
