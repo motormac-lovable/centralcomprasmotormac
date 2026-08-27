@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getDataProvider } from "@/services/data/provider";
+import type { SolicitacaoCreateDTO } from "@/services/data/types";
 import { getCompradoraByCodigo, MATERIAL_BUYERS } from "@/lib/apollo-buyers";
+
 
 
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -83,13 +86,15 @@ export async function createCard(input: {
     }
   } else if (input.kind === "contratos") {
     try {
-      const { data: assigned } = await supabase.rpc("assign_contract_buyer", { _buyers: MATERIAL_BUYERS });
-      if (assigned && typeof assigned === "string") {
+      const api = await getDataProvider();
+      const assigned = await api.solicitacoes.assignRotationBuyer(MATERIAL_BUYERS);
+      if (assigned) {
         buyer_name = assigned;
         buyer_source = "rodizio_contratos";
       }
     } catch { /* fallback silencioso: card sem comprador */ }
   }
+
   // "compras" (peças) e "frete" iniciam sem comprador.
 
   const initialObs: Array<{ at: string; author: string; text: string }> = [];
@@ -120,10 +125,9 @@ export async function createCard(input: {
   };
   if (initialObs.length) insertPayload.observations = initialObs as never;
 
-  const { error } = await supabase
-    .from("kanban_cards")
-    .insert(insertPayload as never);
-  if (error) throw error;
+  const api = await getDataProvider();
+  await api.solicitacoes.create(insertPayload as unknown as SolicitacaoCreateDTO);
   return { ok: true as const, buyer_name };
 }
+
 
