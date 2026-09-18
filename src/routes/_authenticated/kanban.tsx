@@ -1001,7 +1001,10 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
   const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
-  const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  const hiddenKeys = new Set<string>(["itens", "files", "volumesList", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  const volumesFrete = Array.isArray(rawData.volumesList)
+    ? (rawData.volumesList as Array<Record<string, string>>)
+    : [];
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   // Governança de perfis: o Aprovador NÃO decide nem escreve pelo Kanban.
@@ -1479,6 +1482,44 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               </dl>
             )}
           </section>
+
+          {/* ── Volumes da carga (Frete) ── */}
+          {card.kind === "frete" && volumesFrete.length > 0 && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Volumes da carga ({volumesFrete.length})
+              </h3>
+              <div className="overflow-x-auto rounded-xl border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="p-2 text-left">#</th>
+                      <th className="p-2 text-left">Tipo de produto</th>
+                      <th className="p-2 text-left">Dimensões (A x L x C cm)</th>
+                      <th className="p-2 text-left">Peso (kg)</th>
+                      <th className="p-2 text-left">Nº de volumes</th>
+                      <th className="p-2 text-left">Valor da Mercadoria</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {volumesFrete.map((v, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="p-2">{i + 1}</td>
+                        <td className="p-2">{v.tipoProduto || "—"}</td>
+                        <td className="p-2">{[v.altura, v.largura, v.comprimento].filter(Boolean).join(" x ") || "—"}</td>
+                        <td className="p-2">{v.pesoBruto || "—"}</td>
+                        <td className="p-2">{v.volumes || "—"}</td>
+                        <td className="p-2">{v.valorMercadoria || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-2 text-sm font-semibold text-right">
+                Valor total da(s) Mercadoria(s): {(rawData.valorTotalMercadorias as string) || "—"}
+              </div>
+            </section>
+          )}
 
           {/* ── Detalhes da solicitação de Peças ── */}
           {card.kind === "compras" && (
