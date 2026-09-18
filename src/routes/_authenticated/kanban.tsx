@@ -1001,7 +1001,10 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
   const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
-  const hiddenKeys = new Set<string>(["itens", "files", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  const hiddenKeys = new Set<string>(["itens", "files", "volumesList", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  const volumesFrete = Array.isArray(rawData.volumesList)
+    ? (rawData.volumesList as Array<Record<string, string>>)
+    : [];
   const entries = Object.entries(rawData).filter(([k]) => !hiddenKeys.has(k));
   const { fullName, user, isApprover, isOwner, isAdmin, isAuditor, isBuyer } = useAuth();
   // Governança de perfis: o Aprovador NÃO decide nem escreve pelo Kanban.
