@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Package, FileSignature, Truck, ArrowRight, ClipboardList } from "lucide-react";
+import { Package, FileSignature, Truck, ArrowRight, ClipboardList, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { IndicadoresEconomicos } from "@/components/IndicadoresEconomicos";
 
 export const Route = createFileRoute("/")({
@@ -55,8 +56,6 @@ function Hub() {
   // A notificação "Bem Vindo, [Perfil]!" é disparada uma única vez no
   // evento SIGNED_IN pelo AuthProvider — nunca em trocas de tela.
 
-
-
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center min-h-screen justify-center" style={{ zoom: "90%" }}>
       <div className="text-center max-w-2xl mx-auto mb-8 flex flex-col items-center">
@@ -71,10 +70,42 @@ function Hub() {
         </p>
       </div>
 
-
       <div className="w-full grid gap-5 md:grid-cols-2 lg:grid-cols-4 justify-center">
         {cards.map((c) => {
           const Icon = c.icon;
+
+          if (c.inativo) {
+            return (
+              <div
+                key={c.to}
+                role="button"
+                aria-disabled="true"
+                title="Formulário inativo"
+                onClick={() => toast.error("Formulário inativo")}
+                className="group relative overflow-hidden rounded-2xl border border-muted bg-muted/40 p-6 shadow-none cursor-not-allowed select-none opacity-70"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-muted-foreground/25" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-muted text-muted-foreground">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {c.subtitle}
+                </div>
+                <h2 className="text-xl font-semibold mt-1 text-muted-foreground">{c.title}</h2>
+                <p className="text-sm text-muted-foreground/80 mt-2 leading-relaxed">{c.description}</p>
+                <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                  <Lock className="h-4 w-4" />
+                  Formulário inativo
+                </div>
+                <div className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-background/70 group-hover:flex">
+                  <span className="rounded-md bg-secondary text-secondary-foreground px-3 py-1.5 text-sm font-medium shadow-sm">
+                    Formulário inativo
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={c.to}
