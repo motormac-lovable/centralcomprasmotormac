@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
 import { Field, FormShell, inputCls } from "../components/forms/FormShell";
 import {
   BlocoInicialPadrao,
@@ -23,6 +24,44 @@ export const Route = createFileRoute("/frete")({
   component: FretePage,
 });
 
+type Volume = {
+  altura: string;
+  largura: string;
+  comprimento: string;
+  tipoProduto: string;
+  pesoBruto: string;
+  volumes: string;
+  valorMercadoria: string;
+};
+
+const VOLUME_VAZIO: Volume = {
+  altura: "",
+  largura: "",
+  comprimento: "",
+  tipoProduto: "",
+  pesoBruto: "",
+  volumes: "",
+  valorMercadoria: "",
+};
+
+const VOLUME_LABELS: Record<keyof Volume, string> = {
+  altura: "Altura",
+  largura: "Largura",
+  comprimento: "Comprimento",
+  tipoProduto: "Tipo de produto",
+  pesoBruto: "Peso bruto",
+  volumes: "Número de volumes",
+  valorMercadoria: "Valor da Mercadoria",
+};
+
+/** Converte "R$ 1.234,56" em número. */
+function parseMoney(v: string): number {
+  const d = (v || "").replace(/\D/g, "");
+  return d ? parseInt(d, 10) / 100 : 0;
+}
+
+const formatBRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 function FretePage() {
   const navigate = useNavigate();
   const [bloco, setBloco] = useState<BlocoInicial>(BLOCO_INICIAL_VAZIO);
@@ -31,13 +70,17 @@ function FretePage() {
     departamento_codigo: "",
     cnpjPagador: "", cnpjRemetente: "", cnpjDestinatario: "",
     cidadeOrigem: "", cepOrigem: "", cidadeDestino: "", cepDestino: "",
-    valorNF: "", pesoBruto: "", volumes: "",
-    altura: "", largura: "", comprimento: "", tipoProduto: "",
     dataColetaPrevista: "", dataEntregaPrevista: "",
   });
+  const [volumesList, setVolumesList] = useState<Volume[]>([{ ...VOLUME_VAZIO }]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
+  const setVol = (i: number, k: keyof Volume, v: string) =>
+    setVolumesList((list) => list.map((vol, idx) => (idx === i ? { ...vol, [k]: v } : vol)));
+
+  const valorTotalMercadorias = volumesList.reduce((sum, v) => sum + parseMoney(v.valorMercadoria), 0);
+  const totalVolumes = volumesList.reduce((sum, v) => sum + (parseInt(v.volumes || "0", 10) || 0), 0);
 
   const REQUIRED_FREIGHT_LABELS: Record<string, string> = {
     departamento: "Departamento",
@@ -48,13 +91,6 @@ function FretePage() {
     cepOrigem: "CEP de origem",
     cidadeDestino: "Cidade de destino",
     cepDestino: "CEP de destino",
-    valorNF: "Valor total da Nota Fiscal",
-    pesoBruto: "Peso bruto",
-    volumes: "Número de volumes",
-    altura: "Altura",
-    largura: "Largura",
-    comprimento: "Comprimento",
-    tipoProduto: "Tipo de produto",
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -67,6 +103,11 @@ function FretePage() {
         freightEr[key] = "Campo obrigatório";
       }
     }
+    volumesList.forEach((vol, i) => {
+      (Object.keys(VOLUME_LABELS) as Array<keyof Volume>).forEach((k) => {
+        if (!String(vol[k] ?? "").trim()) freightEr[`vol_${i}_${k}`] = "Campo obrigatório";
+      });
+    });
     const allErr = { ...blocoEr, ...freightEr };
     setErrors(allErr);
     if (Object.keys(allErr).length) {
@@ -74,12 +115,27 @@ function FretePage() {
       return;
     }
     setSubmitting(true);
-    const payload = { ...bloco, ...f };
+    const primeiro = volumesList[0];
+    const payload = {
+      ...bloco,
+      ...f,
+      // Compatibilidade com consumidores antigos (primeiro volume consolidado)
+      altura: primeiro.altura,
+      largura: primeiro.largura,
+      comprimento: primeiro.comprimento,
+      tipoProduto: primeiro.tipoProduto,
+      pesoBruto: primeiro.pesoBruto,
+      volumes: String(totalVolumes),
+      volumesList,
+      valorTotalMercadorias: formatBRL(valorTotalMercadorias),
+    };
+    const titulo = `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`;
+    const resumo = `${formatBRL(valorTotalMercadorias)} · ${totalVolumes} vol. · ${volumesList.length} lançamento(s)`;
     try {
       await createCard({
         kind: "frete",
-        title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`,
-        summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`,
+        title: titulo,
+        summary: resumo,
         requester_name: bloco.nome,
         requester_email: bloco.email,
         unidade: bloco.unidade,
@@ -92,7 +148,7 @@ function FretePage() {
       setSubmitting(false);
       return;
     }
-    addHistory({ kind: "frete", title: `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`, summary: `NF ${f.valorNF || "—"} · ${f.volumes || 0} vol.`, data: payload });
+    addHistory({ kind: "frete", title: titulo, summary: resumo, data: payload });
     toast.success("Solicitação enviada com sucesso!");
     navigate({ to: "/historico" });
   };
@@ -144,30 +200,80 @@ function FretePage() {
           </Field>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-5">
+        {/* ── Volumes ── */}
+        <div className="grid gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Volumes da carga</h3>
+              <p className="text-xs text-muted-foreground">
+                Volumes iguais podem ser lançados em um único registro. Para tamanhos ou valores distintos, adicione novos volumes.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVolumesList((l) => [...l, { ...VOLUME_VAZIO }])}
+              className="inline-flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted transition"
+            >
+              <Plus className="h-3.5 w-3.5" /> Adicionar volume
+            </button>
+          </div>
 
-          <Field label="Valor total da Nota Fiscal" required error={errors.valorNF}>
-            <input className={inputCls} placeholder="R$ 0,00" value={f.valorNF} onChange={(e) => set("valorNF", maskMoney(e.target.value))} />
-          </Field>
-          <Field label="Peso bruto (kg)" required error={errors.pesoBruto}>
-            <input className={inputCls} type="number" min="0" step="0.01" value={f.pesoBruto} onChange={(e) => set("pesoBruto", e.target.value)} />
-          </Field>
-          <Field label="Número de volumes" required error={errors.volumes}>
-            <input className={inputCls} type="number" min="0" value={f.volumes} onChange={(e) => set("volumes", e.target.value)} />
+          {volumesList.map((vol, i) => (
+            <div key={i} className="rounded-xl border p-4 grid gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Volume {i + 1}
+                </span>
+                {volumesList.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setVolumesList((l) => l.filter((_, idx) => idx !== i))}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-destructive hover:bg-destructive/10 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Remover
+                  </button>
+                )}
+              </div>
+
+              <Field
+                label="Dimensões das embalagens (Altura x Largura x Comprimento) em cm"
+                required
+                error={errors[`vol_${i}_altura`] || errors[`vol_${i}_largura`] || errors[`vol_${i}_comprimento`]}
+              >
+                <div className="grid grid-cols-3 gap-3">
+                  <input className={inputCls} placeholder="Altura" value={vol.altura} onChange={(e) => setVol(i, "altura", e.target.value)} />
+                  <input className={inputCls} placeholder="Largura" value={vol.largura} onChange={(e) => setVol(i, "largura", e.target.value)} />
+                  <input className={inputCls} placeholder="Comprimento" value={vol.comprimento} onChange={(e) => setVol(i, "comprimento", e.target.value)} />
+                </div>
+              </Field>
+
+              <Field label="Tipo de produto" required error={errors[`vol_${i}_tipoProduto`]}>
+                <input
+                  className={inputCls}
+                  placeholder="Ex: peças automotivas, óleo lubrificante..."
+                  value={vol.tipoProduto}
+                  onChange={(e) => setVol(i, "tipoProduto", e.target.value)}
+                />
+              </Field>
+
+              <div className="grid sm:grid-cols-3 gap-5">
+                <Field label="Peso bruto (kg)" required error={errors[`vol_${i}_pesoBruto`]}>
+                  <input className={inputCls} type="number" min="0" step="0.01" value={vol.pesoBruto} onChange={(e) => setVol(i, "pesoBruto", e.target.value)} />
+                </Field>
+                <Field label="Número de volumes" required error={errors[`vol_${i}_volumes`]}>
+                  <input className={inputCls} type="number" min="0" value={vol.volumes} onChange={(e) => setVol(i, "volumes", e.target.value)} />
+                </Field>
+                <Field label="Valor da Mercadoria" required error={errors[`vol_${i}_valorMercadoria`]}>
+                  <input className={inputCls} placeholder="R$ 0,00" value={vol.valorMercadoria} onChange={(e) => setVol(i, "valorMercadoria", maskMoney(e.target.value))} />
+                </Field>
+              </div>
+            </div>
+          ))}
+
+          <Field label="Valor total da(s) Mercadoria(s)" hint="Calculado automaticamente pela soma dos volumes.">
+            <input className={`${inputCls} bg-muted/50 font-semibold`} value={formatBRL(valorTotalMercadorias)} readOnly disabled />
           </Field>
         </div>
-
-        <Field label="Dimensões das embalagens (Altura x Largura x Comprimento) em cm" required error={errors.altura || errors.largura || errors.comprimento}>
-          <div className="grid grid-cols-3 gap-3">
-            <input className={inputCls} placeholder="Altura" value={f.altura} onChange={(e) => set("altura", e.target.value)} />
-            <input className={inputCls} placeholder="Largura" value={f.largura} onChange={(e) => set("largura", e.target.value)} />
-            <input className={inputCls} placeholder="Comprimento" value={f.comprimento} onChange={(e) => set("comprimento", e.target.value)} />
-          </div>
-        </Field>
-
-        <Field label="Tipo de produto" required error={errors.tipoProduto}>
-          <input className={inputCls} placeholder="Ex: peças automotivas, óleo lubrificante..." value={f.tipoProduto} onChange={(e) => set("tipoProduto", e.target.value)} />
-        </Field>
 
         <div className="grid sm:grid-cols-2 gap-5">
           <Field label="Data de coleta prevista" hint="Opcional">
