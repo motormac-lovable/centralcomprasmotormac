@@ -20,6 +20,7 @@ const cards = [
     description: "Solicite materiais e serviços diversos pelo módulo de Gestão de Materiais.",
     icon: ClipboardList,
     accent: "oklch(0.62 0.18 200)",
+    inativo: true,
   },
   {
     to: "/compras",
@@ -28,6 +29,7 @@ const cards = [
     description: "Abra um pedido de compra de peças para Cummins, JCB e demais operações.",
     icon: Package,
     accent: "var(--primary)",
+    inativo: true,
   },
   {
     to: "/frete",
@@ -36,6 +38,7 @@ const cards = [
     description: "Solicite cotações e agendamentos de frete com origem e destino.",
     icon: Truck,
     accent: "oklch(0.6 0.18 150)",
+    inativo: false,
   },
   {
     to: "/contratos",
@@ -44,6 +47,7 @@ const cards = [
     description: "Envie contratos novos, aditivos de renovação ou retificações de saldo.",
     icon: FileSignature,
     accent: "oklch(0.55 0.18 250)",
+    inativo: true,
   },
 ] as const;
 
