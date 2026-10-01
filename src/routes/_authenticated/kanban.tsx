@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
   CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon, Send,
-  ChevronDown, Lock as LockIcon,
+  ChevronDown, Lock as LockIcon, MapPin, ArrowRight, Calendar, Building2, Boxes, Scale, Banknote,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -1001,7 +1001,18 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
   const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
-  const hiddenKeys = new Set<string>(["itens", "files", "volumesList", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  // Frete: todas as informações têm exibição segmentada própria — não entram na lista genérica.
+  const FRETE_KEYS = [
+    "altura", "largura", "comprimento", "tipoProduto", "pesoBruto", "volumes", "valorMercadoria",
+    "valorTotalMercadorias", "cidadeOrigem", "cepOrigem", "cidadeDestino", "cepDestino",
+    "cnpjPagador", "cnpjRemetente", "cnpjDestinatario", "dataColetaPrevista", "dataEntregaPrevista",
+    "departamento", "departamento_codigo",
+  ];
+  const hiddenKeys = new Set<string>([
+    "itens", "files", "volumesList", ...BLOCO_KEYS,
+    ...(card.kind === "compras" ? COMPRAS_KEYS : []),
+    ...(card.kind === "frete" ? FRETE_KEYS : []),
+  ]);
   const volumesFrete = Array.isArray(rawData.volumesList)
     ? (rawData.volumesList as Array<Record<string, string>>)
     : [];
