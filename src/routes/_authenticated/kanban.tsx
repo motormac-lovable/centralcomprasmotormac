@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   X, Package, FileSignature, Truck, AlertCircle, Filter, Paperclip, Plus, Trash2,
   CheckCircle2, XCircle, Mail, MessageSquare, Download, Eye, FileText, Image as ImageIcon, File as FileIcon, Send,
-  ChevronDown, Lock as LockIcon,
+  ChevronDown, Lock as LockIcon, MapPin, ArrowRight, Boxes, Scale, Banknote,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -1001,7 +1001,18 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
   const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
   const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
-  const hiddenKeys = new Set<string>(["itens", "files", "volumesList", ...BLOCO_KEYS, ...(card.kind === "compras" ? COMPRAS_KEYS : [])]);
+  // Frete: todas as informações têm exibição segmentada própria — não entram na lista genérica.
+  const FRETE_KEYS = [
+    "altura", "largura", "comprimento", "tipoProduto", "pesoBruto", "volumes", "valorMercadoria",
+    "valorTotalMercadorias", "cidadeOrigem", "cepOrigem", "cidadeDestino", "cepDestino",
+    "cnpjPagador", "cnpjRemetente", "cnpjDestinatario", "dataColetaPrevista", "dataEntregaPrevista",
+    "departamento", "departamento_codigo",
+  ];
+  const hiddenKeys = new Set<string>([
+    "itens", "files", "volumesList", ...BLOCO_KEYS,
+    ...(card.kind === "compras" ? COMPRAS_KEYS : []),
+    ...(card.kind === "frete" ? FRETE_KEYS : []),
+  ]);
   const volumesFrete = Array.isArray(rawData.volumesList)
     ? (rawData.volumesList as Array<Record<string, string>>)
     : [];
@@ -1483,41 +1494,118 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             )}
           </section>
 
-          {/* ── Volumes da carga (Frete) ── */}
-          {card.kind === "frete" && volumesFrete.length > 0 && (
+          {/* ── Frete: exposição segmentada (rota → CNPJs → datas → volumes) ── */}
+          {card.kind === "frete" && (
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Volumes da carga ({volumesFrete.length})
+                Detalhes do Frete
               </h3>
-              <div className="overflow-x-auto rounded-xl border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="p-2 text-left">#</th>
-                      <th className="p-2 text-left">Tipo de produto</th>
-                      <th className="p-2 text-left">Dimensões (A x L x C cm)</th>
-                      <th className="p-2 text-left">Peso (kg)</th>
-                      <th className="p-2 text-left">Nº de volumes</th>
-                      <th className="p-2 text-left">Valor da Mercadoria</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {volumesFrete.map((v, i) => (
-                      <tr key={i} className="border-t">
-                        <td className="p-2">{i + 1}</td>
-                        <td className="p-2">{v.tipoProduto || "—"}</td>
-                        <td className="p-2">{[v.altura, v.largura, v.comprimento].filter(Boolean).join(" x ") || "—"}</td>
-                        <td className="p-2">{v.pesoBruto || "—"}</td>
-                        <td className="p-2">{v.volumes || "—"}</td>
-                        <td className="p-2">{v.valorMercadoria || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              {/* Rota: origem → destino (cidade + CEP juntos) */}
+              <div className="rounded-xl border p-4 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" /> Origem
+                    </p>
+                    <p className="text-sm font-semibold mt-0.5 break-words">{(rawData.cidadeOrigem as string) || "—"}</p>
+                    <p className="text-xs text-muted-foreground">CEP {(rawData.cepOrigem as string) || "—"}</p>
+                  </div>
+                  <div className="shrink-0 self-start sm:self-center rounded-full bg-muted p-2">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90 sm:rotate-0" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" /> Destino
+                    </p>
+                    <p className="text-sm font-semibold mt-0.5 break-words">{(rawData.cidadeDestino as string) || "—"}</p>
+                    <p className="text-xs text-muted-foreground">CEP {(rawData.cepDestino as string) || "—"}</p>
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 text-sm font-semibold text-right">
-                Valor total da(s) Mercadoria(s): {(rawData.valorTotalMercadorias as string) || "—"}
+
+              {/* CNPJs, departamento e datas previstas */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm mb-3">
+                <Detail label="CNPJ do pagador" value={(rawData.cnpjPagador as string) || "—"} />
+                <Detail label="CNPJ do remetente" value={(rawData.cnpjRemetente as string) || "—"} />
+                <Detail label="CNPJ do destinatário" value={(rawData.cnpjDestinatario as string) || "—"} />
+                <Detail label="Departamento" value={(rawData.departamento as string) || "—"} />
+                <Detail
+                  label="Coleta prevista"
+                  value={(rawData.dataColetaPrevista as string)
+                    ? new Date(`${rawData.dataColetaPrevista}T00:00:00`).toLocaleDateString("pt-BR")
+                    : "—"}
+                />
+                <Detail
+                  label="Entrega prevista"
+                  value={(rawData.dataEntregaPrevista as string)
+                    ? new Date(`${rawData.dataEntregaPrevista}T00:00:00`).toLocaleDateString("pt-BR")
+                    : "—"}
+                />
               </div>
+
+              {/* Volumes da carga */}
+              {volumesFrete.length > 0 && (
+                <>
+                  <div className="overflow-x-auto rounded-xl border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="p-2 text-left">#</th>
+                          <th className="p-2 text-left">Tipo de produto</th>
+                          <th className="p-2 text-left">Dimensões (A x L x C cm)</th>
+                          <th className="p-2 text-left">Peso (kg)</th>
+                          <th className="p-2 text-left">Nº de volumes</th>
+                          <th className="p-2 text-left">Valor da Mercadoria</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {volumesFrete.map((v, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="p-2">{i + 1}</td>
+                            <td className="p-2">{v.tipoProduto || "—"}</td>
+                            <td className="p-2">{[v.altura, v.largura, v.comprimento].filter(Boolean).join(" x ") || "—"}</td>
+                            <td className="p-2">{v.pesoBruto || "—"}</td>
+                            <td className="p-2">{v.volumes || "—"}</td>
+                            <td className="p-2">{v.valorMercadoria || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Totais: peso e valor da mercadoria, um após o outro */}
+                  <div className="mt-3 grid sm:grid-cols-3 gap-3">
+                    <div className="rounded-lg border bg-muted/40 px-3 py-2 flex items-center gap-2.5">
+                      <Boxes className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-muted-foreground leading-tight">Total de volumes</p>
+                        <p className="text-sm font-semibold">
+                          {volumesFrete.reduce((s, v) => s + (parseInt(v.volumes || "0", 10) || 0), 0)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted/40 px-3 py-2 flex items-center gap-2.5">
+                      <Scale className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-muted-foreground leading-tight">Peso total (kg)</p>
+                        <p className="text-sm font-semibold">
+                          {volumesFrete
+                            .reduce((s, v) => s + (parseFloat(v.pesoBruto || "0") || 0) * (parseInt(v.volumes || "1", 10) || 1), 0)
+                            .toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted/40 px-3 py-2 flex items-center gap-2.5">
+                      <Banknote className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-muted-foreground leading-tight">Valor total da(s) Mercadoria(s)</p>
+                        <p className="text-sm font-semibold">{(rawData.valorTotalMercadorias as string) || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </section>
           )}
 
