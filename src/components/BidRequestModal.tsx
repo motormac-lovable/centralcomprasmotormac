@@ -56,6 +56,90 @@ function parseEmails(input: string): string[] {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+function s(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
+function fmtData(v: unknown): string {
+  const t = s(v);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : t;
+}
+
+function num(v: unknown): number {
+  const n = Number(s(v).replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function montarCorpoFrete(raw: Record<string, unknown>): string | null {
+  const isFrete =
+    raw.cepOrigem !== undefined || raw.cidadeOrigem !== undefined || Array.isArray(raw.volumesList);
+  if (!isFrete) return null;
+
+  type V = Record<string, unknown>;
+  const lista: V[] = Array.isArray(raw.volumesList) && raw.volumesList.length
+    ? (raw.volumesList as V[])
+    : [raw];
+
+  const linhasVol: string[] = [];
+  let totalVol = 0;
+  let pesoTotal = 0;
+  lista.forEach((v, i) => {
+    const qtd = num(v.volumes) || 1;
+    const peso = num(v.pesoBruto);
+    totalVol += qtd;
+    pesoTotal += peso * qtd;
+    linhasVol.push(`Volume ${i + 1}:`);
+    linhasVol.push(`  - Tipo de produto: ${s(v.tipoProduto) || "-"}`);
+    linhasVol.push(
+      `  - Dimensões (A x L x C): ${s(v.altura) || "-"} x ${s(v.largura) || "-"} x ${s(v.comprimento) || "-"} cm`,
+    );
+    linhasVol.push(`  - Peso bruto por volume: ${s(v.pesoBruto) || "-"} kg`);
+    linhasVol.push(`  - Quantidade de volumes: ${s(v.volumes) || "-"}`);
+    if (s(v.valorMercadoria)) linhasVol.push(`  - Valor da mercadoria: ${s(v.valorMercadoria)}`);
+    linhasVol.push("");
+  });
+
+  const valorTotal = s(raw.valorTotalMercadorias) || s(raw.valorMercadoria) || s(raw.valorNotaFiscal);
+  const obs = s(raw.observacoes) || s(raw.descricao);
+
+  return [
+    "Olá, Fornecedor.",
+    "",
+    "Solicitamos cotação de frete conforme as informações abaixo.",
+    "",
+    "**Rota:**",
+    `  - Origem: ${s(raw.cidadeOrigem) || "-"} | CEP: ${s(raw.cepOrigem) || "-"}`,
+    `  - Destino: ${s(raw.cidadeDestino) || "-"} | CEP: ${s(raw.cepDestino) || "-"}`,
+    "",
+    "**Datas previstas:**",
+    `  - Coleta: ${fmtData(raw.dataColetaPrevista) || "-"}`,
+    `  - Entrega: ${fmtData(raw.dataEntregaPrevista) || "-"}`,
+    "",
+    "**Partes envolvidas (CNPJ):**",
+    `  - Remetente: ${s(raw.cnpjRemetente) || "-"}`,
+    `  - Destinatário: ${s(raw.cnpjDestinatario) || "-"}`,
+    `  - Pagador do frete: ${s(raw.cnpjPagador) || "-"}`,
+    "",
+    "**Carga / Volumes:**",
+    ...linhasVol,
+    "**Totais:**",
+    `  - Total de volumes: ${totalVol}`,
+    `  - Peso total: ${pesoTotal.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg`,
+    `  - Valor total da(s) mercadoria(s): ${valorTotal || "-"}`,
+    ...(obs ? ["", "**Observações:**", obs] : []),
+    "",
+    "Favor informar no orçamento: valor do frete, prazo de entrega, tipo de veículo e validade da proposta.",
+    "",
+    "**Instrução importante:**",
+    "Manter obrigatoriamente o e-mail do comprador em cópia no envio do orçamento.",
+    "",
+    "Atenciosamente,",
+    "Central de Compras Motormac",
+  ].join("\n");
+}
+
 export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: () => void }) {
   const buyerEmailFn = useServerFn(getBidBuyerEmail);
   const attachmentsFn = useServerFn(getBidAttachments);
@@ -80,6 +164,8 @@ export function BidRequestModal({ card, onClose }: { card: CardLike; onClose: ()
   const subject = `Solicitação de Orçamento para o Grupo Motormac - Solicitação ID #${codigo}`;
 
   const [body, setBody] = useState(() => {
+    const frete = montarCorpoFrete(raw);
+    if (frete) return frete;
     const itens = extrairItens(raw);
     return [
       "Olá, Fornecedor.",
