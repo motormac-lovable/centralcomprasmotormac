@@ -128,6 +128,7 @@ function montarCorpoFrete(raw: Record<string, unknown>): string | null {
     `  - Total de volumes: ${totalVol}`,
     `  - Peso total: ${pesoTotal.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg`,
     `  - Valor total da(s) mercadoria(s): ${valorTotal || "-"}`,
+    ...(s(raw.observacoesCarga).trim() ? ["", "**Observações sobre a carga:**", s(raw.observacoesCarga).trim()] : []),
     ...(obs ? ["", "**Observações:**", obs] : []),
     "",
     "Favor informar no orçamento: valor do frete, prazo de entrega, tipo de veículo e validade da proposta.",
