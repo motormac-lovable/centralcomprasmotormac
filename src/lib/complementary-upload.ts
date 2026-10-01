@@ -10,11 +10,13 @@ type Kind = Database["public"]["Enums"]["card_kind"];
 export const COMPLEMENTARY_MAX_FILES: Partial<Record<Kind, number>> = {
   materiais: 5,
   compras: 5,
+  frete: 5,
 };
 
 export const COMPLEMENTARY_MAX_SIZE_MB: Partial<Record<Kind, number>> = {
   materiais: 50,
   compras: 100,
+  frete: 100,
 };
 
 export function countExistingFiles(data: unknown): number {
