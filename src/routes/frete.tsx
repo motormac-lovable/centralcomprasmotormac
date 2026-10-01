@@ -257,7 +257,7 @@ function FretePage() {
               </Field>
 
               <div className="grid sm:grid-cols-3 gap-5">
-                <Field label="Peso bruto (kg)" required error={errors[`vol_${i}_pesoBruto`]}>
+                <Field label="Peso bruto por volume (kg)" required error={errors[`vol_${i}_pesoBruto`]}>
                   <input className={inputCls} type="number" min="0" step="0.01" value={vol.pesoBruto} onChange={(e) => setVol(i, "pesoBruto", e.target.value)} />
                 </Field>
                 <Field label="Número de volumes" required error={errors[`vol_${i}_volumes`]}>
