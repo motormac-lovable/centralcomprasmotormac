@@ -270,7 +270,7 @@ function MinhasSolicitacoesPage() {
 
 
   const canAttach = (it: Card) => {
-    if (it.kind !== "materiais" && it.kind !== "compras") return { show: false, enabled: false };
+    if (it.kind !== "materiais" && it.kind !== "compras" && it.kind !== "frete") return { show: false, enabled: false };
     const isOwnRow =
       (!!user?.id && it.requester_id === user.id) ||
       (!!user?.email && !!it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());

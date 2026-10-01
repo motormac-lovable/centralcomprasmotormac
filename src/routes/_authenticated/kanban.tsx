@@ -1006,7 +1006,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
     "altura", "largura", "comprimento", "tipoProduto", "pesoBruto", "volumes", "valorMercadoria",
     "valorTotalMercadorias", "cidadeOrigem", "cepOrigem", "cidadeDestino", "cepDestino",
     "cnpjPagador", "cnpjRemetente", "cnpjDestinatario", "dataColetaPrevista", "dataEntregaPrevista",
-    "departamento", "departamento_codigo",
+    "departamento", "departamento_codigo", "observacoesCarga",
   ];
   const hiddenKeys = new Set<string>([
     "itens", "files", "volumesList", ...BLOCO_KEYS,
@@ -1606,6 +1606,16 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                   </div>
                 </>
               )}
+
+              {/* Observações sobre a carga */}
+              <div className="rounded-xl border p-4 mt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Observações sobre a carga
+                </p>
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {(rawData.observacoesCarga as string)?.trim() || "Nenhuma observação informada."}
+                </p>
+              </div>
             </section>
           )}
 

@@ -13,6 +13,8 @@ import { addHistory } from "../lib/history";
 import { createCard } from "../lib/cards";
 import { maskCEP, maskCNPJ, maskMoney } from "../lib/masks";
 import { DepartamentoPicker } from "../components/forms/DepartamentoPicker";
+import { FileUpload, type PickedFile } from "../components/forms/FileUpload";
+import { uploadRequesterFiles } from "../lib/requester-files";
 
 export const Route = createFileRoute("/frete")({
   head: () => ({
@@ -73,6 +75,8 @@ function FretePage() {
     dataColetaPrevista: "", dataEntregaPrevista: "",
   });
   const [volumesList, setVolumesList] = useState<Volume[]>([{ ...VOLUME_VAZIO }]);
+  const [files, setFiles] = useState<PickedFile[]>([]);
+  const [observacoesCarga, setObservacoesCarga] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((s) => ({ ...s, [k]: v }));
@@ -108,6 +112,7 @@ function FretePage() {
         if (!String(vol[k] ?? "").trim()) freightEr[`vol_${i}_${k}`] = "Campo obrigatório";
       });
     });
+    if (files.length === 0) freightEr.files = "Envie ao menos 1 arquivo";
     const allErr = { ...blocoEr, ...freightEr };
     setErrors(allErr);
     if (Object.keys(allErr).length) {
@@ -115,6 +120,14 @@ function FretePage() {
       return;
     }
     setSubmitting(true);
+    let uploaded;
+    try {
+      uploaded = await uploadRequesterFiles("frete", files);
+    } catch (err) {
+      toast.error("Falha ao enviar anexos: " + (err as Error).message);
+      setSubmitting(false);
+      return;
+    }
     const primeiro = volumesList[0];
     const payload = {
       ...bloco,
@@ -128,6 +141,8 @@ function FretePage() {
       volumes: String(totalVolumes),
       volumesList,
       valorTotalMercadorias: formatBRL(valorTotalMercadorias),
+      observacoesCarga: observacoesCarga.trim(),
+      files: uploaded,
     };
     const titulo = `Frete: ${f.cidadeOrigem || "—"} → ${f.cidadeDestino || "—"}`;
     const resumo = `${formatBRL(valorTotalMercadorias)} · ${totalVolumes} vol. · ${volumesList.length} lançamento(s)`;
@@ -284,6 +299,30 @@ function FretePage() {
           </Field>
         </div>
 
+        <Field
+          label="Envio de arquivos"
+          required
+          hint="Envie notas fiscais, fotos da carga, romaneio ou outros documentos que ajudem o comprador na cotação do frete."
+          error={errors.files}
+        >
+          <FileUpload
+            files={files}
+            onChange={setFiles}
+            maxFiles={5}
+            maxSizeMB={100}
+            accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,image/*,video/*,audio/*"
+          />
+        </Field>
+
+        <Field label="Observações sobre a carga" hint="Opcional — descreva especificações, cuidados de manuseio, detalhamentos e demais informações relevantes.">
+          <textarea
+            className={`${inputCls} min-h-28`}
+            maxLength={2000}
+            value={observacoesCarga}
+            onChange={(e) => setObservacoesCarga(e.target.value)}
+            placeholder="Ex: carga frágil, necessita paletização, empilhamento máximo..."
+          />
+        </Field>
 
         <div className="flex justify-stretch md:justify-end pt-2">
           <button
