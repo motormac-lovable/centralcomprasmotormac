@@ -358,7 +358,7 @@ function HistoricoPage() {
                         <span className="font-mono text-emerald-700 font-semibold">Pedido #{it.numero_pedido_linx}</span>
                       </>
                     )}
-                    {approverScope && dept && (
+                    {(approverScope || ownerScope) && dept && (
                       <>
                         <span>·</span>
                         <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
@@ -366,7 +366,7 @@ function HistoricoPage() {
                         </span>
                       </>
                     )}
-                    {approverScope && it.requester_email && (
+                    {(approverScope || ownerScope) && it.requester_email && (
                       <>
                         <span>·</span>
                         <span className="truncate max-w-[220px]">{it.requester_email}</span>
