@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Share the requests table through RequestsHistoryView between personal requests and owner history so their actions and document presentation stay identical; preserve other history audiences.
