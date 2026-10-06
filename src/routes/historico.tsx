@@ -11,16 +11,26 @@ import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { getFaturamento } from "@/lib/invoice-documents";
+import { RequestsHistoryView } from "@/components/RequestsHistoryView";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
     meta: [
       { title: "Histórico de Solicitações — Motormac" },
       { name: "description", content: "Acompanhe suas solicitações emitidas e o status atual no Kanban." },
+      { property: "og:title", content: "Histórico de Solicitações — Motormac" },
+      { property: "og:description", content: "Consulte o histórico, os detalhes e as mensagens das solicitações Motormac." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: HistoricoPage,
+  component: HistoryPage,
 });
+
+function HistoryPage() {
+  const { isOwner } = useAuth();
+  return isOwner ? <RequestsHistoryView history /> : <HistoricoPage />;
+}
 
 type Kind = Database["public"]["Enums"]["card_kind"];
 type Card = Pick<
