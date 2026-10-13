@@ -178,6 +178,9 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
       }
     }
 
+    // Regra cumulativa: o proprietário sempre recebe cópia das solicitações aguardando aprovação.
+    recipients.add("herllon.souza@motormac.com.br");
+
     if (recipients.size === 0) {
       console.warn("[email] Nenhum destinatário para o departamento:", dept);
       return { ok: true, sent: 0 };
