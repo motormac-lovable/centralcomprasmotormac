@@ -1,0 +1,1 @@
+- [ ] Reconectar Gmail com centraldecomprasmotormac@gmail.com (nova conexão, não a existente 'Safety's Gmail')
