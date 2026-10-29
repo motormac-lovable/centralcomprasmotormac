@@ -1,1 +1,3 @@
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'aprovador';
+-- O conteúdo desta migration foi movido para supabase/migrations/20261029171400_add_aprovador_to_app_role.sql
+-- Arquivo mantido (vazio) porque a entrada existe no histórico de migrations; removê-lo quebraria as próximas migrations.
+-- ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'aprovador';
