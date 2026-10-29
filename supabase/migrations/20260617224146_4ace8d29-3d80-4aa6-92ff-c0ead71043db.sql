@@ -1,6 +1,6 @@
 
 -- Enums
-CREATE TYPE public.app_role AS ENUM ('admin', 'buyer');
+CREATE TYPE public.app_role AS ENUM ('admin', 'buyer', 'aprovador');
 CREATE TYPE public.card_kind AS ENUM ('compras', 'contratos', 'frete');
 CREATE TYPE public.card_status AS ENUM ('pending', 'in_progress', 'done', 'rejected');
 CREATE TYPE public.application_status AS ENUM ('pending', 'approved', 'rejected');
