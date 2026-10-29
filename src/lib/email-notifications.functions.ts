@@ -120,7 +120,7 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => notifySchema.parse(d))
   .handler(async ({ data }) => {
     const lovableKey = process.env.LOVABLE_API_KEY;
-    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    const gmailKey = (process.env.GOOGLE_MAIL_API_KEY_1 || process.env.GOOGLE_MAIL_API_KEY);
     if (!lovableKey || !gmailKey) {
       console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
       return { ok: false, sent: 0, reason: "missing_credentials" as const };
@@ -252,7 +252,7 @@ export const notifyRequestRejected = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => rejectSchema.parse(d))
   .handler(async ({ data }) => {
     const lovableKey = process.env.LOVABLE_API_KEY;
-    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    const gmailKey = (process.env.GOOGLE_MAIL_API_KEY_1 || process.env.GOOGLE_MAIL_API_KEY);
     if (!lovableKey || !gmailKey) {
       console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
       return { ok: false, sent: 0, reason: "missing_credentials" as const };
@@ -403,7 +403,7 @@ export const notifyUserApproved = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => approvedSchema.parse(d))
   .handler(async ({ data }) => {
     const lovableKey = process.env.LOVABLE_API_KEY;
-    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    const gmailKey = (process.env.GOOGLE_MAIL_API_KEY_1 || process.env.GOOGLE_MAIL_API_KEY);
     if (!lovableKey || !gmailKey) {
       console.error("[email] Missing LOVABLE_API_KEY or GOOGLE_MAIL_API_KEY");
       return { ok: false, reason: "missing_credentials" as const };

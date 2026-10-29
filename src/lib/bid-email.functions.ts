@@ -140,7 +140,7 @@ export const sendBidRequest = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => bidSchema.parse(d))
   .handler(async ({ data }) => {
     const lovableKey = process.env.LOVABLE_API_KEY;
-    const gmailKey = process.env.GOOGLE_MAIL_API_KEY;
+    const gmailKey = (process.env.GOOGLE_MAIL_API_KEY_1 || process.env.GOOGLE_MAIL_API_KEY);
     if (!lovableKey || !gmailKey) {
       return { ok: false as const, error: "Serviço de e-mail não configurado." };
     }
