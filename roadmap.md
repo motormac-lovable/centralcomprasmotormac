@@ -1,1 +1,1 @@
-- [ ] Reconectar Gmail com centraldecomprasmotormac@gmail.com (nova conexão, não a existente 'Safety's Gmail')
+- [x] Reconectar Gmail com centraldecomprasmotormac@gmail.com — feito: nova conexão vinculada, código aponta para GOOGLE_MAIL_API_KEY_1, conta antiga desvinculada
