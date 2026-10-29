@@ -27,12 +27,20 @@ import { translateError } from "@/lib/error-messages";
 import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notifications.functions";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { BidRequestModal } from "@/components/BidRequestModal";
+import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-order-entry";
 
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
 export const Route = createFileRoute("/_authenticated/kanban")({
-  head: () => ({ meta: [{ title: "Painel Kanban — Motormac" }] }),
+  head: () => ({ meta: [
+    { title: "Painel Kanban — Motormac" },
+    { name: "description", content: "Painel de solicitações, cotações e pedidos da Central de Compras Motormac." },
+    { property: "og:title", content: "Painel Kanban — Motormac" },
+    { property: "og:description", content: "Acompanhamento das solicitações, aprovações e pedidos da Central de Compras Motormac." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: KanbanPage,
 });
 
@@ -115,7 +123,12 @@ function KanbanPage() {
     const cardId = String(e.active.id);
     const newStatus = String(e.over.id) as Status;
     const card = cards.find((c) => c.id === cardId);
-    if (!card || card.status === newStatus) return;
+    if (!card) return;
+    if (newStatus === "pedidos_gerados") {
+      toast.warning("Alerta", { description: MANUAL_ORDER_ENTRY_MESSAGE });
+      return;
+    }
+    if (card.status === newStatus) return;
     await moveCard(card, newStatus);
   };
 
@@ -127,6 +140,30 @@ function KanbanPage() {
           : "Auditor: leitura apenas — movimentação de cards está bloqueada.",
       );
       return;
+    }
+    // Esta função atende apenas ações manuais; aprovação automática usa seu próprio RPC.
+    if (manualOrderEntryBlock(card, requestedStatus) === "manual") {
+      toast.warning("Alerta", { description: MANUAL_ORDER_ENTRY_MESSAGE });
+      return;
+    }
+    if (card.kind === "frete" && requestedStatus === "cotacoes_aprovadas") {
+      // Evita o atalho manual para Pedidos Gerados com estado local ou aprovação antigos.
+      const { data: currentCard, error } = await supabase.from("kanban_cards")
+        .select("*").eq("id", card.id).single();
+      if (error || !currentCard) {
+        toast.error("Não foi possível validar a aprovação do card. Tente novamente.");
+        return;
+      }
+      if (manualOrderEntryBlock(currentCard, requestedStatus) === "approval") {
+        toast.warning("Alerta", { description: "Entrada em 'Pedidos Gerados' não permitida sem aprovação formal. Aguarde a aprovação pelas alçadas vigentes." });
+        return;
+      }
+      // A aprovação pode ter movido o Frete automaticamente enquanto era arrastado.
+      if (currentCard.status === "pedidos_gerados") {
+        setCards((prev) => prev.map((c) => c.id === currentCard.id ? currentCard : c));
+        return;
+      }
+      card = currentCard;
     }
     // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
     const newStatus: Status =
