@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Share the requests table through RequestsHistoryView between personal requests and owner history so their actions and document presentation stay identical; preserve other history audiences.
+- Keep manual order-entry validation in the browser-safe kanban-order-entry module and apply it only to manual Kanban handlers; approval RPC and ERP transitions remain independent to preserve existing approval authority.
