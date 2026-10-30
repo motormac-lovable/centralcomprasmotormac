@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { canManageProtectedUser, isEligibleForAdmin } from "@/lib/protected-users";
+
+const PROTECTED_MSG = "Este usuário só pode ser gerenciado pelo Proprietário.";
 
 const OWNER_EMAILS = ["herllon.souza@motormac.com.br"];
 
@@ -48,6 +51,9 @@ export const deleteUserCompletely = createServerFn({ method: "POST" })
       (!!targetProfile?.email && OWNER_EMAILS.includes(targetProfile.email.toLowerCase()));
     if (targetIsOwner) {
       throw new Response("Proprietários não podem ser excluídos.", { status: 400 });
+    }
+    if (!canManageProtectedUser(targetProfile?.email, isOwner)) {
+      throw new Response(PROTECTED_MSG, { status: 403 });
     }
     const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
     if (targetIsAdmin && !isOwner) {
@@ -118,6 +124,9 @@ export const setUserActiveState = createServerFn({ method: "POST" })
     const targetIsSolicitante = (targetRoles ?? []).some((r: any) => r.role === "solicitante");
 
     if (targetIsOwner) throw new Response("Proprietários não podem ser inativados.", { status: 400 });
+    if (!canManageProtectedUser(targetProfile?.email, isOwner)) {
+      throw new Response(PROTECTED_MSG, { status: 403 });
+    }
     if (targetIsAdmin && !isOwner) {
       throw new Response("Somente o Proprietário pode inativar Administradores.", { status: 403 });
     }
@@ -178,6 +187,16 @@ export const updateUserRole = createServerFn({ method: "POST" })
     if (!callerIsOwner && (targetIsOwner || targetIsAdmin)) {
       throw new Response("Somente o Proprietário pode alterar Proprietários ou Administradores.", { status: 403 });
     }
+    if (!canManageProtectedUser(targetProfile?.email, callerIsOwner)) {
+      throw new Response(PROTECTED_MSG, { status: 403 });
+    }
+    if (data.role === "admin") {
+      const { data: elig } = await supabaseAdmin
+        .from("profiles").select("is_active, is_deleted").eq("id", data.user_id).maybeSingle();
+      if (!isEligibleForAdmin(elig)) {
+        throw new Response("Usuário inativo não pode ser promovido a Administrador.", { status: 400 });
+      }
+    }
 
     await supabaseAdmin
       .from("user_roles").delete().eq("user_id", data.user_id)
@@ -227,6 +246,9 @@ export const updateUserEmail = createServerFn({ method: "POST" })
     const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "admin");
     if (!callerIsOwner && (targetIsOwner || targetIsAdmin)) {
       throw new Response("Somente o Proprietário pode alterar o e-mail de Administradores.", { status: 403 });
+    }
+    if (!canManageProtectedUser(targetProfile?.email, callerIsOwner)) {
+      throw new Response(PROTECTED_MSG, { status: 403 });
     }
     if (targetIsOwner) {
       throw new Response("O e-mail de Proprietários não pode ser alterado por esta tela.", { status: 400 });

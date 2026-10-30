@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { isOwnerEmail } from "@/lib/owner-emails";
+import { isProtectedUserEmail, isEligibleForAdmin } from "@/lib/protected-users";
 import { deleteUserCompletely, updateUserRole, setUserActiveState, updateUserEmail } from "@/lib/admin-users.functions";
 import { approveBuyerApplication, rejectBuyerApplication } from "@/lib/buyer-applications.functions";
 import { notifyUserApproved } from "@/lib/email-notifications.functions";
@@ -433,7 +434,8 @@ function RegisteredUsers({
                 const owner = isOwnerRow(u);
                 const isSelf = u.id === user?.id;
                 const targetIsAdmin = u.roles.includes("admin");
-                const adminBlocked = targetIsAdmin && !isOwner;
+                const protectedBlocked = isProtectedUserEmail(u.email) && !isOwner;
+                const adminBlocked = (targetIsAdmin && !isOwner) || protectedBlocked;
                 const canManage = !owner && !isSelf && !adminBlocked;
                 const canDelete = canManage && (auditorOnly ? u.roles.includes("solicitante") && !u.roles.some((r) => r !== "solicitante") : !buyerOnly);
                 const canToggle = canManage && !auditorOnly;
@@ -441,6 +443,8 @@ function RegisteredUsers({
                 const active = u.is_active ?? true;
                 const blockedTitle = owner
                   ? "Proprietários são intocáveis"
+                  : protectedBlocked
+                    ? "Usuário gerenciado exclusivamente pelo Proprietário"
                   : adminBlocked
                     ? "Somente o Proprietário pode gerenciar Administradores"
                     : isSelf
@@ -877,17 +881,24 @@ function OwnerAdminManager() {
     const ids = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
     let profiles: ProfileRow[] = [];
     if (ids.length) {
-      const { data } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
-      profiles = data ?? [];
+      const { data } = await supabase.from("profiles").select("id, full_name, email, is_active, is_deleted").in("id", ids);
+      profiles = (data ?? []) as ProfileRow[];
     }
     const decorate = (r: RoleRow) => ({ ...r, profile: profiles.find((p) => p.id === r.user_id) });
     setAdmins(((roles ?? []).filter((r) => r.role === "admin") as RoleRow[]).map(decorate));
-    setApprovedBuyers(((roles ?? []).filter((r) => r.role === "buyer") as RoleRow[]).map(decorate));
+    // Usuário inativo é inelegível para promoção: some da lista de compradores elegíveis.
+    setApprovedBuyers(
+      ((roles ?? []).filter((r) => r.role === "buyer") as RoleRow[])
+        .map(decorate)
+        .filter((b) => isEligibleForAdmin(b.profile as any)),
+    );
   };
 
   useEffect(() => { reload(); }, []);
 
   const promote = async (uid: string) => {
+    const target = approvedBuyers.find((b) => b.user_id === uid);
+    if (!isEligibleForAdmin(target?.profile as any)) return toast.error("Usuário inativo não pode ser promovido a Administrador.");
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role: "admin" });
     if (error) return toast.error(translateError(error, "Não foi possível promover o usuário."));
     toast.success("Comprador promovido a Administrador.");
