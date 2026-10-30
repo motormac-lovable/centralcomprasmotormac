@@ -29,6 +29,13 @@
       "when": 1793383586496,
       "tag": "0003_protected_users_owner_only",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793383869712,
+      "tag": "0004_revoke_admin_on_inactivation",
+      "breakpoints": true
     }
   ]
 }
