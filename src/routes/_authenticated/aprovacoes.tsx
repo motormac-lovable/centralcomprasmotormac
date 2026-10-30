@@ -234,6 +234,7 @@ function AprovacoesPage() {
               card={card}
               busy={busyId === card.id}
               readOnly={isAuditor || !canActOn(card)}
+              readOnlyLabel={isAuditor ? "Auditor · modo leitura — aprovação e rejeição indisponíveis." : "Fora da sua alçada · modo leitura — aprovação e rejeição indisponíveis."}
               onApprove={(sid, just) => approve(card, sid, just)}
               onReject={() => setRejecting(card)}
             />
@@ -248,7 +249,7 @@ function AprovacoesPage() {
   );
 }
 
-function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
+function ApprovalCard({ card, busy, readOnly = false, readOnlyLabel, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; readOnlyLabel?: string; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
   const Icon = KIND_ICON[card.kind];
   const dept = departamentoOf(card);
   const suppliers = suppliersOf(card);
@@ -454,7 +455,7 @@ function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { c
 
       {readOnly ? (
         <div className="px-5 py-4 border-t bg-muted/30 text-xs text-muted-foreground text-right italic">
-          Auditor · modo leitura — aprovação e rejeição indisponíveis.
+          {readOnlyLabel ?? "Auditor · modo leitura — aprovação e rejeição indisponíveis."}
         </div>
       ) : (
         <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
