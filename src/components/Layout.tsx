@@ -142,7 +142,7 @@ export function Layout({ children }: { children: ReactNode }) {
             )}
 
             {/* Painel de Aprovações — Aprovador, Proprietário e Auditor (este último em modo leitura) */}
-            {(isApprover || isOwner || isAuditor) && (
+            {(isApprover || isOwner || isAdmin || isAuditor) && (
               <NavLink
                 to="/aprovacoes"
                 active={pathname.startsWith("/aprovacoes")}

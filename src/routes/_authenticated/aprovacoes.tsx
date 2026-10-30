@@ -27,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/aprovacoes")({
 });
 
 const TETO_OWNER_EXCLUSIVO = 200_000;
+// Alçada nativa do Administrador (todos os departamentos) — regra cumulativa.
+const TETO_ADMIN_NATIVO = 5_000;
 
 function parseValor(v: unknown): number {
   if (typeof v === "number") return v;
@@ -89,6 +91,8 @@ function AprovacoesPage() {
     return cards.filter((c) => {
       // Auditor: transparência total — vê todos os cards em aguardando aprovação.
       if (isAuditor) return true;
+      // Administrador: visualiza tudo o que está pendente de aprovação.
+      if (isAdmin) return true;
       const valor = valorReferenciaAlcada(c);
       const dept = departamentoOf(c);
       const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
@@ -104,6 +108,20 @@ function AprovacoesPage() {
       return false;
     });
   }, [cards, isApprover, isOwner, isAdmin, isAuditor, approverDepartments, approverCeiling]);
+
+  // Pode aprovar/rejeitar este card? (espelha as regras do banco)
+  const canActOn = (c: Card): boolean => {
+    if (isOwner) return true;
+    const valor = valorReferenciaAlcada(c);
+    const dept = departamentoOf(c);
+    const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
+    if (isAdmin && isFallback && valor <= TETO_OWNER_EXCLUSIVO) return true;
+    if (isAdmin && valor <= TETO_ADMIN_NATIVO) return true;
+    if (isApprover && dept && approverDepartments.includes(dept) && valor <= TETO_OWNER_EXCLUSIVO) {
+      return valor === 0 || valor <= approverCeiling;
+    }
+    return false;
+  };
 
   if (!isApprover && !isOwner && !isAdmin && !isAuditor) {
     return (
@@ -188,6 +206,13 @@ function AprovacoesPage() {
         </div>
       )}
 
+      {isAdmin && !isOwner && (
+        <div className="mb-6 rounded-xl border bg-card p-4 text-sm flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 text-primary" />
+          <span>Visão de Administrador: visualiza todas as solicitações pendentes. Alçada nativa de até R$ 5.000,00 em todos os departamentos; acima disso, somente leitura.</span>
+        </div>
+      )}
+
       {isAuditor && (
         <div className="mb-6 rounded-xl border border-slate-300 bg-slate-50 p-4 text-sm flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-slate-700" />
@@ -208,7 +233,8 @@ function AprovacoesPage() {
               key={card.id}
               card={card}
               busy={busyId === card.id}
-              readOnly={isAuditor}
+              readOnly={isAuditor || !canActOn(card)}
+              readOnlyLabel={isAuditor ? "Auditor · modo leitura — aprovação e rejeição indisponíveis." : "Fora da sua alçada · modo leitura — aprovação e rejeição indisponíveis."}
               onApprove={(sid, just) => approve(card, sid, just)}
               onReject={() => setRejecting(card)}
             />
@@ -223,7 +249,7 @@ function AprovacoesPage() {
   );
 }
 
-function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
+function ApprovalCard({ card, busy, readOnly = false, readOnlyLabel, onApprove, onReject }: { card: Card; busy: boolean; readOnly?: boolean; readOnlyLabel?: string; onApprove: (supplierId: string, justificativa: string) => void; onReject: () => void }) {
   const Icon = KIND_ICON[card.kind];
   const dept = departamentoOf(card);
   const suppliers = suppliersOf(card);
@@ -429,7 +455,7 @@ function ApprovalCard({ card, busy, readOnly = false, onApprove, onReject }: { c
 
       {readOnly ? (
         <div className="px-5 py-4 border-t bg-muted/30 text-xs text-muted-foreground text-right italic">
-          Auditor · modo leitura — aprovação e rejeição indisponíveis.
+          {readOnlyLabel ?? "Auditor · modo leitura — aprovação e rejeição indisponíveis."}
         </div>
       ) : (
         <div className="px-5 py-4 border-t bg-muted/30 flex flex-wrap gap-2 justify-end">
