@@ -22,6 +22,13 @@
       "when": 1793381271927,
       "tag": "0002_admin_cap_5000_all_purposes",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793383586496,
+      "tag": "0003_protected_users_owner_only",
+      "breakpoints": true
     }
   ]
 }
