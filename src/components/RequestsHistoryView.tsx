@@ -190,7 +190,8 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
 
 
   const approverScope = isApprover && !isOwner && !isAdmin && !isBuyer;
-  const ownerScope = isOwner;
+  // Proprietário e Administrador: visão completa de todas as solicitações.
+  const ownerScope = isOwner || isAdmin;
 
   const reload = async () => {
     if (!user?.id) return;
@@ -264,7 +265,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
     const isOwnRow =
       (!!user?.id && it.requester_id === user.id) ||
       (!!user?.email && !!it.requester_email && it.requester_email.toLowerCase() === user.email.toLowerCase());
-    if (!isOwnRow && !ownerScope) return { show: false, enabled: false };
+    if (!isOwnRow && !isOwner) return { show: false, enabled: false };
     return { show: true, enabled: UPLOAD_ALLOWED_STATUSES.includes(it.status) };
   };
 
@@ -273,7 +274,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
-            <ClipboardList className="h-3 w-3" /> {ownerScope ? "Visão do Proprietário" : approverScope ? "Visão do Aprovador" : "Visão do Solicitante"}
+            <ClipboardList className="h-3 w-3" /> {isOwner ? "Visão do Proprietário" : ownerScope ? "Visão do Administrador" : approverScope ? "Visão do Aprovador" : "Visão do Solicitante"}
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">{history ? "Histórico de Solicitações" : "Minhas Solicitações"}</h1>
           <p className="text-sm text-muted-foreground mt-1">

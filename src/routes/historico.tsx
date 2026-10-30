@@ -28,8 +28,9 @@ export const Route = createFileRoute("/historico")({
 });
 
 function HistoryPage() {
-  const { isOwner } = useAuth();
-  return isOwner ? <RequestsHistoryView history /> : <HistoricoPage />;
+  const { isOwner, isAdmin } = useAuth();
+  // Proprietário e Administrador veem o mesmo Histórico de Solicitações.
+  return isOwner || isAdmin ? <RequestsHistoryView history /> : <HistoricoPage />;
 }
 
 type Kind = Database["public"]["Enums"]["card_kind"];
