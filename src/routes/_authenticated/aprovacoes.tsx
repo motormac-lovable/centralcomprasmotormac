@@ -114,8 +114,6 @@ function AprovacoesPage() {
     if (isOwner) return true;
     const valor = valorReferenciaAlcada(c);
     const dept = departamentoOf(c);
-    const isFallback = Boolean(((c.data as Record<string, unknown>) ?? {}).aprovacao_fallback_global);
-    void isFallback;
     // Administrador (não Proprietário): teto absoluto de R$ 5.000,00 para todos os fins.
     if (isAdmin) return valor <= TETO_ADMIN_NATIVO;
     if (isApprover && dept && approverDepartments.includes(dept) && valor <= TETO_OWNER_EXCLUSIVO) {
