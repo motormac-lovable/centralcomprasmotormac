@@ -8,6 +8,13 @@
       "when": 1793294039764,
       "tag": "0000_add_aprovador_to_app_role",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793380971434,
+      "tag": "0001_admin_native_alcada_5000",
+      "breakpoints": true
     }
   ]
 }
