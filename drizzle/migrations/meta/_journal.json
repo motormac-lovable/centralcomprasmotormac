@@ -15,6 +15,13 @@
       "when": 1793380971434,
       "tag": "0001_admin_native_alcada_5000",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793381271927,
+      "tag": "0002_admin_cap_5000_all_purposes",
+      "breakpoints": true
     }
   ]
 }
