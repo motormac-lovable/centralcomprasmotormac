@@ -380,10 +380,11 @@ function RegisteredUsers({
   const toggleActive = async (u: Row) => {
     const newState = !(u.is_active ?? true);
     const verb = newState ? "reativar" : "inativar";
-    if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?`)) return;
+    const losesAdmin = !newState && u.roles.includes("admin");
+    if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?${losesAdmin ? "\n\nAtenção: ao ser inativado, o usuário perde o cargo de Administrador." : ""}`)) return;
     try {
       await toggleActiveFn({ data: { user_id: u.id, active: newState } });
-      toast.success(newState ? "Usuário reativado." : "Usuário inativado. Acesso bloqueado até reativação.");
+      toast.success(newState ? "Usuário reativado." : losesAdmin ? "Usuário inativado e removido do cargo de Administrador." : "Usuário inativado. Acesso bloqueado até reativação.");
       reload();
     } catch (e: any) {
       toast.error(e?.message || "Falha ao alterar status.");
