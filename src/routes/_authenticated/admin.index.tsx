@@ -93,6 +93,7 @@ function AdminPage() {
   const [selectedRole, setSelectedRole] = useState<Record<string, AppRole | "">>({});
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [usersRefreshTick, setUsersRefreshTick] = useState(0);
+  const [adminsRefreshTick, setAdminsRefreshTick] = useState(0);
   const [pendingQ, setPendingQ] = useState("");
 
 
@@ -281,9 +282,9 @@ function AdminPage() {
       })()}
 
 
-      <RegisteredUsers refreshTick={usersRefreshTick} />
+      <RegisteredUsers refreshTick={usersRefreshTick} onChanged={() => setAdminsRefreshTick((t) => t + 1)} />
 
-      {isOwner && <OwnerAdminManager />}
+      {isOwner && <OwnerAdminManager refreshTick={adminsRefreshTick} onChanged={() => setUsersRefreshTick((t) => t + 1)} />}
     </div>
   );
 }
@@ -293,11 +294,13 @@ function RegisteredUsers({
   mode = "admin",
   groupByCategory = false,
   refreshTick = 0,
+  onChanged,
 }: {
   restrictedTo?: "solicitante";
   mode?: "admin" | "buyer" | "auditor";
   groupByCategory?: boolean;
   refreshTick?: number;
+  onChanged?: () => void;
 } = {}) {
   type Row = ProfileRow & { roles: string[]; created_at?: string };
   const { isOwner, isAdmin, user } = useAuth();
@@ -370,6 +373,7 @@ function RegisteredUsers({
       toast.success("Usuário excluído com sucesso.");
       setDeleting(null);
       reload();
+      onChanged?.();
     } catch (e: any) {
       toast.error(e?.message || "Falha ao excluir usuário.");
     } finally {
@@ -384,6 +388,7 @@ function RegisteredUsers({
     if (!confirm(`Confirma ${verb} o acesso de ${u.full_name || u.email}?${losesAdmin ? "\n\nAtenção: ao ser inativado, o usuário perde o cargo de Administrador." : ""}`)) return;
     try {
       await toggleActiveFn({ data: { user_id: u.id, active: newState } });
+      onChanged?.();
       toast.success(newState ? "Usuário reativado." : losesAdmin ? "Usuário inativado e removido do cargo de Administrador." : "Usuário inativado. Acesso bloqueado até reativação.");
       reload();
     } catch (e: any) {
@@ -564,7 +569,7 @@ function RegisteredUsers({
           row={editing}
           allowedRoles={isOwner ? ["owner", "admin", "buyer", "solicitante", "aprovador", "auditor"] : ["admin", "buyer", "solicitante", "aprovador", "auditor"]}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); reload(); }}
+          onSaved={() => { setEditing(null); reload(); onChanged?.(); }}
         />
       )}
 
@@ -870,7 +875,7 @@ function ConfirmDeleteModal({ row, busy, onCancel, onConfirm }: { row: ProfileRo
 }
 
 
-function OwnerAdminManager() {
+function OwnerAdminManager({ refreshTick = 0, onChanged }: { refreshTick?: number; onChanged?: () => void } = {}) {
   const [admins, setAdmins] = useState<Array<RoleRow & { profile?: ProfileRow }>>([]);
   const [approvedBuyers, setApprovedBuyers] = useState<Array<RoleRow & { profile?: ProfileRow }>>([]);
 
@@ -895,7 +900,7 @@ function OwnerAdminManager() {
     );
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [refreshTick]);
 
   const promote = async (uid: string) => {
     const target = approvedBuyers.find((b) => b.user_id === uid);
@@ -904,6 +909,7 @@ function OwnerAdminManager() {
     if (error) return toast.error(translateError(error, "Não foi possível promover o usuário."));
     toast.success("Comprador promovido a Administrador.");
     reload();
+    onChanged?.();
   };
 
   const demote = async (uid: string) => {
@@ -911,6 +917,7 @@ function OwnerAdminManager() {
     if (error) return toast.error(translateError(error, "Não foi possível remover o papel de administrador."));
     toast.success("Papel de Administrador removido.");
     reload();
+    onChanged?.();
   };
 
   const adminIds = new Set(admins.map((a) => a.user_id));
