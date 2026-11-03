@@ -101,6 +101,212 @@ CREATE TABLE public.kanban_cards (
 );
 
 
+
+--
+-- Name: approver_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.approver_settings (
+    user_id uuid NOT NULL,
+    departments text[] DEFAULT '{}'::text[] NOT NULL,
+    teto_alcada numeric(12,2) DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: buyer_applications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.buyer_applications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    full_name text NOT NULL,
+    cpf text NOT NULL,
+    phone text NOT NULL,
+    email text NOT NULL,
+    checklist_types text[] DEFAULT '{}'::text[] NOT NULL,
+    status public.application_status DEFAULT 'pending'::public.application_status NOT NULL,
+    decided_by uuid,
+    decided_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    requested_departments text[] DEFAULT '{}'::text[] NOT NULL,
+    requested_ceiling numeric(12,2)
+);
+
+
+--
+-- Name: card_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.card_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    card_id uuid NOT NULL,
+    sender_id uuid NOT NULL,
+    sender_name text DEFAULT ''::text NOT NULL,
+    sender_email text DEFAULT ''::text NOT NULL,
+    sender_phone text DEFAULT ''::text NOT NULL,
+    sender_role text DEFAULT 'solicitante'::text NOT NULL,
+    buyer_name text,
+    body text NOT NULL,
+    read_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: contract_buyer_rotation; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contract_buyer_rotation (
+    id integer DEFAULT 1 NOT NULL,
+    counter bigint DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT contract_buyer_rotation_id_check CHECK ((id = 1))
+);
+
+
+--
+-- Name: departments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.departments (
+    code integer NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: market_cache; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.market_cache (
+    key text NOT NULL,
+    payload jsonb NOT NULL,
+    fetched_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: origins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.origins (
+    code integer NOT NULL,
+    name text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.profiles (
+    id uuid NOT NULL,
+    full_name text,
+    cpf text,
+    phone text,
+    email text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    is_deleted boolean DEFAULT false NOT NULL,
+    deleted_at timestamp with time zone,
+    deleted_by uuid,
+    deleted_by_name text,
+    deactivated_at timestamp with time zone,
+    deactivated_by uuid,
+    deactivated_by_name text,
+    original_full_name text,
+    original_email text,
+    force_logout_at timestamp with time zone
+);
+
+
+--
+-- Name: profiles_directory; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.profiles_directory WITH (security_invoker='true') AS
+ SELECT id,
+    full_name,
+    email,
+    is_active
+   FROM public.profiles;
+
+
+--
+-- Name: solicitacao_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solicitacao_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_audit_log; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_audit_log (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    target_user_id uuid,
+    target_user_name text,
+    target_user_email text,
+    actor_user_id uuid,
+    actor_user_name text,
+    action text NOT NULL,
+    details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: user_roles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_roles (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    role public.app_role NOT NULL
+);
+
+
+--
+-- Name: has_role(uuid, public.app_role); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.has_role(_user_id uuid, _role public.app_role) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT
+    EXISTS (
+      SELECT 1
+      FROM public.user_roles
+      WHERE user_id = _user_id
+        AND role = _role
+    )
+    OR (
+      _role = 'owner'::public.app_role
+      AND EXISTS (
+        SELECT 1
+        FROM auth.users u
+        WHERE u.id = _user_id
+          AND lower(u.email) = 'herllon.souza@motormac.com.br'
+      )
+    )
+$$;
+
+
 --
 -- Name: append_quotation_attachments(uuid, jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
@@ -565,33 +771,6 @@ $$;
 
 
 --
--- Name: has_role(uuid, public.app_role); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.has_role(_user_id uuid, _role public.app_role) RETURNS boolean
-    LANGUAGE sql STABLE SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-  SELECT
-    EXISTS (
-      SELECT 1
-      FROM public.user_roles
-      WHERE user_id = _user_id
-        AND role = _role
-    )
-    OR (
-      _role = 'owner'::public.app_role
-      AND EXISTS (
-        SELECT 1
-        FROM auth.users u
-        WHERE u.id = _user_id
-          AND lower(u.email) = 'herllon.souza@motormac.com.br'
-      )
-    )
-$$;
-
-
---
 -- Name: kanban_cards_set_requester(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -874,183 +1053,6 @@ CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     SET search_path TO 'public'
     AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
 
-
---
--- Name: approver_settings; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.approver_settings (
-    user_id uuid NOT NULL,
-    departments text[] DEFAULT '{}'::text[] NOT NULL,
-    teto_alcada numeric(12,2) DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: buyer_applications; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.buyer_applications (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid,
-    full_name text NOT NULL,
-    cpf text NOT NULL,
-    phone text NOT NULL,
-    email text NOT NULL,
-    checklist_types text[] DEFAULT '{}'::text[] NOT NULL,
-    status public.application_status DEFAULT 'pending'::public.application_status NOT NULL,
-    decided_by uuid,
-    decided_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    requested_departments text[] DEFAULT '{}'::text[] NOT NULL,
-    requested_ceiling numeric(12,2)
-);
-
-
---
--- Name: card_messages; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.card_messages (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    card_id uuid NOT NULL,
-    sender_id uuid NOT NULL,
-    sender_name text DEFAULT ''::text NOT NULL,
-    sender_email text DEFAULT ''::text NOT NULL,
-    sender_phone text DEFAULT ''::text NOT NULL,
-    sender_role text DEFAULT 'solicitante'::text NOT NULL,
-    buyer_name text,
-    body text NOT NULL,
-    read_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: contract_buyer_rotation; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.contract_buyer_rotation (
-    id integer DEFAULT 1 NOT NULL,
-    counter bigint DEFAULT 0 NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT contract_buyer_rotation_id_check CHECK ((id = 1))
-);
-
-
---
--- Name: departments; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.departments (
-    code integer NOT NULL,
-    name text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: market_cache; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.market_cache (
-    key text NOT NULL,
-    payload jsonb NOT NULL,
-    fetched_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: origins; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.origins (
-    code integer NOT NULL,
-    name text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: profiles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.profiles (
-    id uuid NOT NULL,
-    full_name text,
-    cpf text,
-    phone text,
-    email text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    is_active boolean DEFAULT true NOT NULL,
-    is_deleted boolean DEFAULT false NOT NULL,
-    deleted_at timestamp with time zone,
-    deleted_by uuid,
-    deleted_by_name text,
-    deactivated_at timestamp with time zone,
-    deactivated_by uuid,
-    deactivated_by_name text,
-    original_full_name text,
-    original_email text,
-    force_logout_at timestamp with time zone
-);
-
-
---
--- Name: profiles_directory; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.profiles_directory WITH (security_invoker='true') AS
- SELECT id,
-    full_name,
-    email,
-    is_active
-   FROM public.profiles;
-
-
---
--- Name: solicitacao_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.solicitacao_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: user_audit_log; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.user_audit_log (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    target_user_id uuid,
-    target_user_name text,
-    target_user_email text,
-    actor_user_id uuid,
-    actor_user_name text,
-    action text NOT NULL,
-    details jsonb DEFAULT '{}'::jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: user_roles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.user_roles (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    role public.app_role NOT NULL
-);
 
 
 --
