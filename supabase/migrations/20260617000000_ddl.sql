@@ -2,30 +2,8 @@
 -- PostgreSQL database dump
 --
 
-\restrict NbrnZ6GkXC9Rk74D1ZIdvqvqU5MhrvrKFxplvys3bEAhh2IjjtrRCFI2xVhVjzr
-
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.11
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'SQL_ASCII';
-SET standard_conforming_strings = off;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET escape_string_warning = off;
-SET row_security = off;
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA public;
-
 
 --
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
@@ -1708,10 +1686,4 @@ ALTER TABLE public.user_audit_log ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-
---
--- PostgreSQL database dump complete
---
-
-\unrestrict NbrnZ6GkXC9Rk74D1ZIdvqvqU5MhrvrKFxplvys3bEAhh2IjjtrRCFI2xVhVjzr
 
