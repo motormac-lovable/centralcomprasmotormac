@@ -1,0 +1,2 @@
+-- Ajustes
+-- Arquivo de registro. Não é aplicado automaticamente no banco.
