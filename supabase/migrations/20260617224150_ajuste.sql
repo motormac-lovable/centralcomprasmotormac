@@ -2,16 +2,6 @@
 
 CREATE SCHEMA app_private;
 
--- DROP TYPE public.app_role;
-
-CREATE TYPE public.app_role AS ENUM (
-	'admin',
-	'buyer',
-	'owner',
-	'solicitante',
-	'aprovador',
-	'auditor');
-
 -- DROP FUNCTION app_private.current_user_email();
 
 CREATE OR REPLACE FUNCTION app_private.current_user_email()
