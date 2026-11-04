@@ -4,6 +4,7 @@ ALTER TABLE public.buyer_applications DROP COLUMN IF EXISTS pending_password;
 
 -- 2) Tighten kanban_cards UPDATE policy: remove aprovador (approvers must use approve/reject RPCs)
 DROP POLICY IF EXISTS "Buyers, approvers and admins can update cards" ON public.kanban_cards;
+DROP POLICY IF EXISTS "Buyers and admins can update cards" ON public.kanban_cards;
 CREATE POLICY "Buyers and admins can update cards"
   ON public.kanban_cards
   FOR UPDATE
