@@ -1,0 +1,2 @@
+-- Ajustes
+-- Arquivo criado sob demanda. Adicione o SQL abaixo.
