@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
 
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { markVisit, type VisitKey } from "@/lib/last-visits";
 
 // Rotas que NÃO exigem autenticação. Qualquer outra rota redireciona para /auth.
@@ -31,6 +32,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, loading, isOwner, isAdmin, isBuyer, isSolicitante, isApprover, isAuditor, fullName } = useAuth();
   const navigate = useNavigate();
   const { minhasCount, aprovacoesCount, adminCount, historicoCount, mensagensCount } = useNavBadges();
+  useToastNotifications();
 
   // Marca visita para limpar o badge assim que a tela é aberta.
   useEffect(() => {
