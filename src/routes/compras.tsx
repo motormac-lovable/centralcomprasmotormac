@@ -20,6 +20,10 @@ export const Route = createFileRoute("/compras")({
   head: () => ({
     meta: [
       { title: "Solicitação de Peças — Motormac" },
+      { property: "og:title", content: "Solicitação de Peças — Motormac" },
+      { property: "og:description", content: "Solicite peças para as operações Motormac." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "description", content: "Formulário de solicitação de peças do módulo de peças." },
     ],
   }),

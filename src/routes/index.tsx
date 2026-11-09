@@ -8,6 +8,10 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Hub de Compras — Motormac" },
       { name: "description", content: "Selecione o tipo de compra interna: peças, contratos ou frete." },
+      { property: "og:title", content: "Hub de Compras — Motormac" },
+      { property: "og:description", content: "Abra solicitações de compras, peças, contratos ou frete na Central de Compras Motormac." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Hub,
@@ -21,7 +25,7 @@ const cards = [
     description: "Solicite materiais e serviços diversos pelo módulo de Gestão de Materiais.",
     icon: ClipboardList,
     accent: "oklch(0.62 0.18 200)",
-    inativo: true,
+    inativo: false,
   },
   {
     to: "/compras",
@@ -30,7 +34,7 @@ const cards = [
     description: "Abra um pedido de compra de peças para Cummins, JCB e demais operações.",
     icon: Package,
     accent: "var(--primary)",
-    inativo: true,
+    inativo: false,
   },
   {
     to: "/frete",
@@ -48,7 +52,7 @@ const cards = [
     description: "Envie contratos novos, aditivos de renovação ou retificações de saldo.",
     icon: FileSignature,
     accent: "oklch(0.55 0.18 250)",
-    inativo: true,
+    inativo: false,
   },
 ] as const;
 
