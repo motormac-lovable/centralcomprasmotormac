@@ -25,6 +25,10 @@ export const Route = createFileRoute("/materiais")({
   head: () => ({
     meta: [
       { title: "Solicitação de Compras — Motormac" },
+      { property: "og:title", content: "Solicitação de Compras — Motormac" },
+      { property: "og:description", content: "Solicite materiais e serviços na Central de Compras Motormac." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:

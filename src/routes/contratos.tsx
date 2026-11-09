@@ -18,6 +18,10 @@ export const Route = createFileRoute("/contratos")({
   head: () => ({
     meta: [
       { title: "Cadastro ou Renovação de Contratos — Motormac" },
+      { property: "og:title", content: "Cadastro ou Renovação de Contratos — Motormac" },
+      { property: "og:description", content: "Solicite cadastro, renovação ou retificação de contratos na Motormac." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "description", content: "Formulário de cadastro, renovação ou retificação de contratos." },
     ],
   }),
