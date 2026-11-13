@@ -4,4 +4,4 @@
 - [x] Incluir os 147 centros de custo, seleção obrigatória nos quatro formulários e persistência nos dados — testes passaram; solicitação de teste enviada e recuperada no histórico.
 - [x] Exibir Centro de Custo nos detalhes do Kanban e histórico; dados prontos para o futuro PDF, cuja criação foi adiada pelo usuário.
 - [ ] Verificar o arraste no Kanban autenticado — bloqueado: sessão indisponível e nenhum cadastro corresponde ao usuário atual do Lovable.
-- [ ] Protocolo Pipefy pelo formulário público (sem token) — aguardando link do formulário público do usuário
+- [x] Protocolo Pipefy pelo formulário público (Gcg4XrX6) configurado

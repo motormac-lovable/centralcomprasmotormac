@@ -75,7 +75,7 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ card_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const admin = await exigirEquipeCompras(context.userId);
-    const formId = process.env["PIPEFY_PUBLIC_FORM_ID"];
+    const formId = process.env["PIPEFY_PUBLIC_FORM_ID"] || "Gcg4XrX6";
     if (!formId)
       return { ok: false as const, pendencias: ["Link do formulário público do Pipefy ainda não configurado."] };
 
@@ -100,12 +100,12 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
     const enviar = async (path: string, name: string) => {
       const { data: blob, error } = await admin.storage.from(INVOICE_BUCKET).download(path);
       if (error || !blob) throw new Error(`Falha ao ler anexo ${name}`);
-      const pre = await gql(`mutation($i: CreatePresignedUrlForPublicFormInput!){ createPresignedUrlForPublicForm(input:$i){ url } }`,
-        { i: { formId, fileName: name, contentType: blob.type || "application/octet-stream" } });
-      const url: string = pre.createPresignedUrlForPublicForm.url;
-      const put = await fetch(url, { method: "PUT", body: await blob.arrayBuffer(), headers: { "Content-Type": blob.type || "application/octet-stream" } });
+      const pre = await fetch(`https://app.pipefy.com/upload_attachments/new?filename=${encodeURIComponent(name)}`);
+      if (!pre.ok) throw new Error(`Pipefy recusou o anexo ${name}`);
+      const sig = (await pre.json()) as { signedUrl: string; filename: string };
+      const put = await fetch(sig.signedUrl, { method: "PUT", body: await blob.arrayBuffer() });
       if (!put.ok) throw new Error(`Falha ao enviar anexo ${name} ao Pipefy`);
-      return new URL(url).pathname.replace(/^\//, "");
+      return sig.filename;
     };
     try {
       const nfPaths = await Promise.all((fat.notas_fiscais ?? []).map((f) => enviar(f.path, f.name)));
