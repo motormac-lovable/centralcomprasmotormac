@@ -29,7 +29,9 @@ export function recebimentoStatus(card: { status: string; data: unknown }): Rece
   const r = getRecebimento(card.data);
   if (r) return r.status;
   if (card.status !== "pedidos_gerados") return "neutro";
-  return hasDocumentosFiscaisCompletos(card.data) ? "pendente_aceite" : "aguardando_docs";
+  // Liberado ao solicitante só depois que Compras salvar os dados de pagamento.
+  const pg = (card.data as any)?.dados_pagamento;
+  return hasDocumentosFiscaisCompletos(card.data) && pg?.condicao_de_pagamento ? "pendente_aceite" : "aguardando_docs";
 }
 
 /** Nota padrão: 5 estrelas quando o solicitante não escolher. */
