@@ -2048,7 +2048,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
           )}
           {card.status === "pedidos_gerados" && (
             <DadosPagamentoSection
-              key={`pg-${card.id}-${JSON.stringify((rawData as any)?.faturamento?.boletos?.length ?? 0)}`}
+              key={`pg-${card.id}`}
               card={{ ...(card as any), data: rawData }}
               editable={canWriteKanban}
               onChanged={(nextData) => setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card)}
