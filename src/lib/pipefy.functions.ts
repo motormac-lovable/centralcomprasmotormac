@@ -32,10 +32,9 @@ async function exigirEquipeCompras(userId: string) {
   return supabaseAdmin;
 }
 
-const parcelaSchema = z.object({ numero: z.number().int(), data_vencimento: z.string().max(10), valor: z.string().max(30) });
+const parcelaSchema = z.object({ numero: z.number().int(), valor: z.string().max(30) });
 const dadosSchema = z.object({
   condicao_de_pagamento: z.enum(CONDICOES_PAGAMENTO),
-  data_vencimento: z.string().max(10).default(""),
   banco: z.string().max(100).default(""),
   agencia: z.string().max(30).default(""),
   conta_corrente: z.string().max(40).default(""),
