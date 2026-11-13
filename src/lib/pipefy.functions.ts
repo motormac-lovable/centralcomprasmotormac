@@ -2,25 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getFaturamento, INVOICE_BUCKET } from "@/lib/invoice-documents";
-import { montarCamposPipefy, PIPEFY_ANEXO_BOLETO_FIELD, PIPEFY_ANEXO_NF_FIELD } from "@/lib/pipefy-payload";
 import { validarDadosPagamento, CONDICOES_PAGAMENTO } from "@/lib/pagamento";
-
-// Endpoint público do Pipefy usado pelo próprio formulário público no navegador — sem senha nem token.
-const PIPEFY_PUBLIC_API = "https://app.pipefy.com/public_api";
-
-async function gql(query: string, variables: Record<string, unknown>) {
-  const r = await fetch(PIPEFY_PUBLIC_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, variables }),
-  });
-  const j: any = await r.json().catch(() => ({}));
-  if (!r.ok || j.errors) {
-    console.error("Pipefy error", r.status, JSON.stringify(j.errors ?? j).slice(0, 800));
-    throw new Error(j.errors?.[0]?.message || `Pipefy respondeu ${r.status}`);
-  }
-  return j.data;
-}
 
 /** Só Comprador, Administrador e Proprietário (auditor só lê; solicitante não acessa). */
 async function exigirEquipeCompras(userId: string) {
@@ -62,7 +44,7 @@ export const salvarDadosPagamento = createServerFn({ method: "POST" })
     const erros = validarDadosPagamento(data.dados, (fat.boletos?.length ?? 0) > 0);
     if (erros.length) throw new Response(erros.join(" "), { status: 400 });
     const { data: prof } = await admin.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle();
-    const dados_pagamento = { ...data.dados, updated_at: new Date().toISOString(), updated_by: (prof as any)?.full_name || (prof as any)?.email || "Comprador" };
+    const dados_pagamento = { ...data.dados, updated_at: new Date().toISOString(), updated_by: (prof as any)?.full_name || (prof as any)?.email || "Comprador", salvo_por_email: (prof as any)?.email || "" };
     const nextData = { ...((card.data as Record<string, unknown>) ?? {}), dados_pagamento };
     const { error } = await admin.from("kanban_cards").update({ data: nextData as never }).eq("id", card.id);
     if (error) throw new Response("Não foi possível salvar os dados de pagamento.", { status: 500 });
