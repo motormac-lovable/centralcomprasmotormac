@@ -41,9 +41,8 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
 
   const [d, setD] = useState<Partial<DadosPagamento>>(() => ({
     condicao_de_pagamento: saved.condicao_de_pagamento ?? (temBoleto && !mapa.parcelado ? "Boleto" : mapa.parcelado ? "Parcelado" : "Boleto"),
-    data_vencimento: saved.data_vencimento ?? "",
     banco: saved.banco ?? "", agencia: saved.agencia ?? "", conta_corrente: saved.conta_corrente ?? "", codigo_pix: saved.codigo_pix ?? "",
-    parcelas_detalhe: saved.parcelas_detalhe?.length ? saved.parcelas_detalhe : mapa.parcelas.length ? mapa.parcelas : [{ numero: 1, data_vencimento: "", valor: "" }, { numero: 2, data_vencimento: "", valor: "" }],
+    parcelas_detalhe: saved.parcelas_detalhe?.length ? saved.parcelas_detalhe : mapa.parcelas.length ? mapa.parcelas : [{ numero: 1, valor: "" }, { numero: 2, valor: "" }],
     responsavel_pelo_cartao: saved.responsavel_pelo_cartao ?? "",
     despesa_contrato: saved.despesa_contrato ?? (isContrato ? "Sim" : "Não"),
     numero_contrato: saved.numero_contrato ?? ((card.data as any)?.numero_contrato ?? ""),
@@ -59,7 +58,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
   const parcelas = d.parcelas_detalhe ?? [];
   const setQtd = (n: number) => {
     const unit = valorTotal > 0 ? (valorTotal / n).toFixed(2) : "";
-    const next: Parcela[] = Array.from({ length: n }, (_, i) => parcelas[i] ?? { numero: i + 1, data_vencimento: "", valor: unit });
+    const next: Parcela[] = Array.from({ length: n }, (_, i) => parcelas[i] ?? { numero: i + 1, valor: unit });
     set("parcelas_detalhe", next.map((p, i) => ({ ...p, numero: i + 1 })));
   };
   const c = d.condicao_de_pagamento as CondicaoPagamento;
@@ -109,9 +108,6 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
           </select>
         </Field>
 
-        {c !== "Parcelado" && (
-          <Field label="Data de vencimento" required><input type="date" className={inputCls} value={d.data_vencimento} onChange={(e) => set("data_vencimento", e.target.value)} /></Field>
-        )}
         {(c === "Boleto" || c === "Parcelado") && (
           <p className={`md:col-span-2 self-end text-xs ${temBoleto ? "text-muted-foreground" : "text-destructive"}`}>
             {temBoleto ? `${fat.boletos!.length} boleto(s) anexado(s) em Documentos de Faturamento.` : "Anexe o boleto em Documentos de Faturamento acima."}
@@ -132,11 +128,8 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
             </Field>
             <div className="grid gap-2 md:grid-cols-2">
               {parcelas.map((p, i) => (
-                <div key={i} className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/30 p-2">
-                  <Field label={`Vencimento ${i + 1}`} required>
-                    <input type="date" className={inputCls} value={p.data_vencimento} onChange={(e) => set("parcelas_detalhe", parcelas.map((x, j) => j === i ? { ...x, data_vencimento: e.target.value } : x))} />
-                  </Field>
-                  <Field label={`Valor ${i + 1} (R$)`}>
+                <div key={i} className="rounded-lg border bg-muted/30 p-2">
+                  <Field label={`Valor da parcela ${i + 1} (R$)`} required>
                     <input className={inputCls} inputMode="decimal" value={p.valor} onChange={(e) => set("parcelas_detalhe", parcelas.map((x, j) => j === i ? { ...x, valor: e.target.value } : x))} />
                   </Field>
                 </div>

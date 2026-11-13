@@ -4,11 +4,10 @@ export const CONDICOES_PAGAMENTO = [
 ] as const;
 export type CondicaoPagamento = (typeof CONDICOES_PAGAMENTO)[number];
 
-export type Parcela = { numero: number; data_vencimento: string; valor: string };
+export type Parcela = { numero: number; valor: string };
 
 export type DadosPagamento = {
   condicao_de_pagamento: CondicaoPagamento;
-  data_vencimento: string;
   banco: string;
   agencia: string;
   conta_corrente: string;
@@ -35,11 +34,8 @@ export function parseCondicaoMapa(texto: string, valorTotal: number, base = new 
   const mk = (dias: number[]) => {
     const qtd = dias.length;
     const valor = valorTotal > 0 ? (valorTotal / qtd).toFixed(2) : "";
-    return dias.map((d, i) => {
-      const dt = new Date(base);
-      dt.setDate(dt.getDate() + d);
-      return { numero: i + 1, data_vencimento: dt.toISOString().slice(0, 10), valor };
-    });
+    void base;
+    return dias.map((_, i) => ({ numero: i + 1, valor }));
   };
   const mult = t.match(/(\d{1,2})\s*(x|parcelas?)/i);
   if (mult) {
@@ -68,14 +64,13 @@ export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boo
   if (!(parseValor(d.valor_documento) > 0)) e.push("Informe o Valor do Documento.");
   const c = d.condicao_de_pagamento;
   if (!c) { e.push("Selecione a condição de pagamento."); return e; }
-  if (c !== "Parcelado" && !d.data_vencimento) e.push("Informe a Data de Vencimento.");
   if ((c === "Boleto" || c === "Parcelado") && !temBoleto) e.push("Anexe o boleto em Documentos de Faturamento.");
   if (c === "Depósito" && (!d.banco?.trim() || !d.agencia?.trim() || !d.conta_corrente?.trim()))
     e.push("Preencha Banco, Agência e Conta Corrente.");
   if (c === "Parcelado") {
     const p = d.parcelas_detalhe ?? [];
     if (p.length < 2 || p.length > 12) e.push("Parcelamento deve ter de 2 a 12 parcelas.");
-    if (p.some((x) => !x.data_vencimento)) e.push("Preencha o vencimento de todas as parcelas.");
+    if (p.some((x) => !(parseValor(x.valor) > 0))) e.push("Preencha o valor de todas as parcelas.");
   }
   if (c === "Cartão corporativo") {
     if (!d.responsavel_pelo_cartao?.trim()) e.push("Informe o Responsável Pelo Cartão.");

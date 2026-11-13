@@ -1,5 +1,5 @@
 /** Monta os campos do card Pipefy a partir do card da Central (puro, testável). */
-import { centroCustoPipefy, empresaPipefy, setorPipefy } from "./pipefy-depara";
+import { centroCustoPipefy, empresaPipefy } from "./pipefy-depara";
 import { getDadosPagamento, parseValor } from "./pagamento";
 
 export const PIPEFY_ANEXO_NF_FIELD = "anexar_nf";
@@ -49,8 +49,6 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   const d = (card.data ?? {}) as Record<string, any>;
   const pg = getDadosPagamento(card.data);
   const pend: string[] = [];
-  const setor = setorPipefy(d.departamento_codigo);
-  void setor; // o formulário público atual não tem campo Setor
   const emp = empresaPipefy(card.empresa ?? d.empresa, card.unidade ?? d.unidade);
   if (!emp) pend.push("Empresa/Unidade sem De/Para no Pipefy.");
   const cc = centroCustoPipefy(d.centro_custo_codigo, d.centro_custo_descricao, emp?.cnpj);

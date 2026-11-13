@@ -21,7 +21,7 @@ describe("De/Para Pipefy", () => {
     expect(centroCustoPipefy("2150", "SUPPLY CHAIN")).toEqual({ centro_de_custo: "Outro, qual?", outro_centro_de_custo: "2150 - SUPPLY CHAIN" });
   });
   it("boleto exige boleto anexado; depósito exige dados bancários", () => {
-    const base = { numero_nf: "1", valor_documento: "100", data_vencimento: "2026-12-01" };
+    const base = { numero_nf: "1", valor_documento: "100" };
     expect(validarDadosPagamento({ ...base, condicao_de_pagamento: "Boleto" }, false)).toContain("Anexe o boleto em Documentos de Faturamento.");
     expect(validarDadosPagamento({ ...base, condicao_de_pagamento: "Boleto" }, true)).toEqual([]);
     expect(validarDadosPagamento({ ...base, condicao_de_pagamento: "Depósito" }, false).length).toBe(1);
