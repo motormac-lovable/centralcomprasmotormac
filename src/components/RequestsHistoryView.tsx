@@ -10,6 +10,7 @@ import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
+import { RecebimentoButtons, recebimentoCellStyle } from "@/components/RecebimentoCell";
 
 function MessageButton({ cardId }: { cardId: string }) {
   return (
@@ -193,6 +194,10 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
   // Proprietário e Administrador: visão completa de todas as solicitações.
   const ownerScope = isOwner || isAdmin;
 
+  const isOwnRequest = (it: Card) =>
+    it.requester_id === user?.id ||
+    (!!user?.email && (it.requester_email ?? "").toLowerCase() === user.email.toLowerCase());
+
   const reload = async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -353,6 +358,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                     <th className="text-left px-2 py-3 w-[100px]">Status</th>
                     <th className="text-left px-2 py-3 w-[84px]">Pedido ERP</th>
                     <th className="text-left px-2 py-3 w-[64px]">Anexar</th>
+                    <th className="text-center px-2 py-3 w-[92px]">Recebimento</th>
                     <th className="text-left px-2 py-3 w-[172px]">Ações</th>
                   </tr>
                 </thead>
@@ -423,6 +429,9 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                           ) : (
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
+                        </td>
+                        <td className="px-2 py-3 text-center border-l" style={recebimentoCellStyle(it)}>
+                          <RecebimentoButtons card={it} canAct={isOwnRequest(it)} onUpdated={reload} />
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex items-center gap-1.5">
@@ -506,6 +515,10 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                         <span className="font-mono text-emerald-700 font-semibold">#{it.numero_pedido_linx}</span>
                       </div>
                     )}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between rounded-md px-2 py-1 text-xs" style={recebimentoCellStyle(it)}>
+                    <span className="text-muted-foreground">Recebimento</span>
+                    <RecebimentoButtons card={it} canAct={isOwnRequest(it)} onUpdated={reload} />
                   </div>
                   <div className="mt-3 flex items-center gap-2">
                     <ViewButton onClick={() => setDetail(it as DetailCard)} />
