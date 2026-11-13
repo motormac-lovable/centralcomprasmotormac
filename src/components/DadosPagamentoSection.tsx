@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { CreditCard, ExternalLink, Loader2, Send } from "lucide-react";
+import { CreditCard, ExternalLink, FileSearch, Loader2, Send } from "lucide-react";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { CONDICOES_PAGAMENTO, getDadosPagamento, parseCondicaoMapa, parseValor, validarDadosPagamento, type CondicaoPagamento, type DadosPagamento, type Parcela } from "@/lib/pagamento";
 import { getFaturamento } from "@/lib/invoice-documents";
 import { fornecedorVencedor, type CardParaProtocolo } from "@/lib/pipefy-payload";
-import { protocolarPipefy, salvarDadosPagamento } from "@/lib/pipefy.functions";
+import { extrairDadosPagamento, protocolarPipefy, salvarDadosPagamento } from "@/lib/pipefy.functions";
 
 type Protocolo = { card_id: string; url: string; protocolado_em: string; protocolado_por: string };
 
@@ -50,10 +50,38 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
     valor_documento: saved.valor_documento ?? (valorTotal > 0 ? valorTotal.toFixed(2) : ""),
   }));
   const [busy, setBusy] = useState(false);
+  const [lendo, setLendo] = useState(false);
+  const extrair = useServerFn(extrairDadosPagamento);
+  const jaLeu = useRef(false);
+  const lerDocumentos = async (manual = false) => {
+    setLendo(true);
+    try {
+      const r = await extrair({ data: { card_id: card.id } });
+      if (!r.ok) { if (manual) toast.error(r.erro); return; }
+      setD((s) => {
+        const n = { ...s };
+        if (manual || !s.numero_nf) n.numero_nf = r.numero_nf.replace(/^0+/, "");
+        if (r.valor_documento && (manual || !saved.valor_documento)) n.valor_documento = r.valor_documento;
+        const bols = r.boletos.filter((b) => parseValor(b.valor) > 0);
+        if (bols.length >= 2) { n.condicao_de_pagamento = "Parcelado"; n.parcelas_detalhe = bols.slice(0, 12).map((b, i) => ({ numero: i + 1, valor: b.valor })); }
+        else if (bols.length === 1 && !saved.condicao_de_pagamento) n.condicao_de_pagamento = "Boleto";
+        return n;
+      });
+      toast.success("Dados preenchidos a partir da NF e do boleto. Confira antes de salvar.");
+    } catch { if (manual) toast.error("Não foi possível ler os documentos."); }
+    finally { setLendo(false); }
+  };
   const salvar = useServerFn(salvarDadosPagamento);
   const protocolar = useProtocolar();
   const protocolo = (card.data as any)?.protocolo_pipefy as Protocolo | undefined;
   const ro = !editable || !!protocolo;
+  const temNf = (fat.notas_fiscais?.length ?? 0) > 0;
+  useEffect(() => {
+    if (jaLeu.current || ro || !temNf || saved.numero_nf) return;
+    jaLeu.current = true;
+    void lerDocumentos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ro, temNf]);
   const set = <K extends keyof DadosPagamento>(k: K, v: DadosPagamento[K]) => setD((s) => ({ ...s, [k]: v }));
   const parcelas = d.parcelas_detalhe ?? [];
   const setQtd = (n: number) => {
@@ -92,6 +120,11 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         </h3>
         <div className="flex items-center gap-2">
           {venc.condicao && <span className="rounded border bg-muted px-2 py-0.5 text-xs">Mapa comparativo: <strong>{venc.condicao}</strong></span>}
+          {!ro && temNf && (
+            <button type="button" onClick={() => lerDocumentos(true)} disabled={lendo} className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-60">
+              {lendo ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileSearch className="h-3 w-3" />} {lendo ? "Lendo NF e boleto…" : "Ler NF e boleto"}
+            </button>
+          )}
           <ProtocoloBadge data={card.data} />
         </div>
       </div>
