@@ -10,8 +10,11 @@ describe("recebimento", () => {
   it("Pedidos Gerados sem NF+Boleto+XML aguarda documentos", () => {
     expect(recebimentoStatus({ status: "pedidos_gerados", data: { faturamento: { notas_fiscais: [{}], boletos: [{}] } } })).toBe("aguardando_docs");
   });
-  it("Pedidos Gerados com NF+Boleto+XML libera o aceite", () => {
-    expect(recebimentoStatus({ status: "pedidos_gerados", data: docs })).toBe("pendente_aceite");
+  it("NF+Boleto+XML sem dados de pagamento ainda não libera o aceite", () => {
+    expect(recebimentoStatus({ status: "pedidos_gerados", data: docs })).toBe("aguardando_docs");
+  });
+  it("NF+Boleto+XML com dados de pagamento salvos libera o aceite", () => {
+    expect(recebimentoStatus({ status: "pedidos_gerados", data: { ...docs, dados_pagamento: { condicao_de_pagamento: "Boleto" } } })).toBe("pendente_aceite");
   });
   it("decisão registrada fica congelada", () => {
     expect(recebimentoStatus({ status: "pedidos_gerados", data: { ...docs, recebimento: { status: "problema" } } })).toBe("problema");

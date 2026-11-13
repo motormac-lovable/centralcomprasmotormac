@@ -88,7 +88,7 @@ function ProtocoloPage() {
                       <div className="mt-1"><ProtocoloBadge data={c.data} /></div>
                     </td>
                     <td className="p-3 text-right">
-                      {canSend && s.tone !== "ok" && (
+                      {canSend && d.recebimento?.status === "confirmado" && s.tone !== "ok" && (
                         <button type="button" disabled={sending === c.id} onClick={async () => { setSending(c.id); await protocolar(c.id); setSending(null); load(); }}
                           className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60">
                           {sending === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Protocolar
