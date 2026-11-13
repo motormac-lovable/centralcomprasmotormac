@@ -28,6 +28,7 @@ import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notif
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { BidRequestModal } from "@/components/BidRequestModal";
 import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-order-entry";
+import { centroCustoLabel } from "@/lib/centros-de-custo";
 
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
@@ -1512,6 +1513,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <Detail label="Solicitante" value={requesterLabel} />
+              <Detail label="Centro de Custo" value={centroCustoLabel(rawData)} />
               <Detail label="E-mail" value={card.requester_email} />
               <Detail label="Unidade" value={card.unidade} />
               <Detail label="Empresa" value={card.empresa} />

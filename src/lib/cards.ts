@@ -3,6 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { getDataProvider } from "@/services/data/provider";
 import type { SolicitacaoCreateDTO } from "@/services/data/types";
 import { getCompradoraByCodigo, MATERIAL_BUYERS } from "@/lib/apollo-buyers";
+import { isCentroCustoValido } from "@/lib/centros-de-custo";
 
 
 
@@ -72,6 +73,10 @@ export async function createCard(input: {
   status?: Status;
   data: Record<string, unknown>;
 }) {
+  // Apenas abertura de solicitações; transições e aprovação permanecem independentes.
+  if (!isCentroCustoValido(input.data.centro_custo_codigo, input.data.centro_custo_descricao)) {
+    throw new Error("Selecione um Centro de Custo válido");
+  }
   // Regra de atribuição inicial do Comprador conforme a origem do formulário.
   let buyer_name: string | null = null;
   let buyer_source: "materiais_apollo" | "rodizio_contratos" | null = null;
