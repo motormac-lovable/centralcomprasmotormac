@@ -169,7 +169,7 @@ export const extrairDadosPagamento = createServerFn({ method: "POST" })
       method: "POST",
       headers: { Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.8-flash",
         messages: [{ role: "user", content }],
         tools: [{ type: "function", function: { name: "dados", parameters: { type: "object", properties: {
           numero_nf: { type: "string" }, valor_documento: { type: "string" }, fornecedor: { type: "string" },
