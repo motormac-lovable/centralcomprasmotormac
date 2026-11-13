@@ -36,6 +36,7 @@ const parcelaSchema = z.object({ numero: z.number().int(), valor: z.string().max
 const dadosSchema = z.object({
   condicao_de_pagamento: z.enum(CONDICOES_PAGAMENTO),
   banco: z.string().max(100).default(""),
+  fornecedor: z.string().max(200).optional(),
   agencia: z.string().max(30).default(""),
   conta_corrente: z.string().max(40).default(""),
   codigo_pix: z.string().max(150).default(""),

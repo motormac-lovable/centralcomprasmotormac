@@ -60,6 +60,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
       if (!r.ok) { if (manual) toast.error(r.erro); return; }
       setD((s) => {
         const n = { ...s };
+        if (r.fornecedor && !venc.fornecedor) n.fornecedor = r.fornecedor;
         if (manual || !s.numero_nf) n.numero_nf = r.numero_nf.replace(/^0+/, "");
         if (r.valor_documento && (manual || !saved.valor_documento)) n.valor_documento = r.valor_documento;
         const bols = r.boletos.filter((b) => parseValor(b.valor) > 0);
