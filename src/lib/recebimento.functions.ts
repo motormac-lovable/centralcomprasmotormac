@@ -76,5 +76,13 @@ export const registrarRecebimento = createServerFn({ method: "POST" })
         body: `⚠️ ALERTA DE RECEBIMENTO: ${isRequester ? "o solicitante" : nome} reportou uma falha na entrega (${nota}/5 estrelas): "${relato}"`,
       });
     }
-    return { ok: true, recebimento };
+    // Recebido confirmado → protocolo automático no Pipefy (falha fica registrada no card para reenvio na guia Protocolo).
+    let protocolo: unknown = null;
+    if (data.decisao === "confirmado") {
+      try {
+        const { executarProtocoloPipefy } = await import("@/lib/pipefy-protocolo.server");
+        protocolo = await executarProtocoloPipefy(supabaseAdmin, card.id, userId);
+      } catch (e) { console.error("Protocolo automático falhou", e); }
+    }
+    return { ok: true, recebimento, protocolo };
   });

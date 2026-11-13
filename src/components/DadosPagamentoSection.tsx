@@ -103,11 +103,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
       toast.success("Dados de pagamento salvos.");
       let nextData: Record<string, unknown> = { ...((card.data as Record<string, unknown>) ?? {}), dados_pagamento: r.dados_pagamento };
       onChanged?.(nextData);
-      // Protocolo automático assim que NF + dados de pagamento estiverem completos.
-      if ((fat.notas_fiscais?.length ?? 0) > 0) {
-        const p = await protocolar(card.id);
-        if (p.ok) { nextData = { ...nextData, protocolo_pipefy: p.protocolo }; onChanged?.(nextData); }
-      }
+      toast.info("Recebimento liberado ao solicitante. O protocolo no Pipefy será feito após o Recebido.");
     } catch (e: any) {
       toast.error(e?.message || "Não foi possível salvar.");
     } finally { setBusy(false); }
@@ -184,7 +180,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         <div className="flex flex-wrap justify-end gap-2">
           {!protocolo && (
             <button type="button" disabled={busy} onClick={onSave} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Salvar e protocolar
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Salvar e liberar recebimento
             </button>
           )}
         </div>
