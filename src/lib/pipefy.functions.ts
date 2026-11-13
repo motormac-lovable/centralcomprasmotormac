@@ -36,6 +36,7 @@ const parcelaSchema = z.object({ numero: z.number().int(), valor: z.string().max
 const dadosSchema = z.object({
   condicao_de_pagamento: z.enum(CONDICOES_PAGAMENTO),
   banco: z.string().max(100).default(""),
+  fornecedor: z.string().max(200).optional(),
   agencia: z.string().max(30).default(""),
   conta_corrente: z.string().max(40).default(""),
   codigo_pix: z.string().max(150).default(""),
@@ -135,4 +136,57 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
       await admin.from("kanban_cards").update({ data: nextData as never }).eq("id", card.id);
       return { ok: false as const, pendencias: [`Falha no envio ao Pipefy: ${msg}`] };
     }
+  });
+
+/** Lê NF e boleto anexados (PDF) com IA e sugere os dados de pagamento. Não grava nada. */
+export const extrairDadosPagamento = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ card_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const admin = await exigirEquipeCompras(context.userId);
+    const { data: card } = await admin.from("kanban_cards").select("data").eq("id", data.card_id).maybeSingle();
+    if (!card) return { ok: false as const, erro: "Solicitação não encontrada." };
+    const fat = getFaturamento(card.data);
+    const arquivos = [
+      ...(fat.notas_fiscais ?? []).slice(0, 2).map((f) => ({ ...f, tipo: "Nota Fiscal" })),
+      ...(fat.boletos ?? []).slice(0, 4).map((f) => ({ ...f, tipo: "Boleto" })),
+    ];
+    if (!arquivos.length) return { ok: false as const, erro: "Nenhuma NF ou boleto anexado." };
+    const content: any[] = [{ type: "text", text:
+      "Extraia dos documentos fiscais brasileiros abaixo (NF e boletos) os dados de pagamento. " +
+      "numero_nf: número da nota (só dígitos, sem zeros à esquerda). valor_documento: valor total da NF em reais com ponto decimal (ex 1234.56). " +
+      "fornecedor: razão social do emitente/beneficiário. boletos: um item por boleto/parcela com valor (ponto decimal). " +
+      "Se a XML/chave de acesso estiver informada use-a para conferir o número: " + (fat.xml ?? "não informada") }];
+    for (const a of arquivos) {
+      const { data: blob } = await admin.storage.from(INVOICE_BUCKET).download(a.path);
+      if (!blob) continue;
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      const mime = a.type || "application/pdf";
+      content.push({ type: "text", text: `Documento: ${a.tipo} (${a.name})` });
+      content.push({ type: "image_url", image_url: { url: `data:${mime};base64,${btoa(bin)}` } });
+    }
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3.8-flash",
+        messages: [{ role: "user", content }],
+        tools: [{ type: "function", function: { name: "dados", parameters: { type: "object", properties: {
+          numero_nf: { type: "string" }, valor_documento: { type: "string" }, fornecedor: { type: "string" },
+          boletos: { type: "array", items: { type: "object", properties: { valor: { type: "string" }, vencimento: { type: "string" } } } },
+        }, required: ["numero_nf", "valor_documento"] } } }],
+        tool_choice: { type: "function", function: { name: "dados" } },
+      }),
+    });
+    if (!res.ok) {
+      console.error("AI extract", res.status, (await res.text()).slice(0, 500));
+      return { ok: false as const, erro: res.status === 429 ? "Muitas leituras seguidas; tente em instantes." : res.status === 402 ? "Créditos de IA esgotados." : "Não foi possível ler os documentos." };
+    }
+    const j: any = await res.json();
+    try {
+      const x = JSON.parse(j.choices[0].message.tool_calls[0].function.arguments);
+      return { ok: true as const, numero_nf: String(x.numero_nf ?? ""), valor_documento: String(x.valor_documento ?? ""), fornecedor: String(x.fornecedor ?? ""),
+        boletos: (Array.isArray(x.boletos) ? x.boletos : []).map((b: any) => ({ valor: String(b?.valor ?? "") })) as { valor: string }[] };
+    } catch { return { ok: false as const, erro: "Resposta da leitura inválida." }; }
   });

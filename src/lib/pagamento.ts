@@ -9,6 +9,7 @@ export type Parcela = { numero: number; valor: string };
 export type DadosPagamento = {
   condicao_de_pagamento: CondicaoPagamento;
   banco: string;
+  fornecedor?: string;
   agencia: string;
   conta_corrente: string;
   codigo_pix: string;

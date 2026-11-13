@@ -53,7 +53,8 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   if (!emp) pend.push("Empresa/Unidade sem De/Para no Pipefy.");
   const cc = centroCustoPipefy(d.centro_custo_codigo, d.centro_custo_descricao, emp?.cnpj);
   if (cc.centro_de_custo === "Outro, qual?" && !cc.outro_centro_de_custo) pend.push("Centro de Custo não informado.");
-  const venc = fornecedorVencedor(card);
+  const venc0 = fornecedorVencedor(card);
+  const venc = { ...venc0, fornecedor: venc0.fornecedor || (pg as any).fornecedor || "" };
   if (!venc.fornecedor) pend.push("Fornecedor vencedor não identificado.");
   if (!pg.condicao_de_pagamento) pend.push("Dados de pagamento não preenchidos.");
   if (!pg.numero_nf) pend.push("Número da NF não informado.");
