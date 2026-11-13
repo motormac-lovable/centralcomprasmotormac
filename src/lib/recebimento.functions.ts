@@ -77,11 +77,12 @@ export const registrarRecebimento = createServerFn({ method: "POST" })
       });
     }
     // Recebido confirmado → protocolo automático no Pipefy (falha fica registrada no card para reenvio na guia Protocolo).
-    let protocolo: unknown = null;
+    let protocolo: { ok: boolean; numero: string | null; pendencias: string[] } | null = null;
     if (data.decisao === "confirmado") {
       try {
         const { executarProtocoloPipefy } = await import("@/lib/pipefy-protocolo.server");
-        protocolo = await executarProtocoloPipefy(supabaseAdmin, card.id, userId);
+        const r: any = await executarProtocoloPipefy(supabaseAdmin, card.id, userId);
+        protocolo = { ok: !!r.ok, numero: r.ok ? String(r.protocolo?.card_id ?? "") : null, pendencias: r.ok ? [] : (r.pendencias ?? []) };
       } catch (e) { console.error("Protocolo automático falhou", e); }
     }
     return { ok: true, recebimento, protocolo };
