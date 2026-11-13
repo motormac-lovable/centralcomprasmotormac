@@ -28,6 +28,7 @@ import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
 import { Route as AuthenticatedMensagensRouteImport } from './routes/_authenticated/mensagens'
 import { Route as AuthenticatedMinhasSolicitacoesRouteImport } from './routes/_authenticated/minhas-solicitacoes'
+import { Route as AuthenticatedProtocoloRouteImport } from './routes/_authenticated/protocolo'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin.relatorios'
 import { Route as ApiSolicitacoesCodigo_unicoRouteImport } from './routes/api/solicitacoes.$codigo_unico'
@@ -127,6 +128,11 @@ const AuthenticatedMinhasSolicitacoesRoute =
     path: '/minhas-solicitacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProtocoloRoute = AuthenticatedProtocoloRouteImport.update({
+  id: '/protocolo',
+  path: '/protocolo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/protocolo': typeof AuthenticatedProtocoloRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/protocolo': typeof AuthenticatedProtocoloRoute
   '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/mensagens': typeof AuthenticatedMensagensRoute
   '/_authenticated/minhas-solicitacoes': typeof AuthenticatedMinhasSolicitacoesRoute
+  '/_authenticated/protocolo': typeof AuthenticatedProtocoloRoute
   '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
   '/api/solicitacoes/$codigo_unico': typeof ApiSolicitacoesCodigo_unicoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/mensagens'
     | '/minhas-solicitacoes'
+    | '/protocolo'
     | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
     | '/admin/'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/mensagens'
     | '/minhas-solicitacoes'
+    | '/protocolo'
     | '/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
     | '/admin'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kanban'
     | '/_authenticated/mensagens'
     | '/_authenticated/minhas-solicitacoes'
+    | '/_authenticated/protocolo'
     | '/_authenticated/admin/relatorios'
     | '/api/solicitacoes/$codigo_unico'
     | '/_authenticated/admin/'
@@ -437,6 +449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhasSolicitacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/protocolo': {
+      id: '/_authenticated/protocolo'
+      path: '/protocolo'
+      fullPath: '/protocolo'
+      preLoaderRoute: typeof AuthenticatedProtocoloRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
@@ -483,6 +502,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
   AuthenticatedMensagensRoute: typeof AuthenticatedMensagensRoute
   AuthenticatedMinhasSolicitacoesRoute: typeof AuthenticatedMinhasSolicitacoesRoute
+  AuthenticatedProtocoloRoute: typeof AuthenticatedProtocoloRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -494,6 +514,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
   AuthenticatedMensagensRoute: AuthenticatedMensagensRoute,
   AuthenticatedMinhasSolicitacoesRoute: AuthenticatedMinhasSolicitacoesRoute,
+  AuthenticatedProtocoloRoute: AuthenticatedProtocoloRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

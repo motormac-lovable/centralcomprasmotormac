@@ -26,6 +26,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
 import { notifyApproversPending, notifyRequestRejected } from "@/lib/email-notifications.functions";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
+import { DadosPagamentoSection } from "@/components/DadosPagamentoSection";
 import { BidRequestModal } from "@/components/BidRequestModal";
 import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-order-entry";
 import { centroCustoLabel } from "@/lib/centros-de-custo";
@@ -2043,6 +2044,14 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                 const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
                 setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card);
               }}
+            />
+          )}
+          {card.status === "pedidos_gerados" && (
+            <DadosPagamentoSection
+              key={`pg-${card.id}`}
+              card={{ ...(card as any), data: rawData }}
+              editable={canWriteKanban}
+              onChanged={(nextData) => setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card)}
             />
           )}
 
