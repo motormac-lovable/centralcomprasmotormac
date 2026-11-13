@@ -1,6 +1,6 @@
 - [x] Reconectar Gmail com centraldecomprasmotormac@gmail.com — feito: nova conexão vinculada, código aponta para GOOGLE_MAIL_API_KEY_1, conta antiga desvinculada
 - [x] Bloquear entrada manual em Pedidos Gerados e validar aprovação formal no atalho de Frete — cinco testes passaram; demais protocolos preservados.
 - [x] Ativar os formulários de Compras, Peças e Cadastro ou Renovação na tela Nova Solicitação, sem alterar as validações existentes.
-- [ ] Incluir a base oficial de centros de custo, seleção obrigatória em todos os formulários e persistência nos dados da solicitação.
-- [ ] Exibir Centro de Custo nos detalhes do Kanban e conferir a apresentação dos pedidos em PDF sem alterar downloads.
+- [x] Incluir os 147 centros de custo, seleção obrigatória nos quatro formulários e persistência nos dados — testes passaram; solicitação de teste enviada e recuperada no histórico.
+- [x] Exibir Centro de Custo nos detalhes do Kanban e histórico; dados prontos para o futuro PDF, cuja criação foi adiada pelo usuário.
 - [ ] Verificar o arraste no Kanban autenticado — bloqueado: sessão indisponível e nenhum cadastro corresponde ao usuário atual do Lovable.
