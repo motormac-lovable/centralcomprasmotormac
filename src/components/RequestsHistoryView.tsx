@@ -10,6 +10,7 @@ import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { uploadRequesterFiles } from "@/lib/requester-files";
 import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles } from "@/lib/complementary-upload";
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
+import { podeRegistrarRecebimento } from "@/lib/recebimento";
 import { RecebimentoButtons, recebimentoCellStyle } from "@/components/RecebimentoCell";
 
 function MessageButton({ cardId }: { cardId: string }) {
@@ -431,7 +432,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                           )}
                         </td>
                         <td className="px-2 py-3 text-center border-l" style={recebimentoCellStyle(it)}>
-                          <RecebimentoButtons card={it} canAct={isOwnRequest(it)} onUpdated={reload} />
+                          <RecebimentoButtons card={it} canAct={podeRegistrarRecebimento({ isRequester: isOwnRequest(it), isOwner, isAdmin, isApprover, approverDepartments, centroCustoDescricao: (it.data as any)?.centro_custo_descricao })} onUpdated={reload} />
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex items-center gap-1.5">
@@ -518,7 +519,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                   </div>
                   <div className="mt-3 flex items-center justify-between rounded-md px-2 py-1 text-xs" style={recebimentoCellStyle(it)}>
                     <span className="text-muted-foreground">Recebimento</span>
-                    <RecebimentoButtons card={it} canAct={isOwnRequest(it)} onUpdated={reload} />
+                    <RecebimentoButtons card={it} canAct={podeRegistrarRecebimento({ isRequester: isOwnRequest(it), isOwner, isAdmin, isApprover, approverDepartments, centroCustoDescricao: (it.data as any)?.centro_custo_descricao })} onUpdated={reload} />
                   </div>
                   <div className="mt-3 flex items-center gap-2">
                     <ViewButton onClick={() => setDetail(it as DetailCard)} />
