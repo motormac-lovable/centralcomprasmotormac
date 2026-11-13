@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList, CheckSquare, MessagesSquare } from "lucide-react";
+import { History, LayoutGrid, BarChart3, Trello, ShieldCheck, LogIn, LogOut, UserPlus, Code2, ClipboardList, CheckSquare, MessagesSquare , FileCheck2 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import logoAsset from "../assets/logo-motormac.png.asset.json";
 import { useAuth } from "@/lib/auth-context";
@@ -119,6 +119,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
                 <NavLink to="/dashboard" active={pathname.startsWith("/dashboard")} icon={<BarChart3 className="h-4 w-4" />}>Dashboard</NavLink>
                 <NavLink to="/kanban" active={pathname.startsWith("/kanban")} icon={<Trello className="h-4 w-4" />}>Kanban</NavLink>
+                <NavLink to="/protocolo" active={pathname.startsWith("/protocolo")} icon={<FileCheck2 className="h-4 w-4" />}>Protocolo</NavLink>
                 <NavLink to="/historico" active={pathname.startsWith("/historico")} icon={<History className="h-4 w-4" />} badge={historicoCount}>Histórico</NavLink>
               </>
             )}
