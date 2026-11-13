@@ -32,6 +32,9 @@ function situacao(c: Card) {
   const fat = getFaturamento(c.data);
   if (!fat.notas_fiscais?.length) return { label: "Aguardando NF", tone: "pend" };
   if (!getDadosPagamento(c.data).condicao_de_pagamento) return { label: "Aguardando dados de pagamento", tone: "pend" };
+  const rec = d.recebimento?.status;
+  if (rec === "problema") return { label: "Recebimento com problema", tone: "erro" };
+  if (rec !== "confirmado") return { label: "Aguardando Recebido do solicitante", tone: "pend" };
   return { label: "Pronto para protocolar", tone: "pronto" };
 }
 
