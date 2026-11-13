@@ -1,5 +1,7 @@
 import { Field, inputCls } from "./FormShell";
 import { maskPhone } from "@/lib/masks";
+import { CentroCustoPicker } from "./CentroCustoPicker";
+import { isCentroCustoValido } from "@/lib/centros-de-custo";
 
 export const UNIDADES = [
   "Porto Alegre",
@@ -19,6 +21,8 @@ export type BlocoInicial = {
   email: string;
   unidade: string;
   empresa: string;
+  centro_custo_codigo: string;
+  centro_custo_descricao: string;
 };
 
 export const BLOCO_INICIAL_VAZIO: BlocoInicial = {
@@ -27,6 +31,8 @@ export const BLOCO_INICIAL_VAZIO: BlocoInicial = {
   email: "",
   unidade: "",
   empresa: "",
+  centro_custo_codigo: "",
+  centro_custo_descricao: "",
 };
 
 export function BlocoInicialPadrao({
@@ -94,6 +100,12 @@ export function BlocoInicialPadrao({
             ))}
           </select>
         </Field>
+        <CentroCustoPicker
+          codigo={value.centro_custo_codigo}
+          descricao={value.centro_custo_descricao}
+          error={errors?.centro_custo_codigo}
+          onChange={(centro) => onChange({ ...value, ...centro })}
+        />
       </div>
     </div>
   );
@@ -109,5 +121,7 @@ export function validateBlocoInicial(
     er.email = "E-mail inválido";
   if (!v.unidade) er.unidade = "Selecione";
   if (!v.empresa) er.empresa = "Selecione";
+  if (!isCentroCustoValido(v.centro_custo_codigo, v.centro_custo_descricao))
+    er.centro_custo_codigo = "Selecione um Centro de Custo válido";
   return er;
 }

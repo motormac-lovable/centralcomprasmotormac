@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { inputCls } from "./FormShell";
 
@@ -24,6 +24,7 @@ export function SearchableSelect({
   disabled,
   required,
   invalid,
+  ariaLabel,
   emptyLabel = "Nenhum resultado encontrado.",
 }: {
   options: SearchableOption[];
@@ -33,9 +34,11 @@ export function SearchableSelect({
   disabled?: boolean;
   required?: boolean;
   invalid?: boolean;
+  ariaLabel?: string;
   emptyLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const listId = useId();
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -76,7 +79,8 @@ export function SearchableSelect({
         aria-invalid={invalid ? true : undefined}
         aria-expanded={open}
         role="combobox"
-        aria-controls="searchable-listbox"
+        aria-label={ariaLabel}
+        aria-controls={listId}
         autoComplete="off"
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
@@ -117,7 +121,7 @@ export function SearchableSelect({
 
       {open && !disabled && (
         <ul
-          id="searchable-listbox"
+          id={listId}
           role="listbox"
           className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md"
         >

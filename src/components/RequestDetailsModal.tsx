@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { InvoiceDocumentsSection } from "@/components/InvoiceDocumentsSection";
 import { KIND_LABEL, STATUS_COLUMNS, type Status } from "@/lib/cards";
 import type { Database } from "@/integrations/supabase/types";
+import { centroCustoLabel } from "@/lib/centros-de-custo";
 
 type Kind = Database["public"]["Enums"]["card_kind"];
 
@@ -255,6 +256,10 @@ export function RequestDetailsModal({ card, onClose }: { card: DetailCard; onClo
                     <span>{departamento}</span>
                   </div>
                 )}
+                <div>
+                  <span className="text-muted-foreground">Centro de Custo: </span>
+                  <span>{centroCustoLabel((card.data ?? {}) as Record<string, unknown>)}</span>
+                </div>
                 {card.numero_pedido_linx && (
                   <div>
                     <span className="text-muted-foreground">Pedido ERP: </span>

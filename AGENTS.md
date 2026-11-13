@@ -10,5 +10,6 @@
 <!-- LOVABLE:END -->
 
 - Share the requests table through RequestsHistoryView between personal requests and owner history so their actions and document presentation stay identical; preserve other history audiences.
+- Keep cost-center options and exact code-description validation in one browser-safe catalog, shared by the requester block and creation guard; persist both fields in the existing request data JSON without coupling them to approval departments or transitions.
 - Keep manual order-entry validation in the browser-safe kanban-order-entry module and apply it only to manual Kanban handlers; approval RPC and ERP transitions remain independent to preserve existing approval authority.
 - Keep the owner-only protected-user list and admin eligibility rule in src/lib/protected-users.ts mirrored by app_private.is_protected_user / is_admin_eligible in the database; server functions use the service role, so they must check it explicitly besides RLS. Admin revocation on inactivation lives in a profiles trigger so every inactivation path applies it.
