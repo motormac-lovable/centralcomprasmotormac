@@ -5,12 +5,13 @@ import { getFaturamento, INVOICE_BUCKET } from "@/lib/invoice-documents";
 import { montarCamposPipefy, PIPEFY_ANEXO_BOLETO_FIELD, PIPEFY_ANEXO_NF_FIELD } from "@/lib/pipefy-payload";
 import { validarDadosPagamento, CONDICOES_PAGAMENTO } from "@/lib/pagamento";
 
-const PIPEFY_API = "https://api.pipefy.com/graphql";
+// Endpoint público do Pipefy usado pelo próprio formulário público no navegador — sem senha nem token.
+const PIPEFY_PUBLIC_API = "https://app.pipefy.com/public_api";
 
-async function gql(token: string, query: string, variables: Record<string, unknown>) {
-  const r = await fetch(PIPEFY_API, {
+async function gql(query: string, variables: Record<string, unknown>) {
+  const r = await fetch(PIPEFY_PUBLIC_API, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
   const j: any = await r.json().catch(() => ({}));
@@ -74,11 +75,9 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ card_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const admin = await exigirEquipeCompras(context.userId);
-    const token = process.env["PIPEFY_API_TOKEN"];
-    const pipeId = process.env["PIPEFY_PIPE_ID"];
-    const orgId = process.env["PIPEFY_ORG_ID"];
-    if (!token || !pipeId || !orgId)
-      return { ok: false as const, pendencias: ["Integração com o Pipefy ainda não configurada (credenciais ausentes)."] };
+    const formId = process.env["PIPEFY_PUBLIC_FORM_ID"];
+    if (!formId)
+      return { ok: false as const, pendencias: ["Link do formulário público do Pipefy ainda não configurado."] };
 
     const { data: card } = await admin
       .from("kanban_cards")
@@ -97,13 +96,13 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
     pend.push(...pendencias);
     if (pend.length) return { ok: false as const, pendencias: pend };
 
-    // Anexos: baixa do storage privado e envia via URL pré-assinada do Pipefy.
+    // Anexos: baixa do storage privado e envia pelo upload do formulário público (sem login).
     const enviar = async (path: string, name: string) => {
       const { data: blob, error } = await admin.storage.from(INVOICE_BUCKET).download(path);
       if (error || !blob) throw new Error(`Falha ao ler anexo ${name}`);
-      const pre = await gql(token, `mutation($i: CreatePresignedUrlInput!){ createPresignedUrl(input:$i){ url } }`,
-        { i: { organizationId: orgId, fileName: name } });
-      const url: string = pre.createPresignedUrl.url;
+      const pre = await gql(`mutation($i: CreatePresignedUrlForPublicFormInput!){ createPresignedUrlForPublicForm(input:$i){ url } }`,
+        { i: { formId, fileName: name, contentType: blob.type || "application/octet-stream" } });
+      const url: string = pre.createPresignedUrlForPublicForm.url;
       const put = await fetch(url, { method: "PUT", body: await blob.arrayBuffer(), headers: { "Content-Type": blob.type || "application/octet-stream" } });
       if (!put.ok) throw new Error(`Falha ao enviar anexo ${name} ao Pipefy`);
       return new URL(url).pathname.replace(/^\//, "");
@@ -115,12 +114,14 @@ export const protocolarPipefy = createServerFn({ method: "POST" })
         const bPaths = await Promise.all(fat.boletos.map((f) => enviar(f.path, f.name)));
         campos.push({ field_id: PIPEFY_ANEXO_BOLETO_FIELD, field_value: bPaths });
       }
-      const res = await gql(token, `mutation($i: CreateCardInput!){ createCard(input:$i){ card { id url } } }`,
-        { i: { pipe_id: pipeId, title: `${card.codigo_unico ?? ""} ${card.title ?? ""}`.trim(), fields_attributes: campos } });
+      const res = await gql(`mutation($i: SubmitPublicFormInput!){ submitPublicForm(input:$i){ repoItem { id } } }`,
+        { i: { formId, filledFields: campos.map((c) => ({ fieldId: c.field_id, fieldValue: c.field_value })) } });
+      const res_id = String(res.submitPublicForm?.repoItem?.id ?? "");
+      if (!res_id) throw new Error("Pipefy não retornou o número do card");
       const { data: prof } = await admin.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
       const protocolo = {
-        card_id: String(res.createCard.card.id),
-        url: res.createCard.card.url as string,
+        card_id: res_id,
+        url: `https://app.pipefy.com/open-cards/${res_id}`,
         protocolado_em: new Date().toISOString(),
         protocolado_por: (prof as any)?.full_name || au?.user?.email || "Comprador",
       };
