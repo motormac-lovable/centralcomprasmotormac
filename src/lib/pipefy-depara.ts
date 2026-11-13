@@ -47,7 +47,7 @@ export const EMPRESAS_PIPEFY: { opcao: string; cnpj: string; empresa: string; un
   { opcao: "2.7 PASSO FUNDO/RS", cnpj: "90.627.332/0011-65", empresa: "DMMC", unidade: "Passo Fundo" },
   { opcao: "19.1 SV PARTS POA/RS", cnpj: "51.292.751/0001-60", empresa: "SV Parts", unidade: "Porto Alegre" },
   { opcao: "19.2 - SV PARTS SJ/SC", cnpj: "51.292.751/0002-40", empresa: "SV Parts", unidade: "São José" },
-  { opcao: "19.3 - SV PARTS COL/PR", cnpj: "51.292.751/0003-21", empresa: "SV Parts", unidade: "Colombo" },
+  { opcao: "19. 3 - SV PARTS COL/PR", cnpj: "51.292.751/0003-21", empresa: "SV Parts", unidade: "Colombo" },
   { opcao: "19.4 - SV PARTS PF/RS", cnpj: "51.292.751/0006-74", empresa: "SV Parts", unidade: "Passo Fundo" },
   { opcao: "19.5 - SV PARTS MG/PR", cnpj: "51.292.751/0005-93", empresa: "SV Parts", unidade: "Maringá" },
   { opcao: "19.6 - SV PARTS CHAP/SC", cnpj: "51.292.751/0004-02", empresa: "SV Parts", unidade: "Chapecó" },

@@ -4,6 +4,13 @@ import { getDadosPagamento, parseValor } from "./pagamento";
 
 export const PIPEFY_ANEXO_NF_FIELD = "anexar_nf";
 export const PIPEFY_ANEXO_BOLETO_FIELD = "anexar_boleto";
+/** Valor da parcela 1..12 (IDs gerados pelo Pipefy, fora de ordem). */
+export const PIPEFY_PARCELA_FIELDS = [
+  "copy_of_valor_da_parcela_2", "copy_of_valor_da_parcela_1", "copy_of_copy_of_valor_da_parcela_1",
+  "copy_of_copy_of_copy_of_valor_da_parcela_1", "copy_of_valor_da_parcela_4", "copy_of_copy_of_valor_da_parcela_4",
+  "copy_of_copy_of_copy_of_valor_da_parcela_4", "copy_of_copy_of_copy_of_copy_of_valor_da_parcela_4", "copy_of_valor_da_parcela_8",
+  "copy_of_copy_of_copy_of_copy_of_copy_of_valor_da_parcela_4", "copy_of_copy_of_valor_da_parcela_10", "copy_of_valor_da_parcela_11",
+];
 
 export type CardParaProtocolo = {
   id: string;
@@ -43,7 +50,7 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   const pg = getDadosPagamento(card.data);
   const pend: string[] = [];
   const setor = setorPipefy(d.departamento_codigo);
-  if (!setor) pend.push(`Setor sem De/Para para o departamento ${d.departamento_codigo || "(não informado)"}.`);
+  void setor; // o formulário público atual não tem campo Setor
   const emp = empresaPipefy(card.empresa ?? d.empresa, card.unidade ?? d.unidade);
   if (!emp) pend.push("Empresa/Unidade sem De/Para no Pipefy.");
   const cc = centroCustoPipefy(d.centro_custo_codigo, d.centro_custo_descricao, emp?.cnpj);
@@ -61,31 +68,32 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
 
   const f: CampoPipefy[] = [];
   const add = (id: string, v: string | null | undefined) => { if (v) f.push({ field_id: id, field_value: v }); };
-  add("setor", setor);
+  // IDs reais do formulário público Pipefy (Gcg4XrX6).
   add("seu_e_mail", compradorEmail);
+  add("c_pia_de_e_mail", card.requester_email || "");
   add("empresa", emp?.opcao);
-  add("numero_do_nf", pg.numero_nf);
+  add("n_mero_do_documento", pg.numero_nf);
   add("valor_do_documento", valor > 0 ? valor.toFixed(2) : "");
   add("fornecedor", venc.fornecedor);
-  add("gera_valor_a_pagar", "Sim");
+  add("livre_de_d_bito", "Sim");
   const c = pg.condicao_de_pagamento;
-  add("condicao_de_pagamento", c);
+  add("condi_o_de_pagamento", c);
   if (c === "Parcelado") {
-    add("numero_de_parcelas", pg.numero_de_parcelas);
-    add("data_vencimento", pg.parcelas_detalhe?.[0]?.data_vencimento);
-    add("parcelas_detalhe", (pg.parcelas_detalhe ?? []).map((p) => `${p.numero}ª: ${p.data_vencimento} - R$ ${p.valor}`).join("\n"));
-  } else add("data_vencimento", pg.data_vencimento);
-  if (c === "Depósito") { add("banco", pg.banco); add("agencia", pg.agencia); add("conta_corrente", pg.conta_corrente); add("codigo_pix", pg.codigo_pix); }
-  if (c === "Cartão corporativo") {
-    add("responsavel_pelo_cartao", pg.responsavel_pelo_cartao);
-    add("despesa_contrato", pg.despesa_contrato || "Não");
-    if (pg.despesa_contrato === "Sim") add("numero_contrato", pg.numero_contrato);
+    add("n_mero_de_parcelas", pg.numero_de_parcelas);
+    (pg.parcelas_detalhe ?? []).slice(0, 12).forEach((p, i) => {
+      const v = parseValor(p.valor);
+      if (v > 0) add(PIPEFY_PARCELA_FIELDS[i], v.toFixed(2));
+    });
   }
-  add("tipo_de_lancamento", "Centro de Custo");
+  if (c === "Depósito") { add("banco", pg.banco); add("ag_ncia", pg.agencia); add("conta_corrente", pg.conta_corrente); add("c_digo_pix", pg.codigo_pix); }
+  if (c === "Cartão corporativo") add("respons_vel_pelo_cart_o", pg.responsavel_pelo_cartao);
+  add("tipo_de_lan_amento", "Centro de Custo");
   add("centro_de_custo", cc.centro_de_custo);
-  add("outro_centro_de_custo", cc.outro_centro_de_custo);
-  add("tipo_de_autorizacao_de_pagamento", "Ordem de Compra");
-  add("numero_da_ordem_de_compra", oc);
-  add("justificativa_da_despesa", just);
+  add("centro_de_custos", cc.outro_centro_de_custo);
+  add("tipo_de_autoriza_o_de_pagamento", "Ordem de Compra");
+  add("uma_despesa_de_contrato", pg.despesa_contrato || "Não");
+  if (pg.despesa_contrato === "Sim") add("n_mero_do_contrato", pg.numero_contrato);
+  add("n_mero_da_ordem_de_compra", oc);
+  add("observa_es", just);
   return { campos: f, pendencias: pend, copiaEmail: card.requester_email || null };
 }
