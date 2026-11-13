@@ -1038,7 +1038,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
   const rawData = (card.data as Record<string, unknown>) ?? {};
   const itensSolicitados = Array.isArray(rawData.itens) ? (rawData.itens as ItemMaterial[]) : [];
   const COMPRAS_KEYS = ["cnpj", "peca", "operacao", "especificacao", "os", "partNumbers", "pecas", "dataEsperada"];
-  const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa"];
+  const BLOCO_KEYS = ["nome", "telefone", "email", "unidade", "empresa", "centro_custo_codigo", "centro_custo_descricao"];
   // Frete: todas as informações têm exibição segmentada própria — não entram na lista genérica.
   const FRETE_KEYS = [
     "altura", "largura", "comprimento", "tipoProduto", "pesoBruto", "volumes", "valorMercadoria",
@@ -2534,9 +2534,9 @@ function RequesterFilesSection({ rawData }: { rawData: Record<string, unknown> }
 function Detail({ label, value }: { label: string; value: string | null | undefined }) {
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-medium">{value || "—"}</div>
+      <div className="font-medium break-words">{value || "—"}</div>
     </div>
   );
 }
