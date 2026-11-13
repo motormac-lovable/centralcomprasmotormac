@@ -36,3 +36,18 @@ export function recebimentoStatus(card: { status: string; data: unknown }): Rece
 export function notaFinal(estrelas: number): number {
   return estrelas >= 1 && estrelas <= 5 ? Math.round(estrelas) : 5;
 }
+
+/** Quem pode registrar o recebimento: solicitante, Desenvolvedor/Proprietário, Administrador
+ *  ou aprovador cujo escopo inclui o Centro de Custo da solicitação. */
+export function podeRegistrarRecebimento(p: {
+  isRequester: boolean;
+  isOwner: boolean;
+  isAdmin: boolean;
+  isApprover: boolean;
+  approverDepartments: string[];
+  centroCustoDescricao?: string | null;
+}): boolean {
+  if (p.isRequester || p.isOwner || p.isAdmin) return true;
+  const cc = (p.centroCustoDescricao ?? "").trim().toUpperCase();
+  return p.isApprover && !!cc && p.approverDepartments.some((d) => d.trim().toUpperCase() === cc);
+}

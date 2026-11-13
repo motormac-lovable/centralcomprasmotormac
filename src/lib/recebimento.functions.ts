@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { RELATO_MAX, SUGESTAO_MAX, notaFinal, recebimentoStatus } from "@/lib/recebimento";
+import { RELATO_MAX, SUGESTAO_MAX, notaFinal, podeRegistrarRecebimento, recebimentoStatus } from "@/lib/recebimento";
 
 /**
  * Registro de recebimento pelo solicitante. Só o próprio solicitante,
@@ -29,7 +29,19 @@ export const registrarRecebimento = createServerFn({ method: "POST" })
     const { data: au } = await supabaseAdmin.auth.admin.getUserById(userId);
     const email = (au?.user?.email ?? "").toLowerCase();
     const isRequester = card.requester_id === userId || (!!email && (card.requester_email ?? "").toLowerCase() === email);
-    if (!isRequester) throw new Response("Apenas o solicitante pode registrar o recebimento.", { status: 403 });
+    const { data: rolesRows } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId);
+    const roles = new Set((rolesRows ?? []).map((r: any) => r.role as string));
+    const { data: apr } = await supabaseAdmin.from("approver_settings").select("departments").eq("user_id", userId).maybeSingle();
+    const ccDesc = ((card.data as any)?.centro_custo_descricao as string | undefined) ?? null;
+    const permitido = podeRegistrarRecebimento({
+      isRequester,
+      isOwner: roles.has("owner"),
+      isAdmin: roles.has("admin"),
+      isApprover: roles.has("aprovador"),
+      approverDepartments: ((apr as any)?.departments as string[]) ?? [],
+      centroCustoDescricao: ccDesc,
+    });
+    if (!permitido) throw new Response("Você não tem permissão para registrar o recebimento desta solicitação.", { status: 403 });
     if (recebimentoStatus(card) !== "pendente_aceite")
       throw new Response("Recebimento indisponível nesta etapa.", { status: 409 });
 
@@ -59,9 +71,9 @@ export const registrarRecebimento = createServerFn({ method: "POST" })
         sender_name: nome,
         sender_email: email,
         sender_phone: (prof as any)?.phone ?? "",
-        sender_role: "solicitante",
+        sender_role: isRequester ? "solicitante" : roles.has("owner") ? "owner" : roles.has("admin") ? "admin" : "aprovador",
         buyer_name: card.buyer_name,
-        body: `⚠️ ALERTA DE RECEBIMENTO: o solicitante reportou uma falha na entrega (${nota}/5 estrelas): "${relato}"`,
+        body: `⚠️ ALERTA DE RECEBIMENTO: ${isRequester ? "o solicitante" : nome} reportou uma falha na entrega (${nota}/5 estrelas): "${relato}"`,
       });
     }
     return { ok: true, recebimento };
