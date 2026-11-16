@@ -14,9 +14,18 @@ export type PurchaseOrderCard = {
   buyer_name?: string | null;
   suppliers?: unknown;
   data?: unknown;
+  kind?: string | null;
 };
 
-export type FornecedorVencedor = { nome: string; cnpj: string; email: string; valor: string };
+export type FornecedorVencedor = { nome: string; cnpj: string; email: string; valor: string; condicao: string; prazo: string; observacao: string; telefone: string };
+
+/** Helvetica do PDF só cobre Latin-1: troca setas/aspas tipográficas para evitar caracteres quebrados. */
+export function textoPdf(v: unknown): string {
+  return String(v ?? "")
+    .replace(/[\u2192\u2794\u27A1]/g, "->").replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...")
+    .replace(/[^\x00-\xFF]/g, "").trim();
+}
 
 export function parseBRL(v: unknown): number {
   const s = String(v ?? "").replace(/[^\d,.-]/g, "");
@@ -37,6 +46,10 @@ export function fornecedorVencedor(suppliers: unknown): FornecedorVencedor | nul
     cnpj: String(w.cnpj ?? "").trim(),
     email: String(w.email ?? "").trim(),
     valor: String(w.valor_total ?? w.valor ?? ""),
+    condicao: String(w.condicao ?? w.condicao_pagamento ?? "").trim(),
+    prazo: String(w.prazo ?? w.prazo_entrega ?? "").trim(),
+    observacao: String(w.observacao ?? w.observacoes ?? "").trim(),
+    telefone: String(w.telefone ?? "").trim(),
   };
 }
 
@@ -75,7 +88,9 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
       startY,
       margin: { left: M, right: M },
       head: [[{ content: titulo, colSpan: 2 }]],
-      body: linhas,
+      pageBreak: "avoid",
+      showHead: "everyPage",
+      body: linhas.map(([a, b]) => [textoPdf(a), textoPdf(b) || "—"]),
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 1.8, textColor: [30, 30, 30] },
       headStyles: { fillColor: black, textColor: 255, fontStyle: "bold" },
@@ -93,28 +108,70 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
     ["Comprador", card.buyer_name || "—"],
   ], 36);
 
+  const total = parseBRL(vencedor?.valor);
+  const isFrete = (card as { kind?: string }).kind === "frete" || !!data.cidadeOrigem;
+  const dataBR = (v: unknown) => { const m = String(v ?? "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v ?? ""); };
+
   y = bloco("DADOS DO FORNECEDOR VENCEDOR", [
     ["Razão Social", vencedor?.nome || "—"],
     ["CNPJ", vencedor?.cnpj || "—"],
     ["E-mail", vencedor?.email || "—"],
+    ...(vencedor?.telefone ? [["Telefone", vencedor.telefone] as [string, string]] : []),
   ], y);
 
-  const total = parseBRL(vencedor?.valor);
+  y = bloco("CONDIÇÕES COMERCIAIS", [
+    ["Valor total da compra", total ? `R$ ${brl(total)}` : "—"],
+    ["Condição de pagamento", vencedor?.condicao || "—"],
+    ["Prazo de entrega", vencedor?.prazo || "—"],
+    ["Observações do fornecedor", vencedor?.observacao || "—"],
+  ], y);
+
+  if (isFrete) {
+    const local = (c: unknown, cep: unknown) => [textoPdf(c), cep ? `CEP ${textoPdf(cep)}` : ""].filter(Boolean).join(" · ");
+    y = bloco("DETALHES DO FRETE", [
+      ["Origem", local(data.cidadeOrigem, data.cepOrigem)],
+      ["Destino", local(data.cidadeDestino, data.cepDestino)],
+      ["CNPJ do pagador", String(data.cnpjPagador ?? "")],
+      ["CNPJ do remetente", String(data.cnpjRemetente ?? "")],
+      ["CNPJ do destinatário", String(data.cnpjDestinatario ?? "")],
+      ["Departamento", String(data.departamento ?? "")],
+      ["Coleta prevista", dataBR(data.dataColetaPrevista)],
+      ["Entrega prevista", dataBR(data.dataEntregaPrevista)],
+    ], y);
+    const vols = Array.isArray(data.volumesList) && data.volumesList.length ? (data.volumesList as Record<string, unknown>[]) : [data];
+    autoTable(doc, {
+      startY: y,
+      margin: { left: M, right: M },
+      head: [["#", "Tipo de produto", "Dimensões (A x L x C m)", "Peso (kg)", "Volumes", "Valor da mercadoria"]],
+      body: vols.map((v, i) => [String(i + 1), textoPdf(v.tipoProduto) || "—",
+        [v.altura, v.largura, v.comprimento].every(Boolean) ? `${v.altura} x ${v.largura} x ${v.comprimento}` : "—",
+        textoPdf(v.pesoBruto) || "—", textoPdf(v.volumes) || "—", textoPdf(v.valorMercadoria ?? data.valorTotalMercadorias) || "—"]),
+      theme: "grid",
+      styles: { fontSize: 8.5, cellPadding: 1.8 },
+      headStyles: { fillColor: black, textColor: 255 },
+      columnStyles: { 0: { cellWidth: 10, halign: "center" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+  }
+
   const itens = Array.isArray(data.itens) ? (data.itens as Record<string, unknown>[]) : [];
+  const descFrete = isFrete ? `Serviço de frete: ${textoPdf(data.cidadeOrigem) || "origem"} -> ${textoPdf(data.cidadeDestino) || "destino"}` : "";
   const linhas = itens.length
     ? itens.map((it, i) => {
         const qtd = parseBRL(it.quantidade) || 0;
         const unico = itens.length === 1 && total > 0 && qtd > 0;
+        const nome = textoPdf(it.material ?? it.descricao ?? it.servico) || "—";
+        const cod = textoPdf(it.codigo);
         return [
           String(i + 1),
-          String(it.material ?? it.descricao ?? it.servico ?? "—"),
-          qtd ? qtd.toLocaleString("pt-BR") : String(it.quantidade ?? "—"),
-          String(it.unidadeMedida ?? it.unidade_medida ?? "UN"),
+          cod ? `${nome} (cód. ${cod})` : nome,
+          qtd ? qtd.toLocaleString("pt-BR") : textoPdf(it.quantidade) || "—",
+          textoPdf(it.unidadeMedida ?? it.unidade_medida) || "UN",
           unico ? brl(total / qtd) : "—",
           unico ? brl(total) : "—",
         ];
       })
-    : [["1", card.title, "1", "UN", total ? brl(total) : "—", total ? brl(total) : "—"]];
+    : [["1", descFrete || textoPdf(card.title), "1", isFrete ? "SERV" : "UN", total ? brl(total) : "—", total ? brl(total) : "—"]];
 
   autoTable(doc, {
     startY: y,
@@ -126,15 +183,17 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
     styles: { fontSize: 8.5, cellPadding: 1.8 },
     headStyles: { fillColor: black, textColor: 255 },
     footStyles: { fillColor: [238, 238, 238], textColor: [20, 20, 20], fontStyle: "bold" },
-    columnStyles: { 0: { cellWidth: 12, halign: "center" }, 2: { cellWidth: 16, halign: "right" }, 3: { cellWidth: 16 }, 4: { cellWidth: 28, halign: "right" }, 5: { cellWidth: 30, halign: "right" } },
+    columnStyles: { 0: { cellWidth: 12, halign: "center" }, 2: { cellWidth: 14, halign: "right" }, 3: { cellWidth: 22 }, 4: { cellWidth: 28, halign: "right" }, 5: { cellWidth: 30, halign: "right" } },
   });
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
 
-  const obs = [
-    (data.descricao as string) || card.summary || "",
-    typeof data.observacoes === "string" ? (data.observacoes as string) : "",
-  ].filter((s) => s && s.trim()).join("\n\n") || "—";
-  bloco("OBSERVAÇÕES", [["Descrição", obs]], y);
+  const cc = [data.centro_custo_codigo, data.centro_custo_descricao].filter(Boolean).join(" - ");
+  bloco("OBSERVAÇÕES", [
+    ...(cc ? [["Centro de custo", String(cc)] as [string, string]] : []),
+    [isFrete ? "Observações da carga" : "Descrição da solicitação",
+      (isFrete ? String(data.observacoesCarga ?? "") : "") || String(data.descricao ?? "") || card.summary || "—"],
+    ...(typeof data.observacoes === "string" && data.observacoes.trim() ? [["Observações adicionais", data.observacoes] as [string, string]] : []),
+  ], y);
 
   const H = doc.internal.pageSize.getHeight();
   const pages = doc.getNumberOfPages();
