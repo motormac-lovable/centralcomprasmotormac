@@ -55,3 +55,11 @@ export function numeroPedidoExibicao(card: { data?: unknown; numero_pedido_linx?
 export function aplicaPedidoCompra(card: { kind: string; status: string }): boolean {
   return card.status === "pedidos_gerados" && card.kind !== "contratos";
 }
+
+/** Rótulo pronto para exibição: "PC - ..." no novo formato, "#123456" para números legados. */
+export function rotuloPedido(card: { data?: unknown; numero_pedido_linx?: string | null; order_number?: string | null }): string | null {
+  const pc = pedidoCompraInfo(card.data)?.numero;
+  if (pc) return pc;
+  const legado = card.numero_pedido_linx ?? card.order_number ?? null;
+  return legado ? `#${legado}` : null;
+}

@@ -12,6 +12,7 @@ import { COMPLEMENTARY_MAX_FILES, COMPLEMENTARY_MAX_SIZE_MB, countExistingFiles 
 import { RequestDetailsModal, type DetailCard } from "@/components/RequestDetailsModal";
 import { podeRegistrarRecebimento } from "@/lib/recebimento";
 import { RecebimentoButtons, recebimentoCellStyle } from "@/components/RecebimentoCell";
+import { rotuloPedido } from "@/lib/purchase-order-number";
 
 function MessageButton({ cardId }: { cardId: string }) {
   return (
@@ -256,6 +257,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
         norm(it.summary ?? "").includes(q) ||
         norm(it.codigo_unico ?? "").includes(q) ||
         norm(it.numero_pedido_linx ?? "").includes(q) ||
+        norm(rotuloPedido(it) ?? "").includes(q) ||
         norm(it.requester_email ?? "").includes(q) ||
         norm(it.buyer_name ?? "").includes(q) ||
         norm(dept).includes(q) ||
@@ -412,8 +414,8 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                           </span>
                         </td>
                         <td className="px-2 py-3 font-mono text-xs">
-                          {it.numero_pedido_linx ? (
-                            <span className="text-emerald-700 font-semibold">#{it.numero_pedido_linx}</span>
+                          {rotuloPedido(it) ? (
+                            <span className="text-emerald-700 font-semibold whitespace-nowrap">{rotuloPedido(it)}</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -510,10 +512,10 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                       <span className="text-muted-foreground">📅 Última movimentação: </span>
                       <span>{formatBR(it.status_changed_at || it.created_at)}</span>
                     </div>
-                    {it.numero_pedido_linx && (
+                    {rotuloPedido(it) && (
                       <div>
-                        <span className="text-muted-foreground">Pedido ERP: </span>
-                        <span className="font-mono text-emerald-700 font-semibold">#{it.numero_pedido_linx}</span>
+                        <span className="text-muted-foreground">Pedido: </span>
+                        <span className="font-mono text-emerald-700 font-semibold">{rotuloPedido(it)}</span>
                       </div>
                     )}
                   </div>
