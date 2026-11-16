@@ -360,7 +360,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                     <th className="text-left px-2 py-3 w-[84px]">Pedido ERP</th>
                     <th className="text-left px-2 py-3 w-[64px]">Anexar</th>
                     <th className="text-center px-2 py-3 w-[92px]">Recebimento</th>
-                    <th className="text-left px-2 py-3 w-[205px] min-w-[185px] whitespace-nowrap">Ações</th>
+                    <th className="text-left px-2 py-3 w-[222px] min-w-[185px] whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
