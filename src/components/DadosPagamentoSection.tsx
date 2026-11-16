@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { CreditCard, ExternalLink, FileSearch, Loader2, Send } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CreditCard, FileSearch, Loader2, Send } from "lucide-react";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { CONDICOES_PAGAMENTO, getDadosPagamento, parseCondicaoMapa, parseValor, validarDadosPagamento, type CondicaoPagamento, type DadosPagamento, type Parcela } from "@/lib/pagamento";
 import { getFaturamento } from "@/lib/invoice-documents";
