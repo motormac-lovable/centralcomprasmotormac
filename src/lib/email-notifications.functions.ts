@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { translateError } from "@/lib/error-messages";
 
 const APP_URL = "https://centralcomprasmotormac.lovable.app";
 const LOGO_URL =
@@ -209,13 +210,13 @@ export const notifyApproversPending = createServerFn({ method: "POST" })
           );
           if (!res.ok) {
             const body = await res.text();
-            errors.push(`[${to}] ${res.status}: ${body.slice(0, 300)}`);
+            errors.push(`[${to}] Não foi possível enviar a notificação por e-mail (código ${res.status}).`);
             console.error("[email] Gmail send failed", to, res.status, body);
           } else {
             sent++;
           }
         } catch (e) {
-          errors.push(`[${to}] ${(e as Error).message}`);
+          errors.push(`[${to}] ${translateError(e, "Não foi possível enviar a notificação por e-mail.")}`);
           console.error("[email] Exception sending to", to, e);
         }
       }),
@@ -244,7 +245,8 @@ async function sendGmail(to: string, subject: string, html: string, lovableKey: 
   );
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Gmail ${res.status}: ${body.slice(0, 300)}`);
+    console.error("Falha no envio de e-mail", res.status, body);
+    throw new Error(`Não foi possível enviar a notificação por e-mail (código ${res.status}).`);
   }
 }
 
@@ -340,7 +342,7 @@ export const notifyRequestRejected = createServerFn({ method: "POST" })
           await sendGmail(to, subject, html, lovableKey, gmailKey);
           sent++;
         } catch (e) {
-          errors.push(`[${to}] ${(e as Error).message}`);
+          errors.push(`[${to}] ${translateError(e, "Não foi possível enviar a notificação por e-mail.")}`);
           console.error("[email] Falha ao enviar rejeição:", to, e);
         }
       }),
@@ -414,7 +416,7 @@ export const notifyUserApproved = createServerFn({ method: "POST" })
       return { ok: true };
     } catch (e) {
       console.error("[email] Falha ao enviar aprovação:", data.email, e);
-      return { ok: false, error: (e as Error).message };
+      return { ok: false, error: translateError(e, "Não foi possível enviar a notificação por e-mail.") };
     }
   });
 

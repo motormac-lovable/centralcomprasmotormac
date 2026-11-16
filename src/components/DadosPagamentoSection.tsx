@@ -7,6 +7,8 @@ import { CONDICOES_PAGAMENTO, getDadosPagamento, parseCondicaoMapa, parseValor, 
 import { getFaturamento } from "@/lib/invoice-documents";
 import { fornecedorVencedor, type CardParaProtocolo } from "@/lib/pipefy-payload";
 import { extrairDadosPagamento, protocolarPipefy, salvarDadosPagamento } from "@/lib/pipefy.functions";
+import { translateError } from "@/lib/error-messages";
+import { Button } from "@/components/ui/button";
 
 type Protocolo = { card_id: string; url: string; protocolado_em: string; protocolado_por: string };
 
@@ -23,10 +25,15 @@ export function ProtocoloBadge({ data }: { data: unknown }) {
 export function useProtocolar() {
   const fn = useServerFn(protocolarPipefy);
   return async (cardId: string) => {
+    try {
     const r = await fn({ data: { card_id: cardId } });
     if (r.ok) toast.success(r.jaExistia ? `Já protocolado no Pipefy (#${r.protocolo.card_id}).` : `Protocolado no Pipefy sob ID #${r.protocolo.card_id}.`);
-    else toast.error(r.pendencias.join(" "), { duration: 9000 });
+    else toast.error(r.pendencias.map((p) => translateError(p)).join(" "), { duration: 9000 });
     return r;
+    } catch (e) {
+      toast.error(translateError(e, "Não foi possível enviar o protocolo ao Pipefy."));
+      return { ok: false as const, pendencias: [translateError(e)] };
+    }
   };
 }
 
@@ -47,6 +54,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
     despesa_contrato: saved.despesa_contrato ?? (isContrato ? "Sim" : "Não"),
     numero_contrato: saved.numero_contrato ?? ((card.data as any)?.numero_contrato ?? ""),
     numero_nf: saved.numero_nf ?? "",
+    data_vencimento: saved.data_vencimento ?? "",
     valor_documento: saved.valor_documento ?? (valorTotal > 0 ? valorTotal.toFixed(2) : ""),
   }));
   const [busy, setBusy] = useState(false);
@@ -64,11 +72,15 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         if (manual || !s.numero_nf) n.numero_nf = r.numero_nf.replace(/^0+/, "");
         if (r.valor_documento && (manual || !saved.valor_documento)) n.valor_documento = r.valor_documento;
         const bols = r.boletos.filter((b) => parseValor(b.valor) > 0);
-        if (bols.length >= 2) { n.condicao_de_pagamento = "Parcelado"; n.parcelas_detalhe = bols.slice(0, 12).map((b, i) => ({ numero: i + 1, valor: b.valor })); }
-        else if (bols.length === 1 && !saved.condicao_de_pagamento) n.condicao_de_pagamento = "Boleto";
+        if (bols.length >= 2) { n.condicao_de_pagamento = "Parcelado"; n.parcelas_detalhe = bols.slice(0, 12).map((b, i) => ({ numero: i + 1, valor: b.valor, vencimento: b.vencimento })); }
+        else if (bols.length === 1) {
+          if (!saved.condicao_de_pagamento) n.condicao_de_pagamento = "Boleto";
+          if (manual || !s.data_vencimento) n.data_vencimento = bols[0].vencimento;
+        }
         return n;
       });
       toast.success("Dados preenchidos a partir da NF e do boleto. Confira antes de salvar.");
+      if (r.boletos.some((b) => !b.vencimento)) toast.warning("Não foi possível identificar todos os vencimentos. Confira os boletos e use Ler NF e boleto novamente.");
     } catch { if (manual) toast.error("Não foi possível ler os documentos."); }
     finally { setLendo(false); }
   };
@@ -78,7 +90,10 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
   const ro = !editable || !!protocolo;
   const temNf = (fat.notas_fiscais?.length ?? 0) > 0;
   useEffect(() => {
-    if (jaLeu.current || ro || !temNf || saved.numero_nf) return;
+    const faltaVencimento = temBoleto && (saved.condicao_de_pagamento === "Parcelado"
+      ? !saved.parcelas_detalhe?.length || saved.parcelas_detalhe.some((p) => !p.vencimento)
+      : !saved.data_vencimento);
+    if (jaLeu.current || ro || !temNf || (saved.numero_nf && !faltaVencimento)) return;
     jaLeu.current = true;
     void lerDocumentos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,7 +120,8 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
       onChanged?.(nextData);
       toast.info("Recebimento liberado ao solicitante. O protocolo no Pipefy será feito após o Recebido.");
     } catch (e: any) {
-      toast.error(e?.message || "Não foi possível salvar.");
+      const mensagem = e instanceof Response ? await e.text() : e;
+      toast.error(translateError(mensagem, "Não foi possível salvar os dados de pagamento."));
     } finally { setBusy(false); }
   };
 
@@ -118,9 +134,9 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         <div className="flex items-center gap-2">
           {venc.condicao && <span className="rounded border bg-muted px-2 py-0.5 text-xs">Mapa comparativo: <strong>{venc.condicao}</strong></span>}
           {!ro && temNf && (
-            <button type="button" onClick={() => lerDocumentos(true)} disabled={lendo} className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-60">
+            <Button type="button" variant="outline" size="sm" onClick={() => lerDocumentos(true)} disabled={lendo}>
               {lendo ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileSearch className="h-3 w-3" />} {lendo ? "Lendo NF e boleto…" : "Ler NF e boleto"}
-            </button>
+            </Button>
           )}
           <ProtocoloBadge data={card.data} />
         </div>
@@ -138,9 +154,13 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
           </select>
         </Field>
 
+        {c !== "Parcelado" && <Field label="Data de vencimento" required>
+          <input aria-label="Data de vencimento" type="date" className={inputCls} value={d.data_vencimento ?? ""}
+            readOnly={c === "Boleto"} onChange={(e) => set("data_vencimento", e.target.value)} />
+        </Field>}
         {(c === "Boleto" || c === "Parcelado") && (
           <p className={`md:col-span-2 self-end text-xs ${temBoleto ? "text-muted-foreground" : "text-destructive"}`}>
-            {temBoleto ? `${fat.boletos!.length} boleto(s) anexado(s) em Documentos de Faturamento.` : "Anexe o boleto em Documentos de Faturamento acima."}
+            {temBoleto ? `${fat.boletos?.length ?? 0} boleto(s) anexado(s) em Documentos de Faturamento.` : "Anexe o boleto em Documentos de Faturamento acima."}
           </p>
         )}
         {c === "Depósito" && (<>
@@ -162,6 +182,9 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
                   <Field label={`Valor da parcela ${i + 1} (R$)`} required>
                     <input className={inputCls} inputMode="decimal" value={p.valor} onChange={(e) => set("parcelas_detalhe", parcelas.map((x, j) => j === i ? { ...x, valor: e.target.value } : x))} />
                   </Field>
+                  <Field label={`Vencimento da parcela ${i + 1}`} required>
+                    <input aria-label={`Vencimento da parcela ${i + 1}`} type="date" className={inputCls} value={p.vencimento ?? ""} readOnly />
+                  </Field>
                 </div>
               ))}
             </div>
@@ -179,9 +202,9 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
       {editable && (
         <div className="flex flex-wrap justify-end gap-2">
           {!protocolo && (
-            <button type="button" disabled={busy} onClick={onSave} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60">
+            <Button type="button" disabled={busy || lendo} onClick={onSave}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Salvar e liberar recebimento
-            </button>
+            </Button>
           )}
         </div>
       )}

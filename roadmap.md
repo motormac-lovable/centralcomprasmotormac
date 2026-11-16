@@ -5,3 +5,5 @@
 - [x] Exibir Centro de Custo nos detalhes do Kanban e histórico; dados prontos para o futuro PDF, cuja criação foi adiada pelo usuário.
 - [ ] Verificar o arraste no Kanban autenticado — bloqueado: sessão indisponível e nenhum cadastro corresponde ao usuário atual do Lovable.
 - [x] Protocolo Pipefy pelo formulário público (Gcg4XrX6) configurado
+- [x] Traduzir falhas de notificações/protocolo e extrair vencimento do boleto, com campo manual para outras condições — 20 testes passaram e boleto de teste retornou 30/11/2026.
+- [ ] Verificar vencimento e protocolo no card real — bloqueado: usuário atual sem conta correspondente para sessão de teste; nenhum protocolo de teste enviado ao Pipefy.

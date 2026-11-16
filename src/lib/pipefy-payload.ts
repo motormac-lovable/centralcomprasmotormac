@@ -1,6 +1,20 @@
 /** Monta os campos do card Pipefy a partir do card da Central (puro, testável). */
-import { centroCustoPipefy, empresaPipefy } from "./pipefy-depara";
-import { getDadosPagamento, parseValor } from "./pagamento";
+import { centroCustoPipefy, empresaPipefy, setorPipefy } from "./pipefy-depara";
+import { getDadosPagamento, parseValor, normalizarVencimento } from "./pagamento";
+
+/** IDs das etiquetas Setor e vencimentos, conferidos no formulário público. */
+const SETOR_IDS: Record<string, string> = {
+  "Tecnologia da Informação": "309399978", Marketing: "309399979", DP: "309399980", RH: "309399981",
+  Financeiro: "309399982", Contabilidade: "309399987", Controladoria: "309399988", Geradores: "309399989",
+  JCB: "309399990", Peças: "309400019", Engenharia: "309400023", Compras: "309400024",
+  "Segurança do trabalho": "309400026", Oficina: "309400027", Frota: "309492409", NEST: "317317079", Administrativo: "318144216",
+};
+export const PIPEFY_VENCIMENTO_FIELDS = [
+  "data_vencimento", "copy_of_data_vencimento", "copy_of_copy_of_data_vencimento", "copy_of_copy_of_copy_of_data_vencimento",
+  "copy_of_data_vencimento_4", "copy_of_copy_of_copy_of_data_vencimento_4", "copy_of_copy_of_copy_of_copy_of_copy_of_data_vencimento_4",
+  "copy_of_copy_of_copy_of_copy_of_data_vencimento_4", "copy_of_copy_of_data_vencimento_4", "copy_of_data_vencimento_9",
+  "copy_of_data_vencimento_10", "copy_of_data_vencimento_11",
+];
 
 export const PIPEFY_ANEXO_NF_FIELD = "anexar_nf";
 export const PIPEFY_ANEXO_BOLETO_FIELD = "anexar_boleto";
@@ -49,6 +63,8 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   const d = (card.data ?? {}) as Record<string, any>;
   const pg = getDadosPagamento(card.data);
   const pend: string[] = [];
+  const setor = setorPipefy(d.departamento_codigo ?? d.departamento);
+  if (!setor) pend.push("Setor sem De/Para para o departamento da solicitação.");
   const emp = empresaPipefy(card.empresa ?? d.empresa, card.unidade ?? d.unidade);
   if (!emp) pend.push("Empresa/Unidade sem De/Para no Pipefy.");
   const cc = centroCustoPipefy(d.centro_custo_codigo, d.centro_custo_descricao, emp?.cnpj);
@@ -67,6 +83,7 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
 
   const f: CampoPipefy[] = [];
   const add = (id: string, v: string | null | undefined) => { if (v) f.push({ field_id: id, field_value: v }); };
+  if (setor) f.push({ field_id: "sele_o_de_etiqueta", field_value: [SETOR_IDS[setor]] });
   // IDs reais do formulário público Pipefy (Gcg4XrX6).
   add("seu_e_mail", compradorEmail);
   add("c_pia_de_e_mail", card.requester_email || "");
@@ -78,11 +95,18 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   const c = pg.condicao_de_pagamento;
   add("condi_o_de_pagamento", c);
   if (c === "Parcelado") {
-    add("n_mero_de_parcelas", pg.numero_de_parcelas);
+    add("n_mero_de_parcelas", String(pg.parcelas_detalhe?.length ?? ""));
     (pg.parcelas_detalhe ?? []).slice(0, 12).forEach((p, i) => {
       const v = parseValor(p.valor);
       if (v > 0) add(PIPEFY_PARCELA_FIELDS[i], v.toFixed(2));
+      const date = normalizarVencimento(p.vencimento);
+      if (date) add(PIPEFY_VENCIMENTO_FIELDS[i], `${date}T12:00:00-03:00`);
+      else pend.push(`Vencimento da parcela ${i + 1} não informado. Leia os boletos no card.`);
     });
+  } else {
+    const date = normalizarVencimento(pg.data_vencimento);
+    if (date) add("data_vencimento", `${date}T12:00:00-03:00`);
+    else pend.push("Data de vencimento não informada. Confira os dados de pagamento no card.");
   }
   if (c === "Depósito") { add("banco", pg.banco); add("ag_ncia", pg.agencia); add("conta_corrente", pg.conta_corrente); add("c_digo_pix", pg.codigo_pix); }
   if (c === "Cartão corporativo") add("respons_vel_pelo_cart_o", pg.responsavel_pelo_cartao);

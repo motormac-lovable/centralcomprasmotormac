@@ -4,10 +4,11 @@ export const CONDICOES_PAGAMENTO = [
 ] as const;
 export type CondicaoPagamento = (typeof CONDICOES_PAGAMENTO)[number];
 
-export type Parcela = { numero: number; valor: string };
+export type Parcela = { numero: number; valor: string; vencimento?: string };
 
 export type DadosPagamento = {
   condicao_de_pagamento: CondicaoPagamento;
+  data_vencimento?: string;
   banco: string;
   fornecedor?: string;
   agencia: string;
@@ -58,6 +59,16 @@ export function parseValor(v: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Normaliza a data lida do documento sem inventar vencimentos ausentes. */
+export function normalizarVencimento(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const iso = br ? `${br[3]}-${br[2]}-${br[1]}` : raw;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const date = new Date(`${iso}T12:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === iso ? iso : "";
+}
+
 /** Validação conforme De/Para Pipefy. `temBoleto` = boletos anexados no faturamento. Retorna lista de erros. */
 export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boolean): string[] {
   const e: string[] = [];
@@ -65,6 +76,8 @@ export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boo
   if (!(parseValor(d.valor_documento) > 0)) e.push("Informe o Valor do Documento.");
   const c = d.condicao_de_pagamento;
   if (!c) { e.push("Selecione a condição de pagamento."); return e; }
+  if (c !== "Parcelado" && !normalizarVencimento(d.data_vencimento))
+    e.push(c === "Boleto" ? "Leia o boleto para obter a data de vencimento." : "Informe uma data de vencimento válida.");
   if ((c === "Boleto" || c === "Parcelado") && !temBoleto) e.push("Anexe o boleto em Documentos de Faturamento.");
   if (c === "Depósito" && (!d.banco?.trim() || !d.agencia?.trim() || !d.conta_corrente?.trim()))
     e.push("Preencha Banco, Agência e Conta Corrente.");
@@ -72,6 +85,7 @@ export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boo
     const p = d.parcelas_detalhe ?? [];
     if (p.length < 2 || p.length > 12) e.push("Parcelamento deve ter de 2 a 12 parcelas.");
     if (p.some((x) => !(parseValor(x.valor) > 0))) e.push("Preencha o valor de todas as parcelas.");
+    if (p.some((x) => !normalizarVencimento(x.vencimento))) e.push("Leia os boletos para obter o vencimento de todas as parcelas.");
   }
   if (c === "Cartão corporativo") {
     if (!d.responsavel_pelo_cartao?.trim()) e.push("Informe o Responsável Pelo Cartão.");

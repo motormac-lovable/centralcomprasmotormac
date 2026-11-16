@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getFaturamento, INVOICE_BUCKET } from "@/lib/invoice-documents";
-import { validarDadosPagamento, CONDICOES_PAGAMENTO } from "@/lib/pagamento";
+import { validarDadosPagamento, CONDICOES_PAGAMENTO, normalizarVencimento } from "@/lib/pagamento";
 
 /** Só Comprador, Administrador e Proprietário (auditor só lê; solicitante não acessa). */
 async function exigirEquipeCompras(userId: string) {
@@ -14,9 +14,10 @@ async function exigirEquipeCompras(userId: string) {
   return supabaseAdmin;
 }
 
-const parcelaSchema = z.object({ numero: z.number().int(), valor: z.string().max(30) });
+const parcelaSchema = z.object({ numero: z.number().int(), valor: z.string().max(30), vencimento: z.string().max(10).default("") });
 const dadosSchema = z.object({
   condicao_de_pagamento: z.enum(CONDICOES_PAGAMENTO),
+  data_vencimento: z.string().max(10).default(""),
   banco: z.string().max(100).default(""),
   fornecedor: z.string().max(200).optional(),
   agencia: z.string().max(30).default(""),
@@ -78,7 +79,8 @@ export const extrairDadosPagamento = createServerFn({ method: "POST" })
     const content: any[] = [{ type: "text", text:
       "Extraia dos documentos fiscais brasileiros abaixo (NF e boletos) os dados de pagamento. " +
       "numero_nf: número da nota (só dígitos, sem zeros à esquerda). valor_documento: valor total da NF em reais com ponto decimal (ex 1234.56). " +
-      "fornecedor: razão social do emitente/beneficiário. boletos: um item por boleto/parcela com valor (ponto decimal). " +
+      "fornecedor: razão social do emitente/beneficiário. boletos: um item por boleto/parcela com valor (ponto decimal) e vencimento (YYYY-MM-DD). " +
+      "Leia a data do campo Vencimento de cada boleto; não confunda com emissão/processamento e não invente datas. Se não localizar, retorne vencimento vazio. " +
       "Se a XML/chave de acesso estiver informada use-a para conferir o número: " + (fat.xml ?? "não informada") }];
     for (const a of arquivos) {
       const { data: blob } = await admin.storage.from(INVOICE_BUCKET).download(a.path);
@@ -87,7 +89,9 @@ export const extrairDadosPagamento = createServerFn({ method: "POST" })
       let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
       const mime = a.type || "application/pdf";
       content.push({ type: "text", text: `Documento: ${a.tipo} (${a.name})` });
-      content.push({ type: "image_url", image_url: { url: `data:${mime};base64,${btoa(bin)}` } });
+      content.push(mime === "application/pdf"
+        ? { type: "file", file: { filename: a.name, file_data: `data:application/pdf;base64,${btoa(bin)}` } }
+        : { type: "image_url", image_url: { url: `data:${mime};base64,${btoa(bin)}` } });
     }
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -110,6 +114,6 @@ export const extrairDadosPagamento = createServerFn({ method: "POST" })
     try {
       const x = JSON.parse(j.choices[0].message.tool_calls[0].function.arguments);
       return { ok: true as const, numero_nf: String(x.numero_nf ?? ""), valor_documento: String(x.valor_documento ?? ""), fornecedor: String(x.fornecedor ?? ""),
-        boletos: (Array.isArray(x.boletos) ? x.boletos : []).map((b: any) => ({ valor: String(b?.valor ?? "") })) as { valor: string }[] };
+        boletos: (Array.isArray(x.boletos) ? x.boletos : []).map((b: any) => ({ valor: String(b?.valor ?? ""), vencimento: normalizarVencimento(b?.vencimento) })) as { valor: string; vencimento: string }[] };
     } catch { return { ok: false as const, erro: "Resposta da leitura inválida." }; }
   });

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RELATO_MAX, SUGESTAO_MAX, getRecebimento, recebimentoStatus } from "@/lib/recebimento";
 import { registrarRecebimento } from "@/lib/recebimento.functions";
+import { translateError } from "@/lib/error-messages";
 
 const VERDE = "#16aa4f";
 const VERMELHO = "#de2625";
@@ -68,7 +69,7 @@ export function RecebimentoButtons({
       onUpdated();
     } catch (e: any) {
       const msg = e instanceof Response ? await e.text() : e?.message;
-      toast.error(msg || "Não foi possível registrar o recebimento.");
+      toast.error(translateError(msg, "Não foi possível registrar o recebimento."));
     } finally { setLoading(false); }
   };
 
