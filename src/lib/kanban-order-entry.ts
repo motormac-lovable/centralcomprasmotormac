@@ -21,7 +21,7 @@ export function hasFormalOrderApproval(card: EntryCard): boolean {
 /** Only validates the manual Kanban path; the approval RPC and ERP flow do not use this guard. */
 export function manualOrderEntryBlock(card: EntryCard, requestedStatus: string): "manual" | "approval" | null {
   if (requestedStatus === "pedidos_gerados") return "manual";
-  if (card.kind === "frete" && requestedStatus === "cotacoes_aprovadas" && !hasFormalOrderApproval(card)) {
+  if (card.kind !== "contratos" && requestedStatus === "cotacoes_aprovadas" && !hasFormalOrderApproval(card)) {
     return "approval";
   }
   return null;
