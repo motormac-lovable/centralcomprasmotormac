@@ -70,7 +70,7 @@ function ProtocoloPage() {
         <div className="overflow-x-auto rounded-xl border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-              <tr><th className="p-3">Código</th><th className="p-3">Solicitação</th><th className="p-3">Pedido</th><th className="p-3">Centro de Custo</th><th className="p-3">Situação</th><th className="p-3 text-right">Ação</th></tr>
+              <tr><th className="p-3">Código</th><th className="p-3">Solicitação</th><th className="p-3">Pedido</th><th className="p-3">Centro de Custo</th><th className="p-3">Situação</th><th className="whitespace-nowrap p-3">Número do protocolo</th><th className="p-3 text-right">Ação</th></tr>
             </thead>
             <tbody>
               {cards.map((c) => {
@@ -86,7 +86,9 @@ function ProtocoloPage() {
                     <td className={`p-3 text-xs ${tone}`}>
                       {s.tone === "erro" && <AlertTriangle className="mr-1 inline h-3 w-3" />}{s.label}
                       {s.tone === "erro" && d.protocolo_pipefy_erro?.mensagem && <div className="text-muted-foreground">{translateError(d.protocolo_pipefy_erro.mensagem, "Não foi possível enviar o protocolo ao Pipefy.")}</div>}
-                      <div className="mt-1"><ProtocoloBadge data={c.data} /></div>
+                    </td>
+                    <td className="whitespace-nowrap p-3 text-xs">
+                      {d.protocolo_pipefy?.card_id ? <ProtocoloBadge data={c.data} /> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-3 text-right">
                       {canSend && d.recebimento?.status === "confirmado" && s.tone !== "ok" && (
