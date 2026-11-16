@@ -10,3 +10,4 @@
 - [x] Atualizar automaticamente situação e número do protocolo na guia Protocolo — atualização em tempo real observada no pedido 368034 sem recarregar a página; situação Protocolado e número 1479055222 confirmados, com recuperação por foco/conexão e consulta periódica.
 - [x] Corrigir e validar nome, extensão e conteúdo dos anexos enviados ao Pipefy sem alterar downloads da Central — 12 testes passaram; upload real retornou application/pdf, nome .pdf e bytes idênticos, sem criar protocolo.
 - [ ] Substituir anexos antigos sem extensão no protocolo 1479055222 — bloqueado: edição do card Pipefy requer acesso autenticado externo; não criar protocolo duplicado.
+- [x] Desativar Cotações Aprovadas e encaminhar aprovação diretamente para Pedidos Gerados; 10 cards antigos encaminhados, 17 testes passaram, Kanban autenticado com cinco colunas e emissão real do PC1711262188 conferidos. Sem cotações pendentes para um clique de aprovação real.

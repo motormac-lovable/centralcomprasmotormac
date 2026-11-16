@@ -36,8 +36,12 @@ describe("entrada manual em Pedidos Gerados", () => {
     for (const status of ["solicitacoes_abertas", "em_cotacao", "aguardando_aprovacao", "cotacoes_rejeitadas"]) {
       expect(manualOrderEntryBlock({ ...approved, data: {} }, status)).toBeNull();
     }
-    for (const kind of ["compras", "contratos", "materiais"]) {
-      expect(manualOrderEntryBlock({ ...approved, kind, data: {} }, "cotacoes_aprovadas")).toBeNull();
+    expect(manualOrderEntryBlock({ ...approved, kind: "contratos", data: {} }, "cotacoes_aprovadas")).toBeNull();
+  });
+
+  it("não permite usar a coluna aposentada para contornar a aprovação de compras e materiais", () => {
+    for (const kind of ["compras", "materiais"]) {
+      expect(manualOrderEntryBlock({ ...approved, kind, data: {} }, "cotacoes_aprovadas")).toBe("approval");
     }
   });
 });

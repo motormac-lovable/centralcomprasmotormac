@@ -64,7 +64,7 @@ function KanbanPage() {
   const pcTentados = useRef(new Set<string>());
   // Emissão do Pedido de Compra: idempotente no servidor; não altera status nem aprovações.
   useEffect(() => {
-    for (const c of cards) {
+    const timer = window.setTimeout(() => { for (const c of cards) {
       if (!aplicaPedidoCompra(c) || pedidoCompraInfo(c.data)?.numero || pcTentados.current.has(c.id)) continue;
       pcTentados.current.add(c.id);
       gerarPC({ data: { cardId: c.id } })
@@ -74,7 +74,8 @@ function KanbanPage() {
           else if (r.email_status === "falha") toast.error(`Pedido ${r.numero} gerado, mas o e-mail ao fornecedor falhou.`);
         })
         .catch((e) => console.error("[pedido-compra]", translateError(e instanceof Error ? e.message : String(e))));
-    }
+    } }, 5000);
+    return () => window.clearTimeout(timer);
   }, [cards, gerarPC]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -169,7 +170,7 @@ function KanbanPage() {
       toast.warning("Alerta", { description: MANUAL_ORDER_ENTRY_MESSAGE });
       return;
     }
-    if (card.kind === "frete" && requestedStatus === "cotacoes_aprovadas") {
+    if (card.kind !== "contratos" && requestedStatus === "cotacoes_aprovadas") {
       // Evita o atalho manual para Pedidos Gerados com estado local ou aprovação antigos.
       const { data: currentCard, error } = await supabase.from("kanban_cards")
         .select("*").eq("id", card.id).single();
@@ -188,9 +189,9 @@ function KanbanPage() {
       }
       card = currentCard;
     }
-    // Frete pula a etapa de ERP: vai direto para "Pedidos gerados".
+    // A coluna intermediária foi desativada; contratos preservam sua aprovação existente.
     const newStatus: Status =
-      card.kind === "frete" && requestedStatus === "cotacoes_aprovadas"
+      requestedStatus === "cotacoes_aprovadas"
         ? "pedidos_gerados"
         : requestedStatus;
 
@@ -236,7 +237,7 @@ function KanbanPage() {
       patch.order_number = card.codigo_unico;
     }
     // Contratos aprovados ficam prontos para o Apollo consumir via API/View.
-    if (card.kind === "contratos" && newStatus === "cotacoes_aprovadas") {
+    if (card.kind === "contratos" && newStatus === "pedidos_gerados") {
       (patch as Partial<Card> & { ready_for_apollo_integration?: boolean }).ready_for_apollo_integration = true;
     }
 
@@ -441,7 +442,7 @@ function KanbanPage() {
       </div>
 
       <DndContext sensors={sensors} onDragStart={onStart} onDragEnd={onEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-6 lg:overflow-visible snap-x snap-mandatory">
+        <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-5 lg:overflow-visible snap-x snap-mandatory">
           {STATUS_COLUMNS.map((col) => (
             <div key={col.id} className="snap-start shrink-0 w-[85vw] sm:w-[55vw] md:w-[40vw] lg:w-auto">
               <Column
@@ -1340,7 +1341,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
       toast.success("Frete aprovado · movido para Pedidos gerados.");
     } else {
       await onMove(card, "cotacoes_aprovadas");
-      toast.success("Cotação aprovada · aguardando retorno do ERP Linx Apollo.");
+      toast.success("Cotação aprovada · enviada para Pedidos Gerados.");
     }
     onClose();
   };
@@ -2718,7 +2719,7 @@ function AdvanceStageSection({
           <p className="text-xs text-muted-foreground">
             Após revisar as informações e baixar os documentos, aprove o contrato para liberá-lo à integração com o Apollo.
             <br />
-            O card irá diretamente para <strong>Cotações Aprovadas</strong>, pulando as etapas intermediárias.
+            O card irá diretamente para <strong>Pedidos Gerados</strong>, pulando as etapas intermediárias.
           </p>
           <button
             onClick={async () => {

@@ -10,6 +10,7 @@ import { KIND_LABEL, type Supplier, type Attachment } from "@/lib/cards";
 import { translateError } from "@/lib/error-messages";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import { notifyRequestRejected } from "@/lib/email-notifications.functions";
+import { aprovarCotacao } from "@/lib/approval.functions";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 type Kind = Database["public"]["Enums"]["card_kind"];
@@ -22,7 +23,13 @@ const KIND_ICON: Record<Kind, typeof Package> = {
 };
 
 export const Route = createFileRoute("/_authenticated/aprovacoes")({
-  head: () => ({ meta: [{ title: "Painel de Cotações para Aprovação — Central de Compras" }] }),
+  head: () => ({ meta: [
+    { title: "Aprovação de Cotações — Central de Compras Motormac" },
+    { name: "description", content: "Decisões de cotações dentro das alçadas da Central de Compras Motormac." },
+    { property: "og:title", content: "Aprovação de Cotações — Central de Compras Motormac" },
+    { property: "og:description", content: "Acompanhamento e aprovação de cotações da Central de Compras Motormac." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: AprovacoesPage,
 });
 
@@ -70,6 +77,7 @@ function AprovacoesPage() {
   const [rejecting, setRejecting] = useState<Card | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const notifyRejected = useServerFn(notifyRequestRejected);
+  const approveQuotation = useServerFn(aprovarCotacao);
 
   const reload = async () => {
     setLoading(true);
@@ -134,15 +142,19 @@ function AprovacoesPage() {
 
   const approve = async (card: Card, selectedSupplierId: string, justificativa: string) => {
     setBusyId(card.id);
-    const { error } = await (supabase as any).rpc("approve_kanban_card", {
-      _card_id: card.id,
-      _selected_supplier_id: selectedSupplierId,
-      _justificativa: justificativa,
-    });
-    setBusyId(null);
-    if (error) return toast.error(translateError(error, "Não foi possível aprovar a cotação."));
-    toast.success(card.kind === "frete" ? "Frete aprovado — Pedido gerado." : "Cotação aprovada — segue para integração Linx.");
-    reload();
+    try {
+      const result = await approveQuotation({ data: { cardId: card.id, supplierId: selectedSupplierId, justificativa } });
+      toast.success("Cotação aprovada — enviada para Pedidos Gerados.");
+      if (result.aviso) toast.warning(result.aviso);
+      if (result.pedido?.email_status === "falha") toast.warning("Pedido gerado, mas o envio ao fornecedor falhou. Você pode reenviar pelo Kanban.");
+      if (result.pedido?.email_status === "sem_filial") toast.warning("Não foi possível emitir o pedido: empresa/unidade sem cadastro fiscal.");
+      if (result.pedido?.email_status === "sem_email") toast.info("Pedido gerado sem envio por ausência de e-mail do fornecedor.");
+      await reload();
+    } catch (error) {
+      toast.error(translateError(error, "Não foi possível aprovar a cotação."));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const confirmReject = async (motivo: string) => {
