@@ -8,6 +8,7 @@ import { getDadosPagamento } from "@/lib/pagamento";
 import { ProtocoloBadge, useProtocolar } from "@/components/DadosPagamentoSection";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
+import { translateError } from "@/lib/error-messages";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
@@ -61,7 +62,7 @@ function ProtocoloPage() {
     <div className="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold"><FileCheck2 className="h-5 w-5 text-primary" /> Protocolo Pipefy</h1>
-        <p className="text-sm text-muted-foreground">Pedidos Gerados com documentos de pagamento. O protocolo é enviado automaticamente ao salvar os dados de pagamento no card; aqui você acompanha e reenvia pendências.</p>
+        <p className="text-sm text-muted-foreground">Pedidos Gerados com documentos de pagamento e confirmação de recebimento.</p>
       </div>
       {!cards ? <Loader2 className="h-5 w-5 animate-spin" /> : cards.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum pedido em Pedidos Gerados.</p>
@@ -84,7 +85,7 @@ function ProtocoloPage() {
                     <td className="p-3 text-xs">{d.centro_custo_codigo ? `${d.centro_custo_codigo} - ${d.centro_custo_descricao}` : "—"}</td>
                     <td className={`p-3 text-xs ${tone}`}>
                       {s.tone === "erro" && <AlertTriangle className="mr-1 inline h-3 w-3" />}{s.label}
-                      {s.tone === "erro" && <div className="text-muted-foreground">{d.protocolo_pipefy_erro?.mensagem}</div>}
+                      {s.tone === "erro" && d.protocolo_pipefy_erro?.mensagem && <div className="text-muted-foreground">{translateError(d.protocolo_pipefy_erro.mensagem, "Não foi possível enviar o protocolo ao Pipefy.")}</div>}
                       <div className="mt-1"><ProtocoloBadge data={c.data} /></div>
                     </td>
                     <td className="p-3 text-right">
