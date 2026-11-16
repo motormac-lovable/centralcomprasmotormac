@@ -17,9 +17,9 @@ export function ProtocoloBadge({ data }: { data: unknown }) {
   const p = (data as any)?.protocolo_pipefy as Protocolo | undefined;
   if (!p?.card_id) return null;
   return (
-    <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:underline">
-      Pipefy #{p.card_id} <ExternalLink className="h-3 w-3" />
-    </a>
+    <Link to="/protocolo" className="inline-flex items-center gap-1 rounded-full border border-protocol-success/40 bg-protocol-success/10 px-2 py-0.5 text-xs font-medium text-protocol-success hover:underline">
+      #{String(p.card_id).replace(/^#+/, "")}
+    </Link>
   );
 }
 
