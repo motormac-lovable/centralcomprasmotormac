@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, FileCheck2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -46,11 +46,39 @@ function ProtocoloPage() {
   const [cards, setCards] = useState<Card[] | null>(null);
   const [sending, setSending] = useState<string | null>(null);
   const protocolar = useProtocolar();
+  const mounted = useRef(false);
+  const loadVersion = useRef(0);
 
-  const load = () =>
-    supabase.from("kanban_cards").select("*").eq("status", "pedidos_gerados").gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
-      .order("status_changed_at", { ascending: false }).then(({ data }) => setCards(data ?? []));
-  useEffect(() => { if (allowed) load(); }, [allowed]);
+  const load = useCallback(async () => {
+    const version = ++loadVersion.current;
+    const { data, error } = await supabase.from("kanban_cards").select("*")
+      .eq("status", "pedidos_gerados").gte("created_at", DATA_DE_CORTE_PRODUCAO_ISO)
+      .order("status_changed_at", { ascending: false });
+    if (mounted.current && version === loadVersion.current && !error) setCards(data ?? []);
+  }, []);
+  useEffect(() => {
+    if (!allowed) return;
+    mounted.current = true;
+    void load();
+    const refresh = () => { if (document.visibilityState === "visible") void load(); };
+    const channel = supabase.channel(`protocolo-cards-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "kanban_cards" }, () => { void load(); })
+      .subscribe((status) => { if (status === "SUBSCRIBED") void load(); });
+    // Recupera eventos perdidos durante desconexões e ao voltar à guia.
+    const interval = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      mounted.current = false;
+      ++loadVersion.current;
+      void supabase.removeChannel(channel);
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [allowed, load]);
 
   if (!allowed) {
     return <div className="mx-auto max-w-xl p-8 text-center text-sm text-muted-foreground">
