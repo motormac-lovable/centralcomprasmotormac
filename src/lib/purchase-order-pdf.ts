@@ -15,6 +15,7 @@ export type PurchaseOrderCard = {
   suppliers?: unknown;
   data?: unknown;
   kind?: string | null;
+  comprador_email?: string | null;
 };
 
 export type FornecedorVencedor = { nome: string; cnpj: string; email: string; valor: string; condicao: string; prazo: string; observacao: string; telefone: string };
@@ -105,7 +106,7 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
     ["Inscrição Estadual", filial?.ie ?? "—"],
     ["Endereço", filial?.endereco ?? (card.unidade || "—")],
     ["Solicitante", [card.requester_name || (data.nome as string) || "", card.requester_email || ""].filter(Boolean).join(" · ") || "—"],
-    ["Comprador", card.buyer_name || "—"],
+    ["Comprador", [card.buyer_name || "", card.comprador_email || ""].filter(Boolean).join(" · ") || "—"],
   ], 36);
 
   const total = parseBRL(vencedor?.valor);
@@ -123,21 +124,32 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
     ["Valor total da compra", total ? `R$ ${brl(total)}` : "—"],
     ["Condição de pagamento", vencedor?.condicao || "—"],
     ["Prazo de entrega", vencedor?.prazo || "—"],
-    ["Observações do fornecedor", vencedor?.observacao || "—"],
+    ["Observações", vencedor?.observacao || "—"],
   ], y);
 
   if (isFrete) {
     const local = (c: unknown, cep: unknown) => [textoPdf(c), cep ? `CEP ${textoPdf(cep)}` : ""].filter(Boolean).join(" · ");
-    y = bloco("DETALHES DO FRETE", [
-      ["Origem", local(data.cidadeOrigem, data.cepOrigem)],
-      ["Destino", local(data.cidadeDestino, data.cepDestino)],
-      ["CNPJ do pagador", String(data.cnpjPagador ?? "")],
-      ["CNPJ do remetente", String(data.cnpjRemetente ?? "")],
-      ["CNPJ do destinatário", String(data.cnpjDestinatario ?? "")],
-      ["Departamento", String(data.departamento ?? "")],
-      ["Coleta prevista", dataBR(data.dataColetaPrevista)],
-      ["Entrega prevista", dataBR(data.dataEntregaPrevista)],
-    ], y);
+    const par = (l1: string, v1: unknown, l2: string, v2: unknown) => [l1, textoPdf(v1) || "—", l2, textoPdf(v2) || "—"];
+    autoTable(doc, {
+      startY: y,
+      margin: { left: M, right: M },
+      head: [[{ content: "DETALHES DO FRETE", colSpan: 4 }]],
+      pageBreak: "avoid",
+      body: [
+        par("Origem", local(data.cidadeOrigem, data.cepOrigem), "Destino", local(data.cidadeDestino, data.cepDestino)),
+        par("CNPJ do pagador", data.cnpjPagador, "CNPJ do remetente", data.cnpjRemetente),
+        par("CNPJ do destinatário", data.cnpjDestinatario, "Departamento", data.departamento),
+        par("Coleta prevista", dataBR(data.dataColetaPrevista), "Entrega prevista", dataBR(data.dataEntregaPrevista)),
+      ],
+      theme: "grid",
+      styles: { fontSize: 8.5, cellPadding: 1.8, textColor: [30, 30, 30] },
+      headStyles: { fillColor: black, textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 34, fontStyle: "bold", fillColor: [238, 238, 238] },
+        2: { cellWidth: 34, fontStyle: "bold", fillColor: [238, 238, 238] },
+      },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     const vols = Array.isArray(data.volumesList) && data.volumesList.length ? (data.volumesList as Record<string, unknown>[]) : [data];
     autoTable(doc, {
       startY: y,

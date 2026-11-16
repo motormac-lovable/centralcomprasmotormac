@@ -104,7 +104,7 @@ async function enviarEmail(admin: Admin, card: CardRow, numero: string, to: stri
   const body = override?.body || corpoEmailFornecedor(nome || "Fornecedor", card.codigo_unico ?? "—", numero);
   if (override?.to.length) to = override.to.join(", ");
 
-  const pdf = Buffer.from(generatePurchaseOrderPDF(card, numero).output("arraybuffer"));
+  const pdf = Buffer.from(generatePurchaseOrderPDF({ ...card, comprador_email: cc || await emailComprador(admin, card.buyer_name) }, numero).output("arraybuffer"));
   const files: { name: string; mime: string; buf: Buffer }[] = [{ name: nomeArquivoPedido(numero), mime: "application/pdf", buf: pdf }];
   const prop = propostaVencedora(card.attachments, nome);
   if (prop?.path) {

@@ -32,6 +32,7 @@ import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-
 import { centroCustoLabel } from "@/lib/centros-de-custo";
 import { gerarPedidoCompra } from "@/lib/purchase-order.functions";
 import { PedidoEmailModal } from "@/components/PedidoEmailModal";
+import { getBidBuyerEmail } from "@/lib/bid-email.functions";
 import { aplicaPedidoCompra, numeroPedidoExibicao, pedidoCompraInfo } from "@/lib/purchase-order-number";
 import { emailValido, fornecedorVencedor, generatePurchaseOrderPDF, nomeArquivoPedido } from "@/lib/purchase-order-pdf";
 
@@ -2823,9 +2824,11 @@ function PedidoCompraActions({ card }: { card: Card }) {
   const [open, setOpen] = useState(false);
   const numero = pedidoCompraInfo(card.data)?.numero;
   const base = "inline-flex items-center gap-1.5 rounded-md border border-input bg-card text-foreground hover:bg-muted px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
-  const baixar = () => {
+  const buyerEmailFn = useServerFn(getBidBuyerEmail);
+  const baixar = async () => {
     if (!numero) return;
-    generatePurchaseOrderPDF(card, numero).save(nomeArquivoPedido(numero));
+    const email = await buyerEmailFn({ data: { cardId: card.id } }).then((r) => r?.email ?? "").catch(() => "");
+    generatePurchaseOrderPDF({ ...card, comprador_email: email }, numero).save(nomeArquivoPedido(numero));
   };
   return (
     <>
