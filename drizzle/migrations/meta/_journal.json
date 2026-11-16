@@ -36,6 +36,13 @@
       "when": 1793383869712,
       "tag": "0004_revoke_admin_on_inactivation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794866851759,
+      "tag": "0005_approved_quotations_direct_generated_orders",
+      "breakpoints": true
     }
   ]
 }
