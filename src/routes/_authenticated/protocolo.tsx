@@ -3,8 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, FileCheck2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { getFaturamento } from "@/lib/invoice-documents";
-import { getDadosPagamento } from "@/lib/pagamento";
+import { situacaoProtocolo } from "@/lib/protocolo-readiness";
+import { Button } from "@/components/ui/button";
 import { useProtocolar } from "@/components/DadosPagamentoSection";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
@@ -26,19 +26,6 @@ export const Route = createFileRoute("/_authenticated/protocolo")({
   }),
   component: ProtocoloPage,
 });
-
-function situacao(c: Card) {
-  const d = (c.data ?? {}) as any;
-  if (d.protocolo_pipefy?.card_id) return { label: "Protocolado", tone: "ok" };
-  if (d.protocolo_pipefy_erro) return { label: "Falha no envio", tone: "erro" };
-  const fat = getFaturamento(c.data);
-  if (!fat.notas_fiscais?.length) return { label: "Aguardando NF", tone: "pend" };
-  if (!getDadosPagamento(c.data).condicao_de_pagamento) return { label: "Aguardando dados de pagamento", tone: "pend" };
-  const rec = d.recebimento?.status;
-  if (rec === "problema") return { label: "Recebimento com problema", tone: "erro" };
-  if (rec !== "confirmado") return { label: "Aguardando Recebido do solicitante", tone: "pend" };
-  return { label: "Pronto para protocolar", tone: "pronto" };
-}
 
 function ProtocoloPage() {
   const { isBuyer, isAdmin, isOwner, isAuditor, isSolicitante, isApprover } = useAuth();
@@ -103,7 +90,7 @@ function ProtocoloPage() {
             </thead>
             <tbody>
               {cards.map((c) => {
-                const s = situacao(c);
+                const s = situacaoProtocolo(c);
                 const d = (c.data ?? {}) as any;
                 const tone = s.tone === "ok" ? "text-protocol-success" : s.tone === "erro" ? "text-destructive" : s.tone === "pronto" ? "text-foreground font-medium" : "text-muted-foreground";
                 return (
@@ -114,6 +101,7 @@ function ProtocoloPage() {
                     <td className="p-3 text-xs">{d.centro_custo_codigo ? `${d.centro_custo_codigo} - ${d.centro_custo_descricao}` : "—"}</td>
                     <td className={`p-3 text-xs ${tone}`}>
                       {s.tone === "erro" && <AlertTriangle className="mr-1 inline h-3 w-3" />}{s.label}
+                      {s.pendencias.length > 0 && <ul className="mt-1 space-y-1 text-muted-foreground">{s.pendencias.map((p) => <li key={p}>{p}</li>)}</ul>}
                       {s.tone === "erro" && d.protocolo_pipefy_erro?.mensagem && <div className="text-muted-foreground">{translateError(d.protocolo_pipefy_erro.mensagem, "Não foi possível enviar o protocolo ao Pipefy.")}</div>}
                     </td>
                     <td className="whitespace-nowrap p-3 text-xs text-foreground">
@@ -121,10 +109,9 @@ function ProtocoloPage() {
                     </td>
                     <td className="p-3 text-right">
                       {canSend && d.recebimento?.status === "confirmado" && s.tone !== "ok" && (
-                        <button type="button" disabled={sending === c.id} onClick={async () => { setSending(c.id); await protocolar(c.id); setSending(null); load(); }}
-                          className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60">
+                        <Button type="button" variant="outline" size="sm" disabled={!s.pronto || sending === c.id} onClick={async () => { setSending(c.id); try { await protocolar(c.id); } finally { setSending(null); void load(); } }}>
                           {sending === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Protocolar
-                        </button>
+                        </Button>
                       )}
                     </td>
                   </tr>
