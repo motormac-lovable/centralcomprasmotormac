@@ -30,6 +30,9 @@ import { DadosPagamentoSection } from "@/components/DadosPagamentoSection";
 import { BidRequestModal } from "@/components/BidRequestModal";
 import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-order-entry";
 import { centroCustoLabel } from "@/lib/centros-de-custo";
+import { gerarPedidoCompra, reenviarPedidoFornecedor } from "@/lib/purchase-order.functions";
+import { aplicaPedidoCompra, numeroPedidoExibicao, pedidoCompraInfo } from "@/lib/purchase-order-number";
+import { emailValido, fornecedorVencedor, generatePurchaseOrderPDF, nomeArquivoPedido } from "@/lib/purchase-order-pdf";
 
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
@@ -55,6 +58,22 @@ function KanbanPage() {
   const notifyApprovers = useServerFn(notifyApproversPending);
   const notifyRejected = useServerFn(notifyRequestRejected);
   const [cards, setCards] = useState<Card[]>([]);
+  const gerarPC = useServerFn(gerarPedidoCompra);
+  const pcTentados = useRef(new Set<string>());
+  // Emissão do Pedido de Compra: idempotente no servidor; não altera status nem aprovações.
+  useEffect(() => {
+    for (const c of cards) {
+      if (!aplicaPedidoCompra(c) || pedidoCompraInfo(c.data)?.numero || pcTentados.current.has(c.id)) continue;
+      pcTentados.current.add(c.id);
+      gerarPC({ data: { cardId: c.id } })
+        .then((r) => {
+          if (r.email_status === "sem_email") toast.info(`Pedido ${r.numero} gerado sem envio automático por ausência de e-mail do fornecedor.`);
+          else if (r.email_status === "enviado") toast.success(`Pedido ${r.numero} enviado ao fornecedor (${r.email}).`);
+          else if (r.email_status === "falha") toast.error(`Pedido ${r.numero} gerado, mas o e-mail ao fornecedor falhou.`);
+        })
+        .catch((e) => console.error("[pedido-compra]", translateError(e instanceof Error ? e.message : String(e))));
+    }
+  }, [cards, gerarPC]);
   const [open, setOpen] = useState<Card | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [columnQueries, setColumnQueries] = useState<Record<Status, string>>(() =>
@@ -685,9 +704,9 @@ function CardView({ card, dragging = false, footerSlot }: { card: Card; dragging
       </div>
       <h4 className="text-sm font-semibold leading-snug line-clamp-2">{card.title}</h4>
       {card.summary && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{card.summary}</p>}
-      {card.status === "pedidos_gerados" && (card.numero_pedido_linx || card.order_number) && (
+      {card.status === "pedidos_gerados" && numeroPedidoExibicao(card) && (
         <div className="mt-2 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950 dark:border-emerald-900 dark:text-emerald-200">
-          Pedido Linx Apollo: #{card.numero_pedido_linx ?? card.order_number}
+          {pedidoCompraInfo(card.data)?.numero ? `Pedido de Compra: ${numeroPedidoExibicao(card)}` : `Pedido Linx Apollo: #${numeroPedidoExibicao(card)}`}
         </div>
       )}
       {card.buyer_name ? (
@@ -1401,6 +1420,7 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Mensagem</span>
             </Link>
+            {aplicaPedidoCompra(card) && <PedidoCompraActions card={card} />}
             <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
               <X className="h-5 w-5" />
             </button>
@@ -2794,3 +2814,45 @@ function AdvanceStageSection({
 }
 
 
+
+function PedidoCompraActions({ card }: { card: Card }) {
+  const reenviar = useServerFn(reenviarPedidoFornecedor);
+  const [busy, setBusy] = useState(false);
+  const numero = pedidoCompraInfo(card.data)?.numero;
+  const vencedor = fornecedorVencedor(card.suppliers);
+  const temEmail = emailValido(vencedor?.email);
+  const base = "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition";
+  const baixar = () => {
+    if (!numero) return;
+    generatePurchaseOrderPDF(card, numero).save(nomeArquivoPedido(numero));
+  };
+  const enviar = async () => {
+    if (!temEmail || busy) return;
+    if (!window.confirm(`Enviar o Pedido de Compra ${numero ?? ""} para ${vencedor?.email}?`)) return;
+    setBusy(true);
+    try {
+      const r = await reenviar({ data: { cardId: card.id } });
+      if (r.email_status === "enviado") toast.success(`Pedido enviado ao fornecedor (${r.email}).`);
+      else if (r.email_status === "sem_email") toast.info("Fornecedor sem e-mail cadastrado.");
+      else toast.error("Não foi possível enviar o e-mail ao fornecedor.");
+    } catch (e) {
+      toast.error(translateError(e instanceof Error ? e.message : String(e)));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <button type="button" onClick={baixar} disabled={!numero}
+        title={numero ? `Baixar ${numero}` : "Número do pedido em geração"}
+        className={`${base} border-primary bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50`}>
+        <span aria-hidden>📥</span><span className="hidden sm:inline">Baixar Pedido de Compra (PDF)</span>
+      </button>
+      <button type="button" onClick={enviar} disabled={!temEmail || !numero || busy}
+        title={temEmail ? `Enviar para ${vencedor?.email}` : "Fornecedor vencedor sem e-mail cadastrado"}
+        className={`${base} border-input bg-card text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-60`}>
+        <Mail className="h-4 w-4" /><span className="hidden sm:inline">{busy ? "Enviando..." : "Enviar por e-mail"}</span>
+      </button>
+    </>
+  );
+}
