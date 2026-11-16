@@ -2065,14 +2065,15 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                 const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
                 setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card);
               }}
-            />
-          )}
-          {card.status === "pedidos_gerados" && (
-            <DadosPagamentoSection
-              key={`pg-${card.id}`}
-              card={{ ...(card as any), data: rawData }}
-              editable={canWriteKanban}
-              onChanged={(nextData) => setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card)}
+              renderPagamento={(boletos) => (
+                <DadosPagamentoSection
+                  key={`pg-${card.id}`}
+                  card={{ ...(card as any), data: rawData }}
+                  editable={canWriteKanban}
+                  boletosSlot={boletos}
+                  onChanged={(nextData) => setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card)}
+                />
+              )}
             />
           )}
 
