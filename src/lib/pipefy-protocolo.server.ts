@@ -2,6 +2,7 @@ import { getFaturamento, INVOICE_BUCKET } from "@/lib/invoice-documents";
 import { montarCamposPipefy, PIPEFY_ANEXO_BOLETO_FIELD, PIPEFY_ANEXO_NF_FIELD } from "@/lib/pipefy-payload";
 import { getRecebimento } from "@/lib/recebimento";
 import { translateError } from "@/lib/error-messages";
+import { enviarAnexoPipefy } from "@/lib/pipefy-attachments";
 
 const PIPEFY_PUBLIC_API = "https://app.pipefy.com/public_api";
 async function gql(query: string, variables: Record<string, unknown>) {
@@ -46,12 +47,7 @@ export async function executarProtocoloPipefy(admin: any, cardId: string, userId
     const enviar = async (path: string, name: string) => {
       const { data: blob, error } = await admin.storage.from(INVOICE_BUCKET).download(path);
       if (error || !blob) throw new Error(`Falha ao ler anexo ${name}`);
-      const pre = await fetch(`https://app.pipefy.com/upload_attachments/new?filename=${encodeURIComponent(name)}`);
-      if (!pre.ok) throw new Error(`Pipefy recusou o anexo ${name}`);
-      const sig = (await pre.json()) as { signedUrl: string; filename: string };
-      const put = await fetch(sig.signedUrl, { method: "PUT", body: await blob.arrayBuffer() });
-      if (!put.ok) throw new Error(`Falha ao enviar anexo ${name} ao Pipefy`);
-      return sig.filename;
+      return enviarAnexoPipefy(blob, name);
     };
     try {
       const nfPaths = await Promise.all((fat.notas_fiscais ?? []).map((f) => enviar(f.path, f.name)));

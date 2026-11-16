@@ -8,3 +8,5 @@
 - [x] Traduzir falhas de notificações/protocolo e extrair vencimento do boleto, com campo manual para outras condições — 20 testes passaram e boleto de teste retornou 30/11/2026.
 - [x] Verificar vencimento e protocolo no card real — pedido 368034 / solicitação 11202666: setor 205 → Segurança do trabalho, vencimento 20/11/2026 conferido no documento; dados salvos pelo comprador preservados e protocolo Pipefy 1479055222 confirmado na tela e no registro.
 - [x] Atualizar automaticamente situação e número do protocolo na guia Protocolo — atualização em tempo real observada no pedido 368034 sem recarregar a página; situação Protocolado e número 1479055222 confirmados, com recuperação por foco/conexão e consulta periódica.
+- [x] Corrigir e validar nome, extensão e conteúdo dos anexos enviados ao Pipefy sem alterar downloads da Central — 12 testes passaram; upload real retornou application/pdf, nome .pdf e bytes idênticos, sem criar protocolo.
+- [ ] Substituir anexos antigos sem extensão no protocolo 1479055222 — bloqueado: edição do card Pipefy requer acesso autenticado externo; não criar protocolo duplicado.
