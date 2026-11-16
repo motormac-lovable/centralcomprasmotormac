@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { CreditCard, ExternalLink, FileSearch, Loader2, Send } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CreditCard, FileSearch, Loader2, Send } from "lucide-react";
 import { Field, inputCls } from "@/components/forms/FormShell";
 import { CONDICOES_PAGAMENTO, getDadosPagamento, parseCondicaoMapa, parseValor, validarDadosPagamento, type CondicaoPagamento, type DadosPagamento, type Parcela } from "@/lib/pagamento";
 import { getFaturamento } from "@/lib/invoice-documents";
@@ -16,9 +17,9 @@ export function ProtocoloBadge({ data }: { data: unknown }) {
   const p = (data as any)?.protocolo_pipefy as Protocolo | undefined;
   if (!p?.card_id) return null;
   return (
-    <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:underline">
-      Pipefy #{p.card_id} <ExternalLink className="h-3 w-3" />
-    </a>
+    <Link to="/protocolo" className="inline-flex items-center gap-1 rounded-full border border-protocol-success/40 bg-protocol-success/10 px-2 py-0.5 text-xs font-medium text-protocol-success hover:underline">
+      #{String(p.card_id).replace(/^#+/, "")}
+    </Link>
   );
 }
 
