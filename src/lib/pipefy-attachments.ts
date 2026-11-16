@@ -12,7 +12,7 @@ export async function enviarAnexoPipefy(blob: Blob, name: string): Promise<strin
   const sig = await pre.json() as { signedUrl?: string; filename?: string };
   if (!sig.signedUrl || !sig.filename) throw new Error(`O Pipefy não retornou o destino do anexo ${name}.`);
   // Nunca vincular ao protocolo um arquivo que perdeu seu nome/extensão.
-  if (sig.filename.split("/").pop() !== name) {
+  if (!nomePreservado(sig.filename.split("/").pop() ?? "", name)) {
     throw new Error(`O Pipefy não preservou o nome do anexo ${name}. Tente novamente.`);
   }
   const put = await fetch(sig.signedUrl, {
@@ -22,4 +22,14 @@ export async function enviarAnexoPipefy(blob: Blob, name: string): Promise<strin
   });
   if (!put.ok) throw new Error(`Falha ao enviar o anexo ${name} ao Pipefy.`);
   return sig.filename;
+}
+const ext = (n: string) => (n.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase();
+const alnum = (n: string) => n.replace(/\.[a-z0-9]+$/i, "").normalize("NFD").replace(/[^a-z0-9]/gi, "").toLowerCase();
+
+/** Aceita a higienização do Pipefy (remove espaços/símbolos) desde que extensão e conteúdo alfanumérico se mantenham. */
+export function nomePreservado(retornado: string, original: string): boolean {
+  if (!retornado || /^untitled(\.|$)/i.test(retornado)) return false;
+  if (!ext(original) || ext(retornado) !== ext(original)) return false;
+  const a = alnum(retornado), b = alnum(original);
+  return !!a && a === b;
 }

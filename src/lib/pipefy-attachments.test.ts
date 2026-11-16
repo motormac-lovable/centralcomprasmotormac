@@ -27,3 +27,13 @@ describe("Anexos do formulário público Pipefy", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+import { nomePreservado } from "./pipefy-attachments";
+describe("nomePreservado", () => {
+  it("aceita nome higienizado pelo Pipefy", () => {
+    expect(nomePreservado("NF484229-FAZENDATREVISAN002.pdf", "NF 484229 - FAZENDA TREVISAN (002).pdf")).toBe(true);
+  });
+  it("rejeita untitled e extensão trocada", () => {
+    expect(nomePreservado("untitled", "nf.pdf")).toBe(false);
+    expect(nomePreservado("nf.txt", "nf.pdf")).toBe(false);
+  });
+});
