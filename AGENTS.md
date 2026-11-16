@@ -19,3 +19,4 @@
 - Normalize notification and protocol failures with error-messages.ts before display or persistence; external provider messages must not bypass localization.
 - Keep the Protocolo table synced from kanban_cards through a unique, cleaned-up realtime subscription and focus/online/visible polling recovery; all sending paths persist to the same data.protocolo_pipefy source, so stale requests must not overwrite newer reads.
 - Upload Pipefy attachments through pipefy-attachments.ts using objectName, contentType and contentLength plus the PUT MIME header; reject lost filenames to preserve original extensions and bytes without changing Central download rules.
+- Purchase orders (PC numbers, PDF, supplier e-mail) live in purchase-order-number.ts, filiais-fiscais.ts, purchase-order-pdf.ts (browser-safe) and purchase-order.server.ts; they write only kanban_cards.data.pedido_compra plus a history note, never status/approvals, and skip Contratos so Kanban rules stay intact.
