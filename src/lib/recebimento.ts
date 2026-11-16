@@ -1,3 +1,4 @@
+import { exigeBoleto } from "./pagamento";
 import { getFaturamento } from "@/lib/invoice-documents";
 
 export type RecebimentoStatus = "neutro" | "aguardando_docs" | "pendente_aceite" | "confirmado" | "problema";
@@ -21,7 +22,10 @@ export function getRecebimento(data: unknown): Recebimento | null {
 
 export function hasDocumentosFiscaisCompletos(data: unknown): boolean {
   const f = getFaturamento(data);
-  return (f.notas_fiscais?.length ?? 0) > 0 && (f.boletos?.length ?? 0) > 0 && !!f.xml?.trim();
+  // Boleto só é exigido quando a forma de pagamento salva é Boleto (sem dados salvos, segue exigindo).
+  const pg = (data as any)?.dados_pagamento;
+  const precisaBoleto = !pg?.condicao_de_pagamento || exigeBoleto(pg);
+  return (f.notas_fiscais?.length ?? 0) > 0 && (!precisaBoleto || (f.boletos?.length ?? 0) > 0) && !!f.xml?.trim();
 }
 
 /** Estado da célula de Recebimento — decisão final congela o estado. */

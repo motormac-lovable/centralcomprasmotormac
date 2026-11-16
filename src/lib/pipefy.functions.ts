@@ -23,6 +23,8 @@ const dadosSchema = z.object({
   agencia: z.string().max(30).default(""),
   conta_corrente: z.string().max(40).default(""),
   codigo_pix: z.string().max(150).default(""),
+  nome_favorecido: z.string().max(200).default(""),
+  parcelado: z.boolean().default(false),
   numero_de_parcelas: z.string().max(4).default(""),
   parcelas_detalhe: z.array(parcelaSchema).max(12).default([]),
   responsavel_pelo_cartao: z.string().max(150).default(""),

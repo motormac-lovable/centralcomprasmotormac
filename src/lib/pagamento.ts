@@ -1,7 +1,9 @@
 /** Dados de pagamento preenchidos pelo comprador em Pedidos Gerados (data.dados_pagamento). Browser-safe. */
 export const CONDICOES_PAGAMENTO = [
-  "Boleto", "Depósito", "Parcelado", "Cartão corporativo", "Adiantamento Fornecedor", "Adiantamento Viagem",
+  "Boleto", "Pagamento Pix", "Depósito", "Parcelado", "Cartão corporativo", "Adiantamento Fornecedor", "Adiantamento Viagem",
 ] as const;
+/** Formas exibidas no seletor; "Parcelado" virou opção marcável (legado aceito na leitura). */
+export const FORMAS_PAGAMENTO = CONDICOES_PAGAMENTO.filter((c) => c !== "Parcelado");
 export type CondicaoPagamento = (typeof CONDICOES_PAGAMENTO)[number];
 
 export type Parcela = { numero: number; valor: string; vencimento?: string };
@@ -14,6 +16,9 @@ export type DadosPagamento = {
   agencia: string;
   conta_corrente: string;
   codigo_pix: string;
+  nome_favorecido?: string;
+  /** Pagamento parcelado (opcional, marcado pelo comprador). */
+  parcelado?: boolean;
   numero_de_parcelas: string;
   parcelas_detalhe: Parcela[];
   responsavel_pelo_cartao: string;
@@ -69,6 +74,16 @@ export function normalizarVencimento(value: unknown): string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === iso ? iso : "";
 }
 
+/** Parcelado = marcação opcional ou condição legada "Parcelado". */
+export function isParcelado(d: Partial<DadosPagamento>): boolean {
+  return d.condicao_de_pagamento === "Parcelado" || !!d.parcelado;
+}
+
+/** Boleto só é exigido quando a forma escolhida é Boleto (ou legado Parcelado). */
+export function exigeBoleto(d: Partial<DadosPagamento> | undefined): boolean {
+  return d?.condicao_de_pagamento === "Boleto" || d?.condicao_de_pagamento === "Parcelado";
+}
+
 /** Validação conforme De/Para Pipefy. `temBoleto` = boletos anexados no faturamento. Retorna lista de erros. */
 export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boolean): string[] {
   const e: string[] = [];
@@ -76,16 +91,21 @@ export function validarDadosPagamento(d: Partial<DadosPagamento>, temBoleto: boo
   if (!(parseValor(d.valor_documento) > 0)) e.push("Informe o Valor do Documento.");
   const c = d.condicao_de_pagamento;
   if (!c) { e.push("Selecione a condição de pagamento."); return e; }
-  if (c !== "Parcelado" && !normalizarVencimento(d.data_vencimento))
+  const parc = isParcelado(d);
+  if (!parc && !normalizarVencimento(d.data_vencimento))
     e.push(c === "Boleto" ? "Leia o boleto para obter a data de vencimento." : "Informe uma data de vencimento válida.");
-  if ((c === "Boleto" || c === "Parcelado") && !temBoleto) e.push("Anexe o boleto em Documentos de Faturamento.");
+  if (exigeBoleto(d) && !temBoleto) e.push("Anexe o boleto em Documentos de Faturamento.");
+  if (c === "Pagamento Pix") {
+    if (!d.codigo_pix?.trim()) e.push("Informe a Chave Pix.");
+    if (!d.nome_favorecido?.trim()) e.push("Informe o nome do favorecido.");
+  }
   if (c === "Depósito" && (!d.banco?.trim() || !d.agencia?.trim() || !d.conta_corrente?.trim()))
     e.push("Preencha Banco, Agência e Conta Corrente.");
-  if (c === "Parcelado") {
+  if (parc) {
     const p = d.parcelas_detalhe ?? [];
     if (p.length < 2 || p.length > 12) e.push("Parcelamento deve ter de 2 a 12 parcelas.");
     if (p.some((x) => !(parseValor(x.valor) > 0))) e.push("Preencha o valor de todas as parcelas.");
-    if (p.some((x) => !normalizarVencimento(x.vencimento))) e.push("Leia os boletos para obter o vencimento de todas as parcelas.");
+    if (p.some((x) => !normalizarVencimento(x.vencimento))) e.push(c === "Boleto" || c === "Parcelado" ? "Leia os boletos para obter o vencimento de todas as parcelas." : "Informe o vencimento de todas as parcelas.");
   }
   if (c === "Cartão corporativo") {
     if (!d.responsavel_pelo_cartao?.trim()) e.push("Informe o Responsável Pelo Cartão.");
