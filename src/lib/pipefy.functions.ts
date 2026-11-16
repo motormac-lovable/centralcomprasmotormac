@@ -38,7 +38,7 @@ export const salvarDadosPagamento = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ card_id: z.string().uuid(), dados: dadosSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const admin = await exigirEquipeCompras(context.userId);
-    const { data: card } = await admin.from("kanban_cards").select("id, status, data").eq("id", data.card_id).maybeSingle();
+    const { data: card } = await admin.from("kanban_cards").select("id, status, data, codigo_unico, requester_id, requester_email, buyer_name").eq("id", data.card_id).maybeSingle();
     if (!card) throw new Response("Solicitação não encontrada.", { status: 404 });
     if (card.status !== "pedidos_gerados") throw new Response("Dados de pagamento só podem ser informados em Pedidos Gerados.", { status: 409 });
     const fat = getFaturamento(card.data);
@@ -49,7 +49,24 @@ export const salvarDadosPagamento = createServerFn({ method: "POST" })
     const nextData = { ...((card.data as Record<string, unknown>) ?? {}), dados_pagamento };
     const { error } = await admin.from("kanban_cards").update({ data: nextData as never }).eq("id", card.id);
     if (error) throw new Response("Não foi possível salvar os dados de pagamento.", { status: 500 });
-    return { ok: true, dados_pagamento };
+    // Aviso ao solicitante (CC comprador) — só na primeira liberação; falha não bloqueia o salvamento.
+    const anterior = ((card.data as any)?.dados_pagamento ?? {}) as Record<string, unknown>;
+    let email: { ok: boolean; para?: string; erro?: string } | null = null;
+    if (!anterior.email_solicitante_enviado_em) {
+      const { enviarEmailRecebimento } = await import("@/lib/recebimento-email.server");
+      email = await enviarEmailRecebimento(admin, { ...card, data: nextData });
+      const { data: atual } = await admin.from("kanban_cards").select("data, observations").eq("id", card.id).maybeSingle();
+      const ad = ((atual?.data as Record<string, any>) ?? nextData);
+      const obs = Array.isArray(atual?.observations) ? atual!.observations : [];
+      const texto = email.ok
+        ? `E-mail de confirmação de recebimento enviado ao solicitante (${email.para}).`
+        : `E-mail de confirmação de recebimento não enviado: ${email.erro}`;
+      await admin.from("kanban_cards").update({
+        data: (email.ok ? { ...ad, dados_pagamento: { ...ad.dados_pagamento, email_solicitante_enviado_em: new Date().toISOString() } } : ad) as never,
+        observations: [...obs, { at: new Date().toISOString(), author: "Sistema", text: texto }] as never,
+      }).eq("id", card.id);
+    }
+    return { ok: true, dados_pagamento, email };
   });
 
 /** Reenvio manual pela guia Protocolo (só após o Recebido). */

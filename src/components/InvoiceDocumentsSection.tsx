@@ -343,7 +343,7 @@ export function InvoiceDocumentsSection({
                   className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium disabled:opacity-60"
                 >
                   {savingXml ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Salvar código XML
+                  Salvar
                 </button>
                 {xml.trim() && (
                   <button
