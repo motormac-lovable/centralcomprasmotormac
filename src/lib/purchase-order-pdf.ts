@@ -88,6 +88,8 @@ export function generatePurchaseOrderPDF(card: PurchaseOrderCard, numeroPedido: 
       startY,
       margin: { left: M, right: M },
       head: [[{ content: titulo, colSpan: 2 }]],
+      pageBreak: "avoid",
+      showHead: "everyPage",
       body: linhas.map(([a, b]) => [textoPdf(a), textoPdf(b) || "—"]),
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 1.8, textColor: [30, 30, 30] },
