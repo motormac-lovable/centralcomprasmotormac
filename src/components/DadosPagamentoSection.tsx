@@ -38,7 +38,7 @@ export function useProtocolar() {
   };
 }
 
-export function DadosPagamentoSection({ card, editable, onChanged, boletosSlot }: { card: CardParaProtocolo; editable: boolean; onChanged?: (nextData: Record<string, unknown>) => void; boletosSlot?: ReactNode }) {
+export function DadosPagamentoSection({ card, editable, onChanged, boletosSlot, salvarAntes }: { card: CardParaProtocolo; editable: boolean; onChanged?: (nextData: Record<string, unknown>) => void; boletosSlot?: ReactNode; salvarAntes?: () => Promise<unknown | null | undefined> }) {
   const saved = getDadosPagamento(card.data);
   const fat = getFaturamento(card.data);
   const temBoleto = (fat.boletos?.length ?? 0) > 0;
@@ -119,9 +119,13 @@ export function DadosPagamentoSection({ card, editable, onChanged, boletosSlot }
     if (erros.length) { toast.error(erros.join(" ")); return; }
     setBusy(true);
     try {
+      // Salva junto o código do XML da NF-e (sem botão próprio).
+      const fatAtualizado = salvarAntes ? await salvarAntes() : undefined;
+      if (fatAtualizado === null) return;
       const r = await salvar({ data: { card_id: card.id, dados: payload as any } });
       toast.success("Dados de pagamento salvos.");
       let nextData: Record<string, unknown> = { ...((card.data as Record<string, unknown>) ?? {}), dados_pagamento: r.dados_pagamento };
+      if (fatAtualizado) nextData = { ...nextData, faturamento: fatAtualizado };
       onChanged?.(nextData);
       toast.info("Recebimento liberado ao solicitante. O protocolo no Pipefy será feito após o Recebido.");
       if (r.email?.ok) toast.success(`E-mail enviado ao solicitante (${r.email.para}).`);

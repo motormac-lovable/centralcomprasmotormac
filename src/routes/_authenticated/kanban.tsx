@@ -2065,12 +2065,13 @@ function CardModal({ card: cardProp, onClose, onMove }: { card: Card; onClose: (
                 const nextData = { ...(rawData as Record<string, unknown>), faturamento: fat };
                 setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card);
               }}
-              renderPagamento={(boletos) => (
+              renderPagamento={(boletos, saveXml) => (
                 <DadosPagamentoSection
                   key={`pg-${card.id}`}
                   card={{ ...(card as any), data: rawData }}
                   editable={canWriteKanban}
                   boletosSlot={boletos}
+                  salvarAntes={saveXml}
                   onChanged={(nextData) => setFreshCard({ ...(freshCard ?? cardProp), data: nextData as never } as Card)}
                 />
               )}
