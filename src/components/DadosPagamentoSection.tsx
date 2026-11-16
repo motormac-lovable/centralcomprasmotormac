@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { CreditCard, FileSearch, Loader2, Send } from "lucide-react";
 import { Field, inputCls } from "@/components/forms/FormShell";
-import { CONDICOES_PAGAMENTO, getDadosPagamento, parseCondicaoMapa, parseValor, validarDadosPagamento, type CondicaoPagamento, type DadosPagamento, type Parcela } from "@/lib/pagamento";
+import { FORMAS_PAGAMENTO, isParcelado, getDadosPagamento, parseCondicaoMapa, parseValor, validarDadosPagamento, type CondicaoPagamento, type DadosPagamento, type Parcela } from "@/lib/pagamento";
 import { getFaturamento } from "@/lib/invoice-documents";
 import { fornecedorVencedor, type CardParaProtocolo } from "@/lib/pipefy-payload";
 import { extrairDadosPagamento, protocolarPipefy, salvarDadosPagamento } from "@/lib/pipefy.functions";
@@ -38,7 +38,7 @@ export function useProtocolar() {
   };
 }
 
-export function DadosPagamentoSection({ card, editable, onChanged }: { card: CardParaProtocolo; editable: boolean; onChanged?: (nextData: Record<string, unknown>) => void }) {
+export function DadosPagamentoSection({ card, editable, onChanged, boletosSlot }: { card: CardParaProtocolo; editable: boolean; onChanged?: (nextData: Record<string, unknown>) => void; boletosSlot?: ReactNode }) {
   const saved = getDadosPagamento(card.data);
   const fat = getFaturamento(card.data);
   const temBoleto = (fat.boletos?.length ?? 0) > 0;
@@ -48,7 +48,9 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
   const isContrato = (card as any).kind === "contratos";
 
   const [d, setD] = useState<Partial<DadosPagamento>>(() => ({
-    condicao_de_pagamento: saved.condicao_de_pagamento ?? (temBoleto && !mapa.parcelado ? "Boleto" : mapa.parcelado ? "Parcelado" : "Boleto"),
+    condicao_de_pagamento: !saved.condicao_de_pagamento || saved.condicao_de_pagamento === "Parcelado" ? "Boleto" : saved.condicao_de_pagamento,
+    parcelado: saved.condicao_de_pagamento ? isParcelado(saved) : mapa.parcelado,
+    nome_favorecido: saved.nome_favorecido ?? "",
     banco: saved.banco ?? "", agencia: saved.agencia ?? "", conta_corrente: saved.conta_corrente ?? "", codigo_pix: saved.codigo_pix ?? "",
     parcelas_detalhe: saved.parcelas_detalhe?.length ? saved.parcelas_detalhe : mapa.parcelas.length ? mapa.parcelas : [{ numero: 1, valor: "" }, { numero: 2, valor: "" }],
     responsavel_pelo_cartao: saved.responsavel_pelo_cartao ?? "",
@@ -73,7 +75,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         if (manual || !s.numero_nf) n.numero_nf = r.numero_nf.replace(/^0+/, "");
         if (r.valor_documento && (manual || !saved.valor_documento)) n.valor_documento = r.valor_documento;
         const bols = r.boletos.filter((b) => parseValor(b.valor) > 0);
-        if (bols.length >= 2) { n.condicao_de_pagamento = "Parcelado"; n.parcelas_detalhe = bols.slice(0, 12).map((b, i) => ({ numero: i + 1, valor: b.valor, vencimento: b.vencimento })); }
+        if (bols.length >= 2) { n.condicao_de_pagamento = "Boleto"; n.parcelado = true; n.parcelas_detalhe = bols.slice(0, 12).map((b, i) => ({ numero: i + 1, valor: b.valor, vencimento: b.vencimento })); }
         else if (bols.length === 1) {
           if (!saved.condicao_de_pagamento) n.condicao_de_pagamento = "Boleto";
           if (manual || !s.data_vencimento) n.data_vencimento = bols[0].vencimento;
@@ -91,7 +93,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
   const ro = !editable || !!protocolo;
   const temNf = (fat.notas_fiscais?.length ?? 0) > 0;
   useEffect(() => {
-    const faltaVencimento = temBoleto && (saved.condicao_de_pagamento === "Parcelado"
+    const faltaVencimento = temBoleto && (isParcelado(saved)
       ? !saved.parcelas_detalhe?.length || saved.parcelas_detalhe.some((p) => !p.vencimento)
       : !saved.data_vencimento);
     if (jaLeu.current || ro || !temNf || (saved.numero_nf && !faltaVencimento)) return;
@@ -107,10 +109,12 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
     set("parcelas_detalhe", next.map((p, i) => ({ ...p, numero: i + 1 })));
   };
   const c = d.condicao_de_pagamento as CondicaoPagamento;
+  const parc = !!d.parcelado;
+  const togglePar = (on: boolean) => { set("parcelado", on); if (on && parcelas.length < 2) setQtd(2); };
   const nfDiverge = valorTotal > 0 && Math.abs(parseValor(d.valor_documento) - valorTotal) > 0.01;
 
   const onSave = async () => {
-    const payload = { ...d, numero_de_parcelas: c === "Parcelado" ? `${parcelas.length}x` : "" };
+    const payload = { ...d, numero_de_parcelas: parc ? `${parcelas.length}x` : "", parcelas_detalhe: parc ? parcelas : [] };
     const erros = validarDadosPagamento(payload, temBoleto);
     if (erros.length) { toast.error(erros.join(" ")); return; }
     setBusy(true);
@@ -129,10 +133,10 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
   };
 
   return (
-    <section className="rounded-xl border bg-card p-4 space-y-4">
+    <div className="space-y-4 border-t border-emerald-200 pt-4 dark:border-emerald-900">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <CreditCard className="h-4 w-4 text-primary" /> Dados de pagamento / Protocolo Pipefy
+          <CreditCard className="h-4 w-4 text-primary" /> 💳 Condição de pagamento
         </h3>
         <div className="flex items-center gap-2">
           {venc.condicao && <span className="rounded border bg-muted px-2 py-0.5 text-xs">Mapa comparativo: <strong>{venc.condicao}</strong></span>}
@@ -153,18 +157,25 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
         </Field>
         <Field label="Condição de pagamento" required>
           <select className={inputCls} value={c} onChange={(e) => set("condicao_de_pagamento", e.target.value as CondicaoPagamento)}>
-            {CONDICOES_PAGAMENTO.map((o) => <option key={o}>{o}</option>)}
+            {FORMAS_PAGAMENTO.map((o) => <option key={o}>{o}</option>)}
           </select>
         </Field>
+        <label className="md:col-span-3 inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={parc} onChange={(e) => togglePar(e.target.checked)} className="h-4 w-4" />
+          Pagamento parcelado?
+        </label>
+        {c === "Boleto" && boletosSlot && <div className="md:col-span-3">{boletosSlot}</div>}
+        {c === "Pagamento Pix" && (<>
+          <Field label="Chave Pix" required><input className={inputCls} value={d.codigo_pix} onChange={(e) => set("codigo_pix", e.target.value)} /></Field>
+          <Field label="Nome do favorecido" required><input className={inputCls} value={d.nome_favorecido ?? ""} onChange={(e) => set("nome_favorecido", e.target.value)} /></Field>
+        </>)}
 
-        {c !== "Parcelado" && <Field label="Data de vencimento" required>
+        {!parc && <Field label="Data de vencimento" required>
           <input aria-label="Data de vencimento" type="date" className={inputCls} value={d.data_vencimento ?? ""}
             readOnly={c === "Boleto"} onChange={(e) => set("data_vencimento", e.target.value)} />
         </Field>}
-        {(c === "Boleto" || c === "Parcelado") && (
-          <p className={`md:col-span-2 self-end text-xs ${temBoleto ? "text-muted-foreground" : "text-destructive"}`}>
-            {temBoleto ? `${fat.boletos?.length ?? 0} boleto(s) anexado(s) em Documentos de Faturamento.` : "Anexe o boleto em Documentos de Faturamento acima."}
-          </p>
+        {c === "Boleto" && !temBoleto && (
+          <p className="md:col-span-2 self-end text-xs text-destructive">Anexe o boleto acima.</p>
         )}
         {c === "Depósito" && (<>
           <Field label="Banco" required><input className={inputCls} value={d.banco} onChange={(e) => set("banco", e.target.value)} /></Field>
@@ -172,7 +183,7 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
           <Field label="Conta corrente" required><input className={inputCls} value={d.conta_corrente} onChange={(e) => set("conta_corrente", e.target.value)} /></Field>
           <Field label="Código Pix"><input className={inputCls} value={d.codigo_pix} onChange={(e) => set("codigo_pix", e.target.value)} /></Field>
         </>)}
-        {c === "Parcelado" && (
+        {parc && (
           <div className="md:col-span-3 space-y-2">
             <Field label="Número de parcelas" required>
               <select className={inputCls} value={parcelas.length} onChange={(e) => setQtd(Number(e.target.value))}>
@@ -186,7 +197,8 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
                     <input className={inputCls} inputMode="decimal" value={p.valor} onChange={(e) => set("parcelas_detalhe", parcelas.map((x, j) => j === i ? { ...x, valor: e.target.value } : x))} />
                   </Field>
                   <Field label={`Vencimento da parcela ${i + 1}`} required>
-                    <input aria-label={`Vencimento da parcela ${i + 1}`} type="date" className={inputCls} value={p.vencimento ?? ""} readOnly />
+                    <input aria-label={`Vencimento da parcela ${i + 1}`} type="date" className={inputCls} value={p.vencimento ?? ""} readOnly={c === "Boleto"}
+                      onChange={(e) => set("parcelas_detalhe", parcelas.map((x, j) => j === i ? { ...x, vencimento: e.target.value } : x))} />
                   </Field>
                 </div>
               ))}
@@ -211,6 +223,6 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }
