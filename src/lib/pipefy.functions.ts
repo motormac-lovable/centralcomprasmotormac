@@ -38,7 +38,7 @@ export const salvarDadosPagamento = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ card_id: z.string().uuid(), dados: dadosSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const admin = await exigirEquipeCompras(context.userId);
-    const { data: card } = await admin.from("kanban_cards").select("id, status, data, requester_id, requester_email, buyer_name").eq("id", data.card_id).maybeSingle();
+    const { data: card } = await admin.from("kanban_cards").select("id, status, data, codigo_unico, requester_id, requester_email, buyer_name").eq("id", data.card_id).maybeSingle();
     if (!card) throw new Response("Solicitação não encontrada.", { status: 404 });
     if (card.status !== "pedidos_gerados") throw new Response("Dados de pagamento só podem ser informados em Pedidos Gerados.", { status: 409 });
     const fat = getFaturamento(card.data);

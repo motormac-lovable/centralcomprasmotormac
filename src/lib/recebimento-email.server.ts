@@ -42,7 +42,7 @@ export async function enviarEmailRecebimento(admin: any, card: any): Promise<{ o
       cc = b?.[0]?.email ?? null;
     }
     const d = (card.data ?? {}) as Record<string, any>;
-    const codigo = String(d.codigo_unico ?? d.codigo ?? card.id);
+    const codigo = String(card.codigo_unico ?? d.codigo_unico ?? card.id);
     const lines = [
       `From: ${hdr("Central de Compras Motormac")} <${SENDER}>`,
       `To: ${para!.trim()}`,

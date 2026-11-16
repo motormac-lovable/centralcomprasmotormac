@@ -120,6 +120,8 @@ export function DadosPagamentoSection({ card, editable, onChanged }: { card: Car
       let nextData: Record<string, unknown> = { ...((card.data as Record<string, unknown>) ?? {}), dados_pagamento: r.dados_pagamento };
       onChanged?.(nextData);
       toast.info("Recebimento liberado ao solicitante. O protocolo no Pipefy será feito após o Recebido.");
+      if (r.email?.ok) toast.success(`E-mail enviado ao solicitante (${r.email.para}).`);
+      else if (r.email && !r.email.ok) toast.warning(r.email.erro ?? "E-mail ao solicitante não enviado.");
     } catch (e: any) {
       const mensagem = e instanceof Response ? await e.text() : e;
       toast.error(translateError(mensagem, "Não foi possível salvar os dados de pagamento."));
