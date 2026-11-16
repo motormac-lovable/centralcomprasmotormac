@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { getFaturamento } from "@/lib/invoice-documents";
 import { getDadosPagamento } from "@/lib/pagamento";
-import { ProtocoloBadge, useProtocolar } from "@/components/DadosPagamentoSection";
+import { useProtocolar } from "@/components/DadosPagamentoSection";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
@@ -104,7 +104,7 @@ function ProtocoloPage() {
               {cards.map((c) => {
                 const s = situacao(c);
                 const d = (c.data ?? {}) as any;
-                const tone = s.tone === "ok" ? "text-primary" : s.tone === "erro" ? "text-destructive" : s.tone === "pronto" ? "text-foreground font-medium" : "text-muted-foreground";
+                const tone = s.tone === "ok" ? "text-protocol-success" : s.tone === "erro" ? "text-destructive" : s.tone === "pronto" ? "text-foreground font-medium" : "text-muted-foreground";
                 return (
                   <tr key={c.id} className="border-t align-top">
                     <td className="p-3 font-mono text-xs">{c.codigo_unico ?? "—"}</td>
@@ -115,8 +115,8 @@ function ProtocoloPage() {
                       {s.tone === "erro" && <AlertTriangle className="mr-1 inline h-3 w-3" />}{s.label}
                       {s.tone === "erro" && d.protocolo_pipefy_erro?.mensagem && <div className="text-muted-foreground">{translateError(d.protocolo_pipefy_erro.mensagem, "Não foi possível enviar o protocolo ao Pipefy.")}</div>}
                     </td>
-                    <td className="whitespace-nowrap p-3 text-xs">
-                      {d.protocolo_pipefy?.card_id ? <ProtocoloBadge data={c.data} /> : <span className="text-muted-foreground">—</span>}
+                    <td className="whitespace-nowrap p-3 text-xs text-foreground">
+                      {d.protocolo_pipefy?.card_id ? `#${String(d.protocolo_pipefy.card_id).replace(/^#+/, "")}` : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="p-3 text-right">
                       {canSend && d.recebimento?.status === "confirmado" && s.tone !== "ok" && (
