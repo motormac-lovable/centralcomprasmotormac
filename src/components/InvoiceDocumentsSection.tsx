@@ -105,14 +105,13 @@ export function InvoiceDocumentsSection({
   editable: boolean;
   author?: string;
   onChanged?: (fat: Faturamento) => void;
-  renderPagamento?: (boletos: ReactNode) => ReactNode;
+  renderPagamento?: (boletos: ReactNode, saveXml: () => Promise<Faturamento | null | undefined>) => ReactNode;
 }) {
   const initial = getFaturamento(card.data);
   const [notas, setNotas] = useState<InvoiceFile[]>(initial.notas_fiscais ?? []);
   const [boletos, setBoletos] = useState<InvoiceFile[]>(initial.boletos ?? []);
   const [xml, setXml] = useState<string>(initial.xml ?? "");
   const [xmlDirty, setXmlDirty] = useState(false);
-  const [savingXml, setSavingXml] = useState(false);
   const [busy, setBusy] = useState<"nf" | "boleto" | null>(null);
   const [copied, setCopied] = useState(false);
   const nfInput = useRef<HTMLInputElement>(null);
@@ -144,10 +143,10 @@ export function InvoiceDocumentsSection({
     const { error } = await supabase.from("kanban_cards").update(update as never).eq("id", card.id);
     if (error) {
       toast.error(translateError(error, "Não foi possível salvar os documentos de faturamento."));
-      return false;
+      return null;
     }
     onChanged?.(nextFat);
-    return true;
+    return nextFat;
   };
 
   const handlePick = async (
@@ -211,18 +210,16 @@ export function InvoiceDocumentsSection({
     }
   };
 
-  const saveXml = async () => {
-    setSavingXml(true);
+  /** Salva o XML apenas se alterado; chamado pelo botão "Salvar" da condição de pagamento. */
+  const saveXml = async (): Promise<Faturamento | null | undefined> => {
+    if (!xmlDirty) return undefined;
     const trimmed = xml.trim();
     const log = trimmed
       ? `📑 ${author ?? "Comprador"} registrou o código/chave do XML da NF-e.`
       : `📑 ${author ?? "Comprador"} removeu o código/chave do XML da NF-e.`;
-    const ok = await persist({ xml: trimmed }, log);
-    setSavingXml(false);
-    if (ok) {
-      setXmlDirty(false);
-      toast.success("Código do XML salvo.");
-    }
+    const fat = await persist({ xml: trimmed }, log);
+    if (fat) setXmlDirty(false);
+    return fat;
   };
 
   const copyXml = async () => {
@@ -328,9 +325,22 @@ export function InvoiceDocumentsSection({
 
       {/* XML da NF-e */}
       <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-          📑 Código/Chave do XML da NF-e
-        </h4>
+        <div className="flex items-center gap-2 mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            📑 Código/Chave do XML da NF-e
+          </h4>
+          {editable && xml.trim() && (
+            <button
+              type="button"
+              onClick={copyXml}
+              title="Copiar código"
+              aria-label="Copiar código do XML"
+              className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-muted text-muted-foreground"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+          )}
+        </div>
         {editable ? (
           <div className="space-y-2">
             <textarea
@@ -340,29 +350,10 @@ export function InvoiceDocumentsSection({
               rows={4}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/40"
             />
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={saveXml}
-                  disabled={!xmlDirty || savingXml}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium disabled:opacity-60"
-                >
-                  {savingXml ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Salvar
-                </button>
-                {xml.trim() && (
-                  <button
-                    type="button"
-                    onClick={copyXml}
-                    className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copiado!" : "Copiar código"}
-                  </button>
-                )}
-              </div>
-              <span className="text-[11px] text-muted-foreground">{xml.trim().length} caracteres</span>
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-[11px] text-muted-foreground">
+                {xml.trim().length} caracteres{xmlDirty ? " · será salvo ao clicar em Salvar" : ""}
+              </span>
             </div>
           </div>
         ) : xml.trim() ? (
@@ -385,7 +376,7 @@ export function InvoiceDocumentsSection({
       </div>
 
       {/* Condição de pagamento: o bloco de boletos só abre quando a forma escolhida pede boleto. */}
-      {renderPagamento ? renderPagamento(boletosBlock) : boletosBlock}
+      {renderPagamento ? renderPagamento(boletosBlock, saveXml) : boletosBlock}
     </section>
   );
 }
