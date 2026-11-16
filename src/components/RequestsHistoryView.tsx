@@ -278,7 +278,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
   };
 
   return (
-    <div className="mx-auto w-[96%] max-w-[1720px] px-2 sm:px-3 py-10">
+    <div className="mx-auto w-[99%] max-w-[2100px] px-2 sm:px-3 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">

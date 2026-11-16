@@ -1,7 +1,7 @@
 import { resolverFilialFiscal } from "@/lib/filiais-fiscais";
 
-/** Formato: "PC - [CNPJ_FINAIS_2][MM][AA][CODIGO_4]". */
-export const PURCHASE_ORDER_PATTERN = /^PC - \d{10}$/;
+/** Formato: "PC[CNPJ_FINAIS_2][MM][AA][CODIGO_4]" (contínuo, sem espaços). */
+export const PURCHASE_ORDER_PATTERN = /^PC\d{10}$/;
 
 export function purchaseOrderPrefix(cnpj: string, date: Date): string {
   const digits = cnpj.replace(/\D/g, "");
@@ -27,7 +27,7 @@ export async function generatePurchaseOrderNumber(
   const prefix = purchaseOrderPrefix(filial.cnpj, createdDate);
   for (let i = 0; i < 200; i++) {
     const codigo = String(Math.floor(random() * 10000)).padStart(4, "0");
-    const numero = `PC - ${prefix}${codigo}`;
+    const numero = `PC${prefix}${codigo}`;
     if (!(await isUsed(numero))) return numero;
   }
   throw new Error("Não foi possível gerar um número de pedido único para esta filial neste mês.");
@@ -44,7 +44,14 @@ export type PedidoCompraInfo = {
 
 export function pedidoCompraInfo(data: unknown): PedidoCompraInfo | null {
   const pc = (data as Record<string, unknown> | null)?.pedido_compra;
-  return pc && typeof pc === "object" ? (pc as PedidoCompraInfo) : null;
+  if (!pc || typeof pc !== "object") return null;
+  const info = pc as PedidoCompraInfo;
+  return info.numero ? { ...info, numero: normalizarNumeroPC(info.numero) } : info;
+}
+
+/** Remove espaços e hífen do número PC ("PC - 9311260001" → "PC9311260001"). */
+export function normalizarNumeroPC(numero: string): string {
+  return /^PC\b/i.test(numero.trim()) ? numero.replace(/[\s-]/g, "").toUpperCase() : numero;
 }
 
 /** Número exibido do pedido: PC quando existir; senão o número legado. */
@@ -56,7 +63,7 @@ export function aplicaPedidoCompra(card: { kind: string; status: string }): bool
   return card.status === "pedidos_gerados" && card.kind !== "contratos";
 }
 
-/** Rótulo pronto para exibição: "PC - ..." no novo formato, "#123456" para números legados. */
+/** Rótulo pronto para exibição: "PC..." no novo formato, "#123456" para números legados. */
 export function rotuloPedido(card: { data?: unknown; numero_pedido_linx?: string | null; order_number?: string | null }): string | null {
   const pc = pedidoCompraInfo(card.data)?.numero;
   if (pc) return pc;

@@ -44,11 +44,11 @@ describe("De/Para Pipefy", () => {
   });
   it("envia etiqueta Setor e vencimentos reais ao formulário público", () => {
     const { campos, pendencias } = montarCamposPipefy({ id: "1", empresa: "DMMC", unidade: "Porto Alegre", order_number: "123", title: "Compra",
-      data: { pedido_compra: { numero: "PC - 9311260001" }, departamento: "201", centro_custo_codigo: "2122", centro_custo_descricao: "TI",
+      data: { pedido_compra: { numero: "PC9311260001" }, departamento: "201", centro_custo_codigo: "2122", centro_custo_descricao: "TI",
         dados_pagamento: { condicao_de_pagamento: "Parcelado", fornecedor: "Fornecedor", numero_nf: "42", valor_documento: "200",
           parcelas_detalhe: [{ numero: 1, valor: "100", vencimento: "2026-11-30" }, { numero: 2, valor: "100", vencimento: "2026-12-30" }] } } }, "comprador@motormac.com.br");
     expect(pendencias).toEqual([]);
-    expect(campos).toContainEqual({ field_id: "n_mero_da_ordem_de_compra", field_value: "PC - 9311260001" });
+    expect(campos).toContainEqual({ field_id: "n_mero_da_ordem_de_compra", field_value: "PC9311260001" });
     expect(campos).not.toContainEqual({ field_id: "n_mero_da_ordem_de_compra", field_value: "123" });
     expect(campos).toContainEqual({ field_id: "sele_o_de_etiqueta", field_value: ["309399978"] });
     expect(campos).toContainEqual({ field_id: "n_mero_de_parcelas", field_value: "2" });
