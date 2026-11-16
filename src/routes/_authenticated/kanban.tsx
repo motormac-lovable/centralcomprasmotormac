@@ -30,7 +30,8 @@ import { DadosPagamentoSection } from "@/components/DadosPagamentoSection";
 import { BidRequestModal } from "@/components/BidRequestModal";
 import { MANUAL_ORDER_ENTRY_MESSAGE, manualOrderEntryBlock } from "@/lib/kanban-order-entry";
 import { centroCustoLabel } from "@/lib/centros-de-custo";
-import { gerarPedidoCompra, reenviarPedidoFornecedor } from "@/lib/purchase-order.functions";
+import { gerarPedidoCompra } from "@/lib/purchase-order.functions";
+import { PedidoEmailModal } from "@/components/PedidoEmailModal";
 import { aplicaPedidoCompra, numeroPedidoExibicao, pedidoCompraInfo } from "@/lib/purchase-order-number";
 import { emailValido, fornecedorVencedor, generatePurchaseOrderPDF, nomeArquivoPedido } from "@/lib/purchase-order-pdf";
 
@@ -2819,43 +2820,24 @@ function AdvanceStageSection({
 
 
 function PedidoCompraActions({ card }: { card: Card }) {
-  const reenviar = useServerFn(reenviarPedidoFornecedor);
-  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const numero = pedidoCompraInfo(card.data)?.numero;
-  const vencedor = fornecedorVencedor(card.suppliers);
-  const temEmail = emailValido(vencedor?.email);
-  const base = "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition";
+  const base = "inline-flex items-center gap-1.5 rounded-md border border-input bg-card text-foreground hover:bg-muted px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
   const baixar = () => {
     if (!numero) return;
     generatePurchaseOrderPDF(card, numero).save(nomeArquivoPedido(numero));
   };
-  const enviar = async () => {
-    if (!temEmail || busy) return;
-    if (!window.confirm(`Enviar o Pedido de Compra ${numero ?? ""} para ${vencedor?.email}?`)) return;
-    setBusy(true);
-    try {
-      const r = await reenviar({ data: { cardId: card.id } });
-      if (r.email_status === "enviado") toast.success(`Pedido enviado ao fornecedor (${r.email}).`);
-      else if (r.email_status === "sem_email") toast.info("Fornecedor sem e-mail cadastrado.");
-      else toast.error("Não foi possível enviar o e-mail ao fornecedor.");
-    } catch (e) {
-      toast.error(translateError(e instanceof Error ? e.message : String(e)));
-    } finally {
-      setBusy(false);
-    }
-  };
   return (
     <>
       <button type="button" onClick={baixar} disabled={!numero}
-        title={numero ? `Baixar ${numero}` : "Número do pedido em geração"}
-        className={`${base} border-primary bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50`}>
+        title={numero ? `Baixar ${numero}` : "Número do pedido em geração"} className={base}>
         <span aria-hidden>📥</span><span className="hidden sm:inline">Baixar Pedido de Compra (PDF)</span>
       </button>
-      <button type="button" onClick={enviar} disabled={!temEmail || !numero || busy}
-        title={temEmail ? `Enviar para ${vencedor?.email}` : "Fornecedor vencedor sem e-mail cadastrado"}
-        className={`${base} border-input bg-card text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-60`}>
-        <Mail className="h-4 w-4" /><span className="hidden sm:inline">{busy ? "Enviando..." : "Enviar por e-mail"}</span>
+      <button type="button" onClick={() => setOpen(true)} disabled={!numero}
+        title={numero ? "Abrir e-mail do Pedido de Compra" : "Número do pedido em geração"} className={base}>
+        <Mail className="h-4 w-4" /><span className="hidden sm:inline">Enviar por e-mail</span>
       </button>
+      {open && <PedidoEmailModal cardId={card.id} codigo={card.codigo_unico ?? card.id.slice(0, 8)} onClose={() => setOpen(false)} />}
     </>
   );
 }

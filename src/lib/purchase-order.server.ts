@@ -75,13 +75,34 @@ async function emailComprador(admin: Admin, buyer: string | null) {
   return (data?.email as string | undefined) ?? "";
 }
 
-async function enviarEmail(admin: Admin, card: CardRow, numero: string, to: string, nome: string) {
+export type EmailOverride = { to: string[]; cc?: string; subject: string; body: string };
+
+/** Modelo padrão do e-mail do Pedido de Compra (destinatário, cópia, assunto, corpo e anexos). */
+export async function modeloEmailPedido(admin: Admin, cardId: string) {
+  const card = await loadCard(admin, cardId);
+  if (!card) throw new Error("Solicitação não encontrada.");
+  const numero = pedidoCompraInfo(card.data)?.numero;
+  if (!numero) throw new Error("Número do Pedido de Compra ainda não gerado.");
+  const v = fornecedorVencedor(card.suppliers);
+  const prop = propostaVencedora(card.attachments, v?.nome ?? "");
+  return {
+    numero,
+    to: v && emailValido(v.email) ? [v.email] : [],
+    cc: await emailComprador(admin, card.buyer_name),
+    subject: `Aprovação de Orçamento e Pedido de Compra N° ${numero} - Grupo Motormac`,
+    body: corpoEmailFornecedor(v?.nome || "Fornecedor", card.codigo_unico ?? "—", numero),
+    anexos: [nomeArquivoPedido(numero), ...(prop?.name ? [prop.name] : [])],
+  };
+}
+
+async function enviarEmail(admin: Admin, card: CardRow, numero: string, to: string, nome: string, override?: EmailOverride) {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const gmailKey = process.env.GOOGLE_MAIL_API_KEY_1 || process.env.GOOGLE_MAIL_API_KEY;
   if (!lovableKey || !gmailKey) throw new Error("Serviço de e-mail não configurado.");
-  const cc = await emailComprador(admin, card.buyer_name);
-  const subject = `Aprovação de Orçamento e Pedido de Compra N° ${numero} - Grupo Motormac`;
-  const body = corpoEmailFornecedor(nome || "Fornecedor", card.codigo_unico ?? "—", numero);
+  const cc = override ? (override.cc ?? "") : await emailComprador(admin, card.buyer_name);
+  const subject = override?.subject || `Aprovação de Orçamento e Pedido de Compra N° ${numero} - Grupo Motormac`;
+  const body = override?.body || corpoEmailFornecedor(nome || "Fornecedor", card.codigo_unico ?? "—", numero);
+  if (override?.to.length) to = override.to.join(", ");
 
   const pdf = Buffer.from(generatePurchaseOrderPDF(card, numero).output("arraybuffer"));
   const files: { name: string; mime: string; buf: Buffer }[] = [{ name: nomeArquivoPedido(numero), mime: "application/pdf", buf: pdf }];
@@ -129,7 +150,7 @@ export type EmissaoResultado = { numero: string | null; email_status: PedidoComp
  * Gera (uma única vez) o número PC do card em "Pedidos Gerados" e dispara o e-mail ao fornecedor vencedor.
  * Não altera status, aprovações nem regras do Kanban; grava apenas em data.pedido_compra e no histórico.
  */
-export async function emitirPedidoCompra(admin: Admin, cardId: string, opts: { reenviar?: boolean } = {}): Promise<EmissaoResultado> {
+export async function emitirPedidoCompra(admin: Admin, cardId: string, opts: { reenviar?: boolean; override?: EmailOverride } = {}): Promise<EmissaoResultado> {
   const card = await loadCard(admin, cardId);
   if (!card || card.status !== "pedidos_gerados" || card.kind === "contratos") return { numero: null, email_status: null };
   let info = pedidoCompraInfo(card.data);
@@ -156,14 +177,15 @@ export async function emitirPedidoCompra(admin: Admin, cardId: string, opts: { r
   if (info.email_status && !opts.reenviar) return { numero, email_status: info.email_status, email: info.email_destino };
 
   const fresh = (await loadCard(admin, cardId))!;
-  const v = fornecedorVencedor(fresh.suppliers);
-  if (!v || !emailValido(v.email)) {
+  const vReal = fornecedorVencedor(fresh.suppliers);
+  const v = opts.override?.to.length ? { nome: vReal?.nome ?? "", email: opts.override.to.join(", ") } : vReal;
+  if (!v || (!opts.override?.to.length && !emailValido(v.email))) {
     await patchPedido(admin, cardId, { email_status: "sem_email" },
       "✉️ Pedido de Compra gerado sem envio automático por ausência de e-mail do fornecedor.");
     return { numero, email_status: "sem_email" };
   }
   try {
-    await enviarEmail(admin, fresh, numero, v.email, v.nome);
+    await enviarEmail(admin, fresh, numero, v.email, v.nome, opts.override);
     await patchPedido(admin, cardId, { email_status: "enviado", email_destino: v.email, email_em: new Date().toISOString(), email_erro: undefined },
       `✉️ E-mail de aprovação e Pedido de Compra enviados ao fornecedor (${v.email}).`);
     return { numero, email_status: "enviado", email: v.email };
