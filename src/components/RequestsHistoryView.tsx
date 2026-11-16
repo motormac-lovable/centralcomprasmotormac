@@ -276,7 +276,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 py-10">
+    <div className="mx-auto w-[96%] max-w-[1720px] px-2 sm:px-3 py-10">
       <div className="flex flex-wrap items-end justify-between mb-8 gap-4">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-medium mb-3">
@@ -360,7 +360,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                     <th className="text-left px-2 py-3 w-[84px]">Pedido ERP</th>
                     <th className="text-left px-2 py-3 w-[64px]">Anexar</th>
                     <th className="text-center px-2 py-3 w-[92px]">Recebimento</th>
-                    <th className="text-left px-2 py-3 w-[172px]">Ações</th>
+                    <th className="text-left px-2 py-3 w-[190px] min-w-[185px] whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -434,7 +434,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                         <td className="px-2 py-3 text-center border-l" style={recebimentoCellStyle(it)}>
                           <RecebimentoButtons card={it} canAct={podeRegistrarRecebimento({ isRequester: isOwnRequest(it), isOwner, isAdmin, isApprover, approverDepartments, centroCustoDescricao: (it.data as any)?.centro_custo_descricao })} onUpdated={reload} />
                         </td>
-                        <td className="px-2 py-3">
+                        <td className="px-2 py-3 min-w-[185px] whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <ViewButton onClick={() => setDetail(it as DetailCard)} />
                             <MessageButton cardId={it.id} />
