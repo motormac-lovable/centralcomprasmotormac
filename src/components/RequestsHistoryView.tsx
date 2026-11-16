@@ -352,7 +352,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                   <tr>
                     <th className="text-left px-2 py-3 w-[80px]">Código</th>
                     <th className="text-left px-2 py-3 w-[96px]">Tipo</th>
-                    <th className="text-left px-2 py-3 w-[260px]">Título / Resumo</th>
+                    <th className="text-left px-2 py-3 min-w-[200px]">Título / Resumo</th>
                     {(approverScope || ownerScope) && <th className="text-left px-2 py-3 w-[140px]">Solicitante</th>}
                     <th className="text-left px-2 py-3 w-[120px]">Comprador</th>
                     <th className="text-left px-2 py-3 w-[100px]">Última mov.</th>
@@ -360,7 +360,7 @@ export function RequestsHistoryView({ history = false }: { history?: boolean }) 
                     <th className="text-left px-2 py-3 w-[84px]">Pedido ERP</th>
                     <th className="text-left px-2 py-3 w-[64px]">Anexar</th>
                     <th className="text-center px-2 py-3 w-[92px]">Recebimento</th>
-                    <th className="text-left px-2 py-3 w-[190px] min-w-[185px] whitespace-nowrap">Ações</th>
+                    <th className="text-left px-2 py-3 w-[205px] min-w-[185px] whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
