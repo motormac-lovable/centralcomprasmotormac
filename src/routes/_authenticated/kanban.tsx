@@ -621,7 +621,7 @@ function StatusTag({ card }: { card: Card }) {
     return <Tag label="Aprovada · aguardando ERP" bg="oklch(0.65 0.18 160)" fg="white" />;
   }
   if (card.status === "pedidos_gerados") {
-    return <Tag label={card.order_number ? `Pedido ${card.order_number}` : "Pedido gerado"} bg="oklch(0.6 0.18 150)" fg="white" />;
+    return <Tag label={pedidoCompraInfo(card.data)?.numero ? `Pedido ${pedidoCompraInfo(card.data)?.numero}` : "Pedido gerado"} bg="oklch(0.6 0.18 150)" fg="white" />;
   }
   return null;
 }
@@ -674,6 +674,7 @@ function cardMatchesQuery(card: Card, q: string): boolean {
     card.codigo_unico ?? "",
     (card as unknown as { numero_pedido_linx?: string | null }).numero_pedido_linx ?? "",
     (card as unknown as { order_number?: string | null }).order_number ?? "",
+    pedidoCompraInfo(card.data)?.numero ?? "",
     visibleSuggestedBuyer ?? "",
   ];
   const dump = (v: unknown) => { try { if (v != null) parts.push(JSON.stringify(v)); } catch { /* noop */ } };
