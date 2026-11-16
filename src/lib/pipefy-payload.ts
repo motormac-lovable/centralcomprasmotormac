@@ -1,5 +1,6 @@
 /** Monta os campos do card Pipefy a partir do card da Central (puro, testável). */
 import { centroCustoPipefy, empresaPipefy, setorPipefy } from "./pipefy-depara";
+import { pedidoCompraInfo } from "./purchase-order-number";
 import { getDadosPagamento, parseValor, normalizarVencimento } from "./pagamento";
 
 /** IDs das etiquetas Setor e vencimentos, conferidos no formulário público. */
@@ -76,8 +77,9 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   if (!pg.numero_nf) pend.push("Número da NF não informado.");
   const valor = parseValor(pg.valor_documento || venc.valor);
   if (!(valor > 0)) pend.push("Valor do documento não informado.");
-  const oc = card.numero_pedido_linx || card.order_number || "";
-  if (!oc) pend.push("Número do pedido gerado não informado.");
+  // Para todos os fins, o número enviado é o do Pedido de Compra (regra PC), nunca o do Linx.
+  const oc = pedidoCompraInfo(card.data)?.numero ?? "";
+  if (!oc) pend.push("Número do Pedido de Compra (PC) ainda não gerado.");
   const just = justificativaOriginal(card);
   if (!just) pend.push("Justificativa da solicitação ausente.");
 
