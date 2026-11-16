@@ -1,14 +1,15 @@
 import { getFaturamento, INVOICE_BUCKET } from "@/lib/invoice-documents";
 import { montarCamposPipefy, PIPEFY_ANEXO_BOLETO_FIELD, PIPEFY_ANEXO_NF_FIELD } from "@/lib/pipefy-payload";
 import { getRecebimento } from "@/lib/recebimento";
+import { translateError } from "@/lib/error-messages";
 
 const PIPEFY_PUBLIC_API = "https://app.pipefy.com/public_api";
 async function gql(query: string, variables: Record<string, unknown>) {
   const r = await fetch(PIPEFY_PUBLIC_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query, variables }) });
   const j: any = await r.json().catch(() => ({}));
   if (!r.ok || j.errors) {
-    console.error("Pipefy error", r.status, JSON.stringify(j.errors ?? j).slice(0, 800));
-    throw new Error(j.errors?.[0]?.message || `Pipefy respondeu ${r.status}`);
+    console.error("Falha no Pipefy", r.status, JSON.stringify(j.errors ?? j).slice(0, 800));
+    throw new Error(translateError(j.errors?.[0]?.message, `O Pipefy não aceitou o protocolo (código ${r.status}). Tente novamente ou contate o administrador.`));
   }
   return j.data;
 }
@@ -75,7 +76,7 @@ export async function executarProtocoloPipefy(admin: any, cardId: string, userId
       await admin.from("kanban_cards").update({ data: nextData as never }).eq("id", card.id);
       return { ok: true as const, protocolo, jaExistia: false };
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro desconhecido";
+      const msg = translateError(e, "Não foi possível enviar o protocolo ao Pipefy. Tente novamente.");
       const { data: atual } = await admin.from("kanban_cards").select("data").eq("id", card.id).maybeSingle();
       const nextData = { ...((atual?.data as Record<string, unknown>) ?? {}), protocolo_pipefy_erro: { mensagem: msg, em: new Date().toISOString() } };
       await admin.from("kanban_cards").update({ data: nextData as never }).eq("id", card.id);

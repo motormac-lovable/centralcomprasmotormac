@@ -16,6 +16,7 @@ const EXACT: Record<string, string> = {
   "JWT expired": "Sessão expirada. Faça login novamente.",
   "Token has expired or is invalid": "O link expirou ou é inválido. Solicite um novo.",
   "Unauthorized": "Você não tem permissão para executar esta ação.",
+  "Forbidden": "Você não tem permissão para executar esta ação.",
   "Failed to fetch": "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
   "Network request failed": "Falha de conexão. Verifique sua internet e tente novamente.",
   "NetworkError when attempting to fetch resource.": "Falha de conexão. Verifique sua internet e tente novamente.",
@@ -65,10 +66,14 @@ function rawMessage(err: unknown): string {
 export function translateError(err: unknown, fallback: string = GENERIC_FALLBACK): string {
   const raw = rawMessage(err).trim();
   if (!raw) return fallback;
+  // O Pipefy pode misturar etiquetas em português com instruções em inglês.
+  const required = [...raw.matchAll(/Field\s+["']([^"']+)["']\s+is required/gi)].map((m) => m[1]);
+  if (required.length) return `Preencha os campos obrigatórios no protocolo: ${required.join(", ")}.`;
   if (EXACT[raw]) return EXACT[raw];
   for (const [regex, msg] of PATTERNS) {
     if (regex.test(raw)) return msg;
   }
+  if (/\b(field|please|failed|error|invalid|required|unexpected|cannot|unable|unauthorized|forbidden|exception)\b/i.test(raw)) return fallback;
   // Se a mensagem já está em português (heurística simples), preserva.
   if (/[áéíóúãõâêôçÁÉÍÓÚÃÕÂÊÔÇ]|(\b(não|senha|usuário|conexão|arquivo|permissão|inválid|obrigat|falha|erro)\b)/i.test(raw)) {
     return raw;
