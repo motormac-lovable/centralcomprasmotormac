@@ -9,6 +9,7 @@ import { useProtocolar } from "@/components/DadosPagamentoSection";
 import { DATA_DE_CORTE_PRODUCAO_ISO } from "@/lib/cutoff";
 import type { Database } from "@/integrations/supabase/types";
 import { translateError } from "@/lib/error-messages";
+import { rotuloPedido } from "@/lib/purchase-order-number";
 
 type Card = Database["public"]["Tables"]["kanban_cards"]["Row"];
 
@@ -109,7 +110,7 @@ function ProtocoloPage() {
                   <tr key={c.id} className="border-t align-top">
                     <td className="p-3 font-mono text-xs">{c.codigo_unico ?? "—"}</td>
                     <td className="p-3"><Link to="/kanban" className="hover:underline">{c.title}</Link><div className="text-xs text-muted-foreground">{c.buyer_name ?? ""}</div></td>
-                    <td className="p-3">{c.numero_pedido_linx || c.order_number || "—"}</td>
+                    <td className="p-3">{rotuloPedido(c) ?? "—"}</td>
                     <td className="p-3 text-xs">{d.centro_custo_codigo ? `${d.centro_custo_codigo} - ${d.centro_custo_descricao}` : "—"}</td>
                     <td className={`p-3 text-xs ${tone}`}>
                       {s.tone === "erro" && <AlertTriangle className="mr-1 inline h-3 w-3" />}{s.label}

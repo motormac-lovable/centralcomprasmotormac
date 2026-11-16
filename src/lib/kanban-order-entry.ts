@@ -6,7 +6,7 @@ type EntryCard = {
 };
 
 export const MANUAL_ORDER_ENTRY_MESSAGE =
-  "Movimentação manual não permitida para 'Pedidos Gerados'. O card é movido automaticamente após a aprovação da cotação.";
+  "⛔ Movimentação manual não permitida. O card avança automaticamente para 'Pedidos Gerados' após a aprovação formal da cotação.";
 
 export function hasFormalOrderApproval(card: EntryCard): boolean {
   if (card.status !== "cotacoes_aprovadas" && card.status !== "pedidos_gerados") return false;
