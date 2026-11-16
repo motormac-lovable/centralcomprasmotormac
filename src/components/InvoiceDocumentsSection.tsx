@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Receipt, FileText, Trash2, Download, Eye, Plus, Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,11 +99,13 @@ export function InvoiceDocumentsSection({
   editable,
   author,
   onChanged,
+  renderPagamento,
 }: {
   card: CardShape;
   editable: boolean;
   author?: string;
   onChanged?: (fat: Faturamento) => void;
+  renderPagamento?: (boletos: ReactNode) => ReactNode;
 }) {
   const initial = getFaturamento(card.data);
   const [notas, setNotas] = useState<InvoiceFile[]>(initial.notas_fiscais ?? []);
@@ -236,6 +238,49 @@ export function InvoiceDocumentsSection({
     }
   };
 
+  const boletosBlock = (
+    <>
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            🎟️ Boletos ({boletos.length}/{INVOICE_MAX_FILES})
+          </h4>
+          <span className="text-[11px] text-muted-foreground">PDF, PNG, JPG · até {INVOICE_MAX_SIZE_MB}MB cada</span>
+        </div>
+        <div className="space-y-2 mb-2">
+          {boletos.map((f) => (
+            <FileRow key={f.path} file={f} canDelete={editable} onDelete={() => handleDelete("boleto", f)} />
+          ))}
+          {boletos.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">Nenhum boleto anexado.</p>
+          )}
+        </div>
+        {editable && boletos.length < INVOICE_MAX_FILES && (
+          <>
+            <input
+              ref={boletoInput}
+              type="file"
+              multiple
+              accept={INVOICE_ACCEPT}
+              className="hidden"
+              onChange={(e) => handlePick("boleto", e.target.files)}
+            />
+            <button
+              type="button"
+              onClick={() => boletoInput.current?.click()}
+              disabled={busy === "boleto"}
+              className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted disabled:opacity-60"
+            >
+              {busy === "boleto" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+              Anexar Boleto
+            </button>
+          </>
+        )}
+      </div>
+
+    </>
+  );
+
   return (
     <section className="rounded-xl border-2 border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-900 p-4 space-y-4">
       <h3 className="text-sm font-semibold flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
@@ -276,45 +321,6 @@ export function InvoiceDocumentsSection({
             >
               {busy === "nf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               Anexar Nota Fiscal
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Boletos */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            🎟️ Boletos ({boletos.length}/{INVOICE_MAX_FILES})
-          </h4>
-          <span className="text-[11px] text-muted-foreground">PDF, PNG, JPG · até {INVOICE_MAX_SIZE_MB}MB cada</span>
-        </div>
-        <div className="space-y-2 mb-2">
-          {boletos.map((f) => (
-            <FileRow key={f.path} file={f} canDelete={editable} onDelete={() => handleDelete("boleto", f)} />
-          ))}
-          {boletos.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">Nenhum boleto anexado.</p>
-          )}
-        </div>
-        {editable && boletos.length < INVOICE_MAX_FILES && (
-          <>
-            <input
-              ref={boletoInput}
-              type="file"
-              multiple
-              accept={INVOICE_ACCEPT}
-              className="hidden"
-              onChange={(e) => handlePick("boleto", e.target.files)}
-            />
-            <button
-              type="button"
-              onClick={() => boletoInput.current?.click()}
-              disabled={busy === "boleto"}
-              className="inline-flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm hover:bg-muted disabled:opacity-60"
-            >
-              {busy === "boleto" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              Anexar Boleto
             </button>
           </>
         )}
@@ -377,6 +383,9 @@ export function InvoiceDocumentsSection({
           <p className="text-xs text-muted-foreground italic">Nenhum código/chave XML informado.</p>
         )}
       </div>
+
+      {/* Condição de pagamento: o bloco de boletos só abre quando a forma escolhida pede boleto. */}
+      {renderPagamento ? renderPagamento(boletosBlock) : boletosBlock}
     </section>
   );
 }

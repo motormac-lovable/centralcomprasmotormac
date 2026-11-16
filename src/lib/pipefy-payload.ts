@@ -1,7 +1,7 @@
 /** Monta os campos do card Pipefy a partir do card da Central (puro, testável). */
 import { centroCustoPipefy, empresaPipefy, setorPipefy } from "./pipefy-depara";
 import { pedidoCompraInfo } from "./purchase-order-number";
-import { getDadosPagamento, parseValor, normalizarVencimento } from "./pagamento";
+import { getDadosPagamento, parseValor, normalizarVencimento, isParcelado } from "./pagamento";
 
 /** IDs das etiquetas Setor e vencimentos, conferidos no formulário público. */
 const SETOR_IDS: Record<string, string> = {
@@ -95,8 +95,10 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   add("fornecedor", venc.fornecedor);
   add("livre_de_d_bito", "Sim");
   const c = pg.condicao_de_pagamento;
-  add("condi_o_de_pagamento", c);
-  if (c === "Parcelado") {
+  const parc = isParcelado(pg);
+  // O formulário Pipefy não tem "Pix": vai como Depósito com o campo Código Pix.
+  add("condi_o_de_pagamento", parc ? "Parcelado" : c === "Pagamento Pix" ? "Depósito" : c);
+  if (parc) {
     add("n_mero_de_parcelas", String(pg.parcelas_detalhe?.length ?? ""));
     (pg.parcelas_detalhe ?? []).slice(0, 12).forEach((p, i) => {
       const v = parseValor(p.valor);
@@ -111,6 +113,7 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
     else pend.push("Data de vencimento não informada. Confira os dados de pagamento no card.");
   }
   if (c === "Depósito") { add("banco", pg.banco); add("ag_ncia", pg.agencia); add("conta_corrente", pg.conta_corrente); add("c_digo_pix", pg.codigo_pix); }
+  if (c === "Pagamento Pix") add("c_digo_pix", pg.codigo_pix);
   if (c === "Cartão corporativo") add("respons_vel_pelo_cart_o", pg.responsavel_pelo_cartao);
   add("tipo_de_lan_amento", "Centro de Custo");
   add("centro_de_custo", cc.centro_de_custo);
@@ -119,6 +122,6 @@ export function montarCamposPipefy(card: CardParaProtocolo, compradorEmail: stri
   add("uma_despesa_de_contrato", pg.despesa_contrato || "Não");
   if (pg.despesa_contrato === "Sim") add("n_mero_do_contrato", pg.numero_contrato);
   add("n_mero_da_ordem_de_compra", oc);
-  add("observa_es", just);
+  add("observa_es", c === "Pagamento Pix" && pg.nome_favorecido ? `${just}\n\nPagamento Pix — Favorecido: ${pg.nome_favorecido}` : just);
   return { campos: f, pendencias: pend, copiaEmail: card.requester_email || null };
 }

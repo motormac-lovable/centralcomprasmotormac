@@ -61,3 +61,17 @@ describe("De/Para Pipefy", () => {
     expect(parseCondicaoMapa("à vista", 100).parcelado).toBe(false);
   });
 });
+
+describe("Pagamento Pix e parcelamento opcional", () => {
+  const base = { numero_nf: "1", valor_documento: "100", data_vencimento: "2026-12-01" };
+  it("Pix exige Chave Pix e favorecido, sem banco e sem boleto", () => {
+    const erros = validarDadosPagamento({ ...base, condicao_de_pagamento: "Pagamento Pix" }, false);
+    expect(erros).toEqual(["Informe a Chave Pix.", "Informe o nome do favorecido."]);
+    expect(validarDadosPagamento({ ...base, condicao_de_pagamento: "Pagamento Pix", codigo_pix: "a@b.com", nome_favorecido: "Fulano" }, false)).toEqual([]);
+  });
+  it("parcelado marcado exige parcelas; depósito parcelado não exige boleto", () => {
+    const p = { ...base, condicao_de_pagamento: "Depósito" as const, banco: "1", agencia: "2", conta_corrente: "3", parcelado: true,
+      parcelas_detalhe: [{ numero: 1, valor: "50", vencimento: "2026-12-01" }, { numero: 2, valor: "50", vencimento: "2027-01-01" }] };
+    expect(validarDadosPagamento(p, false)).toEqual([]);
+  });
+});
